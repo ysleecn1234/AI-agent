@@ -48,7 +48,26 @@ Embeddings: OpenAI text-embedding-3-small.
 Database: PostgreSQL 15+ (메타데이터), Milvus 2.3+ (벡터 검색).  
 Infrastructure: Naver Cloud Platform (NCP).  
 
-👥 Team  
-이지석: 에이전트 생성 및 관리 허브 시스템 구축.  
-윤호성: AI 드라이브 및 통합 운영 관리 시스템 구축.  
-권영민: LLM 오케스트레이션 엔진 및 라우팅 로직 개발.
+## �️ 개발 매뉴얼 (Development Manual)
+
+### 1. 가상환경 설정 (Virtual Environment Setup)
+git pull 후 즉시 작업에 착수할 수 있도록 아래 명령어를 실행해주세요.
+
+**Mac/zsh**
+```bash
+python -m venv venv && source venv/bin/activate
+```
+
+**Windows**
+```bash
+python -m venv venv && .\venv\Scripts\activate
+```
+
+### 2. 담당 파트 및 작업 경로 (Roles & Paths)
+- **권영민** (`app/core/`): LLM 오케스트레이션 엔진 및 5단계 라우팅 로직 개발.
+- **이지석** (`app/services/agent_hub/`): 에이전트 생성 및 계층형 관리 허브 시스템 구축.
+- **윤호성** (`app/services/ai_drive/`): AI 드라이브 RAG 시스템 및 통합 운영 관리 시스템 구축.
+
+### 3. 서버 및 데이터베이스 정보 (Server & DB Info)
+- **Status**: 현재 테스트는 로컬 환경 및 NCP Standard 서버를 활용함.
+- **Plan**: MVP 구축 후 회사 내부 서버로 이관 예정.
