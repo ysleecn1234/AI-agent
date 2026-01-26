@@ -76,7 +76,6 @@ python -m venv venv && .\venv\Scripts\activate
 
 ### 1. 보안 및 지갑 사수 (Security & Cost) 🔐
 - **.env 파일 업로드 절대 금지**: 어떤 이유에서든 실제 API 키가 포함된 `.env` 파일을 깃허브에 올리지 않습니다.
-- **비용 모니터링**: 우리 프로젝트는 인세븐 대비 운영 비용 30% 절감을 목표로 합니다. 불필요한 고비용 모델(GPT-5, Claude 4.5) 호출은 자제하고, 테스트 시에는 **Gemini 2.0 Flash**를 적극 활용해 주세요.
 
 ### 2. 깃 워크플로우 준수 (Git Strategy) 🛠️
 - **직접 Push 금지**: `develop` 브랜치나 `main` 브랜치에 직접 코드를 밀어넣지 마세요.
