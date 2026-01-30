@@ -15,4 +15,5 @@ __pycache__/
 Thumbs.db
 
 # 로그 및 데이터
+logs/
 *.log
