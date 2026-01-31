@@ -20,6 +20,7 @@ from core.embedding import EmbeddingGenerator
 from db.milvus_client import MilvusClient
 from db.postgres_client import PostgresClient
 from core.auto_tagger import AutoTagger
+from core.cost_manager import CostManager
 
 class DocumentPipeline:
     """
@@ -207,6 +208,22 @@ class DocumentPipeline:
             cost_usd = total_tokens * 0.00000002  # $0.02 per 1M tokens
             cost_krw = cost_usd * 1400
             
+            # 크기별 저장 비용
+            cost_manager = CostManager()
+            storage_cost = cost_manager.calculate_daily_cost(file_size)
+
+            self.postgres_client.log_cost(
+                user_id=creator_id,
+                operation="storage",
+                tokens_used=0,
+                cost_usd=storage_cost["daily_cost_krw"] / 1400,
+                cost_krw=storage_cost["daily_cost_krw"],
+                doc_id=doc_id,
+                model_name=f"storage_{storage_cost['size_category']}"
+            )
+
+            print(f"  → 저장 비용: {storage_cost['daily_cost_krw']}원/일 ({storage_cost['size_category']})")
+
             self.postgres_client.log_cost(
                 user_id=creator_id,
                 operation="embedding",
