@@ -4,7 +4,7 @@ uvicorn==0.27.0
 
 # LLM 오케스트레이션 (GPT-5, Claude 4.5, Gemini 2.0 등 21종 대응)
 litellm==1.16.0
-openai==1.10.0
+openai==2.16.0
 anthropic==0.15.0
 google-generativeai==0.3.2
 
@@ -12,6 +12,7 @@ google-generativeai==0.3.2
 sqlalchemy==2.0.25
 psycopg2-binary==2.9.9
 pymilvus==2.3.5
+marshmallow==3.21.0
 
 # 지식 임베딩 및 문서 처리 (AI 드라이브용)
 pypdf==3.17.4
