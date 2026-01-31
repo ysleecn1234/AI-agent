@@ -19,6 +19,7 @@ from utils.chunker import TextChunker
 from core.embedding import EmbeddingGenerator
 from db.milvus_client import MilvusClient
 from db.postgres_client import PostgresClient
+from core.auto_tagger import AutoTagger
 
 class DocumentPipeline:
     """
@@ -38,7 +39,8 @@ class DocumentPipeline:
         self.embedding_generator = EmbeddingGenerator()
         self.milvus_client = MilvusClient()
         self.postgres_client = PostgresClient()
-    
+        self.auto_tagger = AutoTagger()
+
     def process_file_upload(
         self,
         file_path: str,
@@ -128,7 +130,15 @@ class DocumentPipeline:
                     "duration_ms": duration_ms,
                     "warning": "텍스트 추출 없음"
                 }
-            
+            # AI 태깅
+            tags_result = self.auto_tagger.generate_tags(text, title)
+            tags = tags_result.get("tags", [])
+            keywords = tags_result.get("keywords", [])
+            doc_type = tags_result.get("doc_type", "기타")
+
+            # PostgreSQL에 태그 업데이트
+            self.postgres_client.update_document_tags(doc_id, tags, keywords, doc_type)
+
             # Step 4: 임베딩 생성
             print("[Step 4/5] 임베딩 생성")
             embeddings = self.embedding_generator.create_batch(chunks)
@@ -258,6 +268,15 @@ class DocumentPipeline:
             print("[Step 2/4] 텍스트 청킹")
             chunks = self.chunker.chunk(chat_content)
             print(f"  → 생성된 청크: {len(chunks)}개")
+
+            # AI 태깅
+            tags_result = self.auto_tagger.generate_tags(chat_content, title)
+            tags = tags_result.get("tags", [])
+            keywords = tags_result.get("keywords", [])
+            doc_type = tags_result.get("doc_type", "기타")
+
+            # PostgreSQL에 태그 업데이트
+            self.postgres_client.update_document_tags(doc_id, tags, keywords, doc_type)
             
             # Step 3: 임베딩 생성
             print("[Step 3/4] 임베딩 생성")
@@ -353,6 +372,15 @@ class DocumentPipeline:
             chunks = self.chunker.chunk(agent_output)
             print(f"  → 생성된 청크: {len(chunks)}개")
             
+            # AI 태깅
+            tags_result = self.auto_tagger.generate_tags(agent_output, title)
+            tags = tags_result.get("tags", [])
+            keywords = tags_result.get("keywords", [])
+            doc_type = tags_result.get("doc_type", "기타")
+
+            # PostgreSQL에 태그 업데이트
+            self.postgres_client.update_document_tags(doc_id, tags, keywords, doc_type)
+
             # Step 3: 임베딩 생성
             print("[Step 3/4] 임베딩 생성")
             embeddings = self.embedding_generator.create_batch(chunks)

@@ -218,23 +218,20 @@ class PostgresClient:
         finally:
             session.close()
     
-    def update_document_tags(self, doc_id: str, tags: List[str], keywords: List[str] = None):
-        """문서 태그/키워드 업데이트"""
+    def update_document_tags(self, doc_id: str, tags: List[str], keywords: List[str] = None, doc_type: str = None):
+        """문서 태그/키워드/유형 업데이트"""
         session = self.Session()
         
         try:
-            doc = session.query(Document).filter(
-                Document.doc_id == uuid.UUID(doc_id)
-            ).first()
-            
+            doc = session.query(Document).filter(Document.doc_id == doc_id).first()
             if doc:
                 doc.tags = tags
                 if keywords:
                     doc.keywords = keywords
-                doc.modified_at = datetime.utcnow()
+                if doc_type:
+                    doc.doc_type = doc_type
                 session.commit()
-                print(f"✓ 문서 태그 업데이트: {doc_id}")
-                
+                print(f"✓ 태그 업데이트: {doc_id}")
         finally:
             session.close()
     
