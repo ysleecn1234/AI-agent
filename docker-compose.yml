@@ -55,7 +55,25 @@ services:
       - etcd
       - minio
 
+  postgres:
+    image: postgres:15
+    container_name: ai-drive-postgres
+    environment:
+      POSTGRES_USER: aiagent
+      POSTGRES_PASSWORD: aiagent123
+      POSTGRES_DB: ai_drive
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U aiagent -d ai_drive" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
 volumes:
   etcd_data:
   minio_data:
   milvus_data:
+  postgres_data:
