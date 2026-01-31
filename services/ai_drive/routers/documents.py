@@ -205,6 +205,258 @@ async def save_agent_result(request: AgentSaveRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# ==================== 문서 조회 API (Phase 2-8) ====================
+
+class SearchRequest(BaseModel):
+    """RAG 검색 요청"""
+    query: str
+    user_department: str
+    top_k: int = 5
+
+
+class SearchResultItem(BaseModel):
+    """검색 결과 아이템"""
+    doc_id: str
+    content: str
+    source: str
+    score: float
+    author: str
+    department: str
+    date: str
+    freshness_bonus: float = 0
+
+
+class SearchResponse(BaseModel):
+    """RAG 검색 응답"""
+    success: bool
+    query: str
+    results: List[SearchResultItem]
+    total_count: int
+
+
+class DocumentDetail(BaseModel):
+    """문서 상세 정보"""
+    doc_id: str
+    title: str
+    description: str
+    creator_id: str
+    creator_department: str
+    created_at: str
+    modified_at: str
+    visibility: str
+    status: str
+    file_size: int
+    file_type: str
+    version: int
+    is_latest: bool
+    tags: List[str]
+    filename: str
+    source_type: str
+    chunk_count: int
+
+
+class DocumentListItem(BaseModel):
+    """문서 목록 아이템"""
+    doc_id: str
+    title: str
+    creator_department: str
+    visibility: str
+    status: str
+    file_type: str
+    version: int
+    modified_at: str
+    tags: List[str]
+
+
+class DocumentListResponse(BaseModel):
+    """문서 목록 응답"""
+    success: bool
+    documents: List[DocumentListItem]
+    total_count: int
+
+
+@router.post("/search", response_model=SearchResponse)
+async def search_documents(request: SearchRequest):
+    """
+    RAG 4단계 검색 API
+    
+    - 질문 임베딩 → 유사도 검색 → 권한 필터 → Freshness Score
+    - 오케스트레이터 Researcher에서 호출
+    """
+    from core.rag_search import RAGSearcher
+    
+    try:
+        searcher = RAGSearcher()
+        
+        results = searcher.search(
+            query=request.query,
+            user_department=request.user_department,
+            top_k=request.top_k
+        )
+        
+        searcher.close()
+        
+        return SearchResponse(
+            success=True,
+            query=request.query,
+            results=[
+                SearchResultItem(
+                    doc_id=r.get("doc_id", ""),
+                    content=r.get("content", ""),
+                    source=r.get("source", "알 수 없음"),
+                    score=r.get("score", 0),
+                    author=r.get("author", ""),
+                    department=r.get("department", ""),
+                    date=r.get("date", ""),
+                    freshness_bonus=r.get("freshness_bonus", 0)
+                )
+                for r in results
+            ],
+            total_count=len(results)
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("", response_model=DocumentListResponse)
+async def list_documents(
+    department: Optional[str] = None,
+    visibility: Optional[str] = None,
+    status: str = "active",
+    limit: int = 50
+):
+    """
+    문서 목록 조회 API
+    
+    - 필터: 부서, 공개범위, 상태
+    - 최신 버전만 조회 (is_latest=True)
+    """
+    try:
+        pipeline = DocumentPipeline()
+        
+        docs = pipeline.postgres_client.list_documents(
+            creator_department=department,
+            visibility=visibility,
+            status=status,
+            is_latest=True,
+            limit=limit
+        )
+        
+        pipeline.close()
+        
+        return DocumentListResponse(
+            success=True,
+            documents=[
+                DocumentListItem(
+                    doc_id=d.get("doc_id", ""),
+                    title=d.get("title", ""),
+                    creator_department=d.get("creator_department", ""),
+                    visibility=d.get("visibility", "team"),
+                    status=d.get("status", "active"),
+                    file_type=d.get("file_type", ""),
+                    version=d.get("version", 1),
+                    modified_at=d.get("modified_at", ""),
+                    tags=d.get("tags", [])
+                )
+                for d in docs
+            ],
+            total_count=len(docs)
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{doc_id}", response_model=DocumentDetail)
+async def get_document(doc_id: str):
+    """
+    문서 상세 조회 API
+    
+    - 메타데이터 전체 반환
+    - 출처 정보 포함
+    """
+    try:
+        pipeline = DocumentPipeline()
+        
+        doc = pipeline.postgres_client.get_document(doc_id)
+        
+        pipeline.close()
+        
+        if not doc:
+            raise HTTPException(status_code=404, detail="문서를 찾을 수 없습니다")
+        
+        return DocumentDetail(
+            doc_id=doc.get("doc_id", ""),
+            title=doc.get("title", ""),
+            description=doc.get("description", ""),
+            creator_id=doc.get("creator_id", ""),
+            creator_department=doc.get("creator_department", ""),
+            created_at=doc.get("created_at", ""),
+            modified_at=doc.get("modified_at", ""),
+            visibility=doc.get("visibility", "team"),
+            status=doc.get("status", "active"),
+            file_size=doc.get("file_size", 0),
+            file_type=doc.get("file_type", ""),
+            version=doc.get("version", 1),
+            is_latest=doc.get("is_latest", True),
+            tags=doc.get("tags", []),
+            filename=doc.get("filename", ""),
+            source_type=doc.get("source_type", "file"),
+            chunk_count=doc.get("chunk_count", 0)
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/{doc_id}")
+async def delete_document(doc_id: str, user_id: str):
+    """
+    문서 삭제 API
+    
+    - 실제 삭제가 아닌 상태 변경 (archived)
+    - Milvus 벡터도 삭제
+    - 활동 로그 기록
+    """
+    try:
+        pipeline = DocumentPipeline()
+        
+        # 문서 존재 확인
+        doc = pipeline.postgres_client.get_document(doc_id)
+        if not doc:
+            pipeline.close()
+            raise HTTPException(status_code=404, detail="문서를 찾을 수 없습니다")
+        
+        # PostgreSQL 상태 변경 (archived)
+        pipeline.postgres_client.delete_document(doc_id)
+        
+        # Milvus에서 벡터 삭제
+        pipeline.milvus_client.delete_by_doc_id(doc_id)
+        
+        # 활동 로그 기록
+        pipeline.postgres_client.log_activity(
+            user_id=user_id,
+            action="delete",
+            doc_id=doc_id,
+            success=True,
+            details={"title": doc.get("title", "")}
+        )
+        
+        pipeline.close()
+        
+        return {
+            "success": True,
+            "message": "문서가 삭제되었습니다",
+            "doc_id": doc_id
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # ==================== 테스트 코드 ====================
 
