@@ -15,6 +15,9 @@ pymilvus==2.3.5
 
 # 지식 임베딩 및 문서 처리 (AI 드라이브용)
 pypdf==3.17.4
+PyMuPDF==1.26.5
+python-docx==1.2.0
+python-pptx==1.0.2
 python-dotenv==1.0.1
 pydantic-settings==2.1.0
 
