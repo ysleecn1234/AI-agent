@@ -126,7 +126,9 @@ class PostgresClient:
         doc_type: str = "",
         filename: str = "",
         source_type: str = "file",
-        chunk_count: int = 0
+        chunk_count: int = 0,
+        version: int = 1,
+        parent_doc_id: str = None
     ) -> str:
         """
         문서 메타데이터 생성
@@ -151,7 +153,9 @@ class PostgresClient:
                 doc_type=doc_type,
                 filename=filename,
                 source_type=source_type,
-                chunk_count=chunk_count
+                chunk_count=chunk_count,
+                version=version,
+                parent_doc_id=uuid.UUID(parent_doc_id) if parent_doc_id else None
             )
             
             session.add(doc)
@@ -552,6 +556,95 @@ class PostgresClient:
         finally:
             session.close()
     
+    def check_duplicate_filename(self, filename: str, creator_department: str) -> Dict[str, Any]:
+        """
+        동일 파일명 문서 확인 (버전 관리용)
+        
+        Returns:
+            존재하면: {"exists": True, "doc_id": "...", "version": 2}
+            없으면: {"exists": False}
+        """
+        session = self.Session()
+        
+        try:
+            doc = session.query(Document).filter(
+                Document.filename == filename,
+                Document.creator_department == creator_department,
+                Document.is_latest == True
+            ).first()
+            
+            if doc:
+                return {
+                    "exists": True,
+                    "doc_id": str(doc.doc_id),
+                    "version": doc.version,
+                    "title": doc.title
+                }
+            else:
+                return {"exists": False}
+        finally:
+            session.close()
+
+
+    def get_version_history(self, doc_id: str) -> List[Dict[str, Any]]:
+        """
+        문서 버전 히스토리 조회
+        (parent_doc_id 체인 따라가기)
+        """
+        session = self.Session()
+        
+        try:
+            history = []
+            
+            # 현재 문서 조회
+            current = session.query(Document).filter(
+                Document.doc_id == doc_id
+            ).first()
+            
+            if not current:
+                return []
+            
+            # 같은 파일명의 모든 버전 조회
+            all_versions = session.query(Document).filter(
+                Document.filename == current.filename,
+                Document.creator_department == current.creator_department,
+                Document.title == current.title
+            ).order_by(Document.version.desc()).all()
+            
+            for doc in all_versions:
+                history.append({
+                    "doc_id": str(doc.doc_id),
+                    "title": doc.title,
+                    "version": doc.version,
+                    "is_latest": doc.is_latest,
+                    "status": doc.status,
+                    "created_at": doc.created_at.isoformat() if doc.created_at else None,
+                    "modified_at": doc.modified_at.isoformat() if doc.modified_at else None
+                })
+            
+            return history
+            
+        finally:
+            session.close()
+
+
+    def archive_old_version(self, doc_id: str):
+        """이전 버전 아카이브 처리"""
+        session = self.Session()
+        
+        try:
+            doc = session.query(Document).filter(
+                Document.doc_id == doc_id
+            ).first()
+            
+            if doc:
+                doc.is_latest = False
+                doc.status = "archived"
+                session.commit()
+                print(f"✓ 이전 버전 아카이브: {doc_id}")
+        finally:
+            session.close()
+
     def close(self):
         """연결 종료"""
         self.engine.dispose()

@@ -80,7 +80,30 @@ class DocumentPipeline:
             title = path.stem  # 확장자 제외한 파일명
         
         print(f"[Pipeline] 문서 처리 시작: {filename}")
-        
+
+        # ===== 버전 관리: 동일 파일명 체크 =====
+        version = 1
+        parent_doc_id = None
+
+        duplicate = self.postgres_client.check_duplicate_filename(
+            filename=filename,
+            creator_department=creator_department
+        )
+
+        if duplicate.get("exists"):
+            old_doc_id = duplicate["doc_id"]
+            old_version = duplicate["version"]
+            version = old_version + 1
+            parent_doc_id = old_doc_id
+            
+            print(f"  → 기존 문서 발견: v{old_version} → v{version} 업그레이드")
+            
+            # 이전 버전 아카이브
+            self.postgres_client.archive_old_version(old_doc_id)
+            
+            # Milvus에서 이전 버전 is_latest=False
+            self.milvus_client.update_version_status(old_doc_id, old_version)
+
         try:
             # Step 1: PostgreSQL에 메타데이터 생성 (status: pending)
             print("[Step 1/5] 메타데이터 생성")
@@ -95,7 +118,9 @@ class DocumentPipeline:
                 tags=tags,
                 doc_type=doc_type,
                 filename=filename,
-                source_type="file"
+                source_type="file",
+                version=version,
+                parent_doc_id=parent_doc_id
             )
             
             # 상태 업데이트: processing

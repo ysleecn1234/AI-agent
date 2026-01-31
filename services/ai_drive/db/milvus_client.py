@@ -212,14 +212,43 @@ class MilvusClient:
         
         return result.delete_count
     
-    def update_version_status(self, doc_id: str, version: int):
+    def update_version_status(self, doc_id: str, old_version: int):
         """
         이전 버전 is_latest를 False로 변경
-        (새 버전 업로드 시 호출)
+        (Milvus는 update 미지원 → 조회 후 삭제 → 재삽입)
         """
-        # Milvus는 update 미지원 → 삭제 후 재삽입 필요
-        # 실제 구현은 Phase 1-6에서
-        pass
+        # 이전 버전 청크들 조회
+        expr = f'doc_id == "{doc_id}" and version == {old_version}'
+    
+        old_chunks = self.collection.query(
+            expr=expr,
+            output_fields=["doc_id", "chunk_text", "embedding", "visibility", 
+                        "creator_department", "version", "is_latest", "status"]
+        )
+    
+        if not old_chunks:
+            print(f"  → 이전 버전 없음 (doc_id={doc_id}, version={old_version})")
+            return
+    
+        # 삭제
+        self.collection.delete(expr)
+    
+        # is_latest=False로 재삽입
+        data = [
+            [chunk["doc_id"] for chunk in old_chunks],
+            [chunk["chunk_text"] for chunk in old_chunks],
+            [chunk["embedding"] for chunk in old_chunks],
+            [chunk["visibility"] for chunk in old_chunks],
+            [chunk["creator_department"] for chunk in old_chunks],
+            [chunk["version"] for chunk in old_chunks],
+            [False] * len(old_chunks),  # is_latest = False
+            [chunk["status"] for chunk in old_chunks],
+        ]
+    
+        self.collection.insert(data)
+        self.collection.flush()
+    
+        print(f"  → 이전 버전 is_latest=False 처리 완료 ({len(old_chunks)}개 청크)")
     
     def get_collection_stats(self) -> Dict[str, Any]:
         """컬렉션 통계 조회"""

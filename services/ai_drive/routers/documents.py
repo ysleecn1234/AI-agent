@@ -410,7 +410,32 @@ async def get_document(doc_id: str):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
+@router.get("/{doc_id}/versions")
+async def get_version_history(doc_id: str):
+    """
+    문서 버전 히스토리 조회 API
+    """
+    try:
+        pipeline = DocumentPipeline()
+        
+        history = pipeline.postgres_client.get_version_history(doc_id)
+        
+        pipeline.close()
+        
+        if not history:
+            raise HTTPException(status_code=404, detail="문서를 찾을 수 없습니다")
+        
+        return {
+            "success": True,
+            "doc_id": doc_id,
+            "versions": history,
+            "total_versions": len(history)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.delete("/{doc_id}")
 async def delete_document(doc_id: str, user_id: str):
