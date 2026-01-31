@@ -231,6 +231,68 @@ class MilvusClient:
             "schema": str(self.collection.schema)
         }
     
+    def search_by_doc_id(
+        self,
+        doc_id: str,
+        query_embedding: List[float],
+        top_k: int = 5
+    ) -> List[Dict[str, Any]]:
+        """
+        특정 문서 내에서만 유사도 검색
+        (문서별 채팅용)
+        """
+        # 해당 doc_id만 필터링
+        filter_expr = f'doc_id == "{doc_id}"'
+        
+        search_params = {
+            "metric_type": "COSINE",
+            "params": {"nprobe": 10}
+        }
+        
+        results = self.collection.search(
+            data=[query_embedding],
+            anns_field="embedding",
+            param=search_params,
+            limit=top_k,
+            expr=filter_expr,
+            output_fields=["doc_id", "chunk_text", "visibility", "creator_department", "version"]
+        )
+        
+        formatted_results = []
+        for hits in results:
+            for hit in hits:
+                formatted_results.append({
+                    "id": hit.id,
+                    "doc_id": hit.entity.get("doc_id"),
+                    "chunk_text": hit.entity.get("chunk_text"),
+                    "visibility": hit.entity.get("visibility"),
+                    "creator_department": hit.entity.get("creator_department"),
+                    "version": hit.entity.get("version"),
+                    "score": hit.score
+                })
+        
+        print(f"  → doc_id={doc_id}에서 {len(formatted_results)}개 검색")
+        
+        return formatted_results
+
+
+    def get_chunks_by_doc_id(self, doc_id: str) -> List[Dict[str, Any]]:
+        """
+        특정 문서의 모든 청크 가져오기
+        (Fallback용)
+        """
+        filter_expr = f'doc_id == "{doc_id}"'
+        
+        results = self.collection.query(
+            expr=filter_expr,
+            output_fields=["doc_id", "chunk_text", "visibility", "creator_department", "version"],
+            limit=100
+        )
+        
+        print(f"  → doc_id={doc_id}에서 {len(results)}개 청크 조회")
+        
+        return results
+
     def close(self):
         """연결 종료"""
         connections.disconnect("default")
