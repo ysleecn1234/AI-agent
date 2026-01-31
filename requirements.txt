@@ -21,6 +21,7 @@ python-docx==1.2.0
 python-pptx==1.0.2
 python-dotenv==1.0.1
 pydantic-settings==2.1.0
+python-multipart==0.0.20
 
 # 멀티모달 처리 (Whisper 등)
 openai-whisper==20231117
