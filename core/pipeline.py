@@ -299,37 +299,163 @@ class Researcher:
     - 벡터 검색을 통한 유사도 기반 정보 추출
     """
     
-    def __init__(self):
-        # TODO: Milvus 벡터 DB 연결 설정
-        self.vector_db = None
+    def __init__(self, use_rag: bool = False):
+        """
+        Args:
+            use_rag: RAG 시스템 사용 여부 (개발 중에는 False, 배포 시 True)
+        """
+        self.use_rag = use_rag
         self.embedding_model = "text-embedding-3-small"
+        
+        # RAG 사용 시에만 클라이언트 초기화
+        if self.use_rag:
+            try:
+                # AI Drive 모듈 import (Feature-H 브랜치의 코드)
+                from services.ai_drive.db.milvus_client import MilvusClient
+                from services.ai_drive.core.embedding import EmbeddingGenerator
+                
+                self.milvus_client = MilvusClient()
+                self.embedding_generator = EmbeddingGenerator()
+                print("  [RAG] AI Drive 연동 활성화")
+            except ImportError as e:
+                print(f"  [RAG] AI Drive 모듈을 찾을 수 없습니다: {e}")
+                print("  [RAG] Mock 검색 모드로 전환")
+                self.use_rag = False
+            except Exception as e:
+                print(f"  [RAG] 초기화 실패: {e}")
+                print("  [RAG] Mock 검색 모드로 전환")
+                self.use_rag = False
+        else:
+            print("  [RAG] Mock 검색 모드 (use_rag=False)")
     
-    def search_documents(self, query: str, top_k: int = 5) -> list[Dict[str, Any]]:
-        """문서 검색"""
-        # TODO: 실제 벡터 검색 구현
-        # 현재는 더미 데이터 반환
-        return [
+    def search_documents(self, query: str, top_k: int = 5, department: str = "개발팀") -> list[Dict[str, Any]]:
+        """
+        문서 검색 (RAG 또는 Mock)
+        
+        Args:
+            query: 검색 쿼리
+            top_k: 반환할 문서 개수
+            department: 사용자 부서 (권한 필터링용)
+            
+        Returns:
+            검색된 문서 리스트
+        """
+        if self.use_rag:
+            return self._search_with_rag(query, top_k, department)
+        else:
+            return self._search_mock(query, top_k)
+    
+    def _search_with_rag(self, query: str, top_k: int, department: str) -> list[Dict[str, Any]]:
+        """
+        실제 RAG 검색 (AI Drive 연동)
+        
+        Args:
+            query: 검색 쿼리
+            top_k: 반환할 문서 개수
+            department: 사용자 부서
+            
+        Returns:
+            검색된 문서 리스트
+        """
+        try:
+            # 1. 쿼리를 임베딩으로 변환
+            query_embedding = self.embedding_generator.create(query)
+            
+            # 2. Milvus에서 유사도 검색
+            results = self.milvus_client.search(
+                query_embedding=query_embedding,
+                department=department,
+                top_k=top_k,
+                include_company=True  # 회사 전체 공개 문서도 포함
+            )
+            
+            # 3. 결과 포맷 변환
+            formatted_results = []
+            for result in results:
+                formatted_results.append({
+                    "content": result.get("chunk_text", ""),
+                    "score": result.get("score", 0.0),
+                    "source": result.get("doc_id", "unknown"),
+                    "doc_id": result.get("doc_id", ""),
+                    "chunk_id": result.get("chunk_id", "")
+                })
+            
+            print(f"  [RAG] 검색 완료: {len(formatted_results)}개 문서 발견")
+            return formatted_results
+            
+        except Exception as e:
+            print(f"  [RAG] 검색 실패: {e}")
+            print("  [RAG] Mock 검색으로 폴백")
+            return self._search_mock(query, top_k)
+    
+    def _search_mock(self, query: str, top_k: int) -> list[Dict[str, Any]]:
+        """
+        Mock 검색 (테스트용)
+        
+        Args:
+            query: 검색 쿼리
+            top_k: 반환할 문서 개수
+            
+        Returns:
+            Mock 문서 리스트
+        """
+        print(f"  [Mock] '{query}'에 대한 Mock 검색 실행")
+        
+        # Mock 데이터 생성
+        mock_documents = [
             {
-                "content": "검색된 문서 내용 예시",
+                "content": f"'{query}'와 관련된 Mock 문서 내용입니다. 이것은 테스트용 데이터로, 실제 RAG 연동 시 실제 문서 내용으로 대체됩니다.",
                 "score": 0.95,
-                "source": "document_1.pdf"
+                "source": "mock_document_1.pdf",
+                "doc_id": "mock-001",
+                "chunk_id": "mock-chunk-001"
+            },
+            {
+                "content": f"'{query}'에 대한 추가 정보입니다. 비용 최적화, 성능 개선 등의 내용이 포함될 수 있습니다.",
+                "score": 0.87,
+                "source": "mock_document_2.pdf",
+                "doc_id": "mock-002",
+                "chunk_id": "mock-chunk-002"
             }
         ]
+        
+        # top_k 개수만큼 반환
+        return mock_documents[:top_k]
     
     def retrieve(self, routing_result: Dict[str, Any]) -> Dict[str, Any]:
-        """정보 검색 실행"""
+        """
+        정보 검색 실행
+        
+        Args:
+            routing_result: Router의 출력 결과
+            
+        Returns:
+            검색 결과가 추가된 딕셔너리
+        """
         user_input = routing_result["user_input"]
+        intent = routing_result["intent"]
+        complexity = routing_result["complexity"]
         
         # 검색이 필요한 경우에만 실행
-        if routing_result["intent"] in ["search", "analysis"]:
-            documents = self.search_documents(user_input)
+        # - SEARCH, ANALYSIS 의도
+        # - COMPLEX, BULK 복잡도
+        should_search = (
+            intent in ["search", "analysis"] or
+            complexity in ["complex", "bulk"]
+        )
+        
+        if should_search:
+            print(f"  → 문서 검색 필요 (의도: {intent}, 복잡도: {complexity})")
+            documents = self.search_documents(user_input, top_k=5)
         else:
+            print(f"  → 문서 검색 스킵 (의도: {intent}, 복잡도: {complexity})")
             documents = []
         
         return {
             **routing_result,
             "retrieved_documents": documents
         }
+
 
 
 # ==================== Step 3: Reasoner & Verification ====================
@@ -629,9 +755,13 @@ class Pipeline:
     Router → Researcher → Reasoner → Synthesizer → Guardrail
     """
     
-    def __init__(self):
+    def __init__(self, use_rag: bool = False):
+        """
+        Args:
+            use_rag: RAG 시스템 사용 여부 (기본값: False)
+        """
         self.router = Router()
-        self.researcher = Researcher()
+        self.researcher = Researcher(use_rag=use_rag)  # RAG 플래그 전달
         self.reasoner = Reasoner()
         self.synthesizer = Synthesizer()
         self.guardrail = Guardrail()
