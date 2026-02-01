@@ -11,6 +11,7 @@ from typing import List, Optional
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from pydantic import BaseModel
 import magic
+from typing import Any
 
 # 상위 디렉토리 import 설정
 import sys
@@ -517,6 +518,57 @@ async def delete_document(doc_id: str, user_id: str):
         
     except HTTPException:
         raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ==================== 문서별 채팅 API ====================
+
+class DocChatRequest(BaseModel):
+    """문서별 채팅 요청"""
+    question: str
+    user_id: str = ""
+
+
+class DocChatResponse(BaseModel):
+    """문서별 채팅 응답"""
+    success: bool
+    doc_id: str
+    question: str
+    answer: str
+    sources: List[Any]
+    processing_time_ms: int
+
+
+@router.post("/{doc_id}/chat", response_model=DocChatResponse)
+async def chat_with_document(doc_id: str, request: DocChatRequest):
+    """
+    문서별 채팅 API
+    
+    - 특정 문서 내에서만 질문/답변
+    - 5단계 SLM 파이프라인 (Router → Researcher → Reasoner → Synthesizer → Guardrail)
+    """
+    from core.doc_chat import DocumentChat
+    
+    try:
+        doc_chat = DocumentChat()
+        
+        result = doc_chat.chat(
+            doc_id=doc_id,
+            question=request.question,
+            user_id=request.user_id
+        )
+        
+        doc_chat.close()
+        
+        return DocChatResponse(
+            success=True,
+            doc_id=doc_id,
+            question=request.question,
+            answer=result.get("answer", ""),
+            sources=result.get("sources", []),
+            processing_time_ms=result.get("processing_time_ms", 0)
+        )
+        
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
