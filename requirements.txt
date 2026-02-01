@@ -23,6 +23,7 @@ python-dotenv==1.0.1
 pydantic-settings==2.1.0
 python-multipart==0.0.20
 python-magic==0.4.27
+pytest==8.4.2
 
 # 멀티모달 처리 (Whisper 등)
 openai-whisper==20231117
