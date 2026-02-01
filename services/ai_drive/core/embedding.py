@@ -7,6 +7,7 @@ import os
 from typing import List
 from openai import OpenAI
 from dotenv import load_dotenv
+import time
 
 # 환경 변수 로드
 load_dotenv()
@@ -48,12 +49,13 @@ class EmbeddingGenerator:
         
         return response.data[0].embedding
     
-    def create_batch(self, texts: List[str]) -> List[List[float]]:
+    def create_batch(self, texts: List[str], batch_size: int = 100) -> List[List[float]]:
         """
-        여러 텍스트 일괄 임베딩 생성
+        여러 텍스트 일괄 임베딩 생성 (배치 분할)
         
         Args:
             texts: 임베딩할 텍스트 리스트
+            batch_size: 한 번에 처리할 최대 개수 (기본 100)
             
         Returns:
             임베딩 벡터 리스트
@@ -67,16 +69,36 @@ class EmbeddingGenerator:
         if not valid_texts:
             return []
         
-        response = self.client.embeddings.create(
-            model=self.model,
-            input=valid_texts
-        )
+        all_embeddings = []
         
-        # 인덱스 순서대로 정렬
-        embeddings = [item.embedding for item in response.data]
-        
-        return embeddings
-    
+        # 배치 분할 처리
+        for i in range(0, len(valid_texts), batch_size):
+            batch = valid_texts[i:i + batch_size]
+            
+            # 재시도 로직 (최대 3회)
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    response = self.client.embeddings.create(
+                        model=self.model,
+                        input=batch
+                    )
+                    break  # 성공하면 루프 탈출
+                except Exception as e:
+                    if attempt < max_retries - 1:
+                        print(f"  ⚠️ 임베딩 실패, 재시도 {attempt + 2}/{max_retries}...")
+                        time.sleep(1)  # 1초 대기 후 재시도
+                    else:
+                        raise e  # 3번 다 실패하면 에러 발생
+            
+            batch_embeddings = [item.embedding for item in response.data]
+            all_embeddings.extend(batch_embeddings)
+            
+            if len(valid_texts) > batch_size:
+                print(f"  → 임베딩 배치 {i//batch_size + 1}/{(len(valid_texts)-1)//batch_size + 1} 완료")
+
+        return all_embeddings
+
     def get_dimension(self) -> int:
         """
         임베딩 차원 수 반환
