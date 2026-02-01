@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import List, Optional
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from pydantic import BaseModel
+import magic
 
 # 상위 디렉토리 import 설정
 import sys
@@ -82,6 +83,42 @@ async def upload_document(
     - 지원 형식: PDF, DOCX, PPTX, TXT, MD, CSV
     - 자동 처리: 파싱 → 청킹 → 임베딩 → 저장
     """
+
+    # 파일 크기 제한 (50MB)
+    MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
+    
+    file.file.seek(0, 2)  # 파일 끝으로 이동
+    file_size = file.file.tell()  # 현재 위치 = 파일 크기
+    file.file.seek(0)  # 다시 처음으로
+    
+    if file_size > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=413,
+            detail=f"파일 크기가 50MB를 초과합니다. (현재: {file_size / 1024 / 1024:.1f}MB)"
+        )
+
+    # 허용된 MIME 타입
+    ALLOWED_MIME_TYPES = {
+        'application/pdf': '.pdf',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation': '.pptx',
+        'text/plain': '.txt',
+        'text/markdown': '.md',
+        'text/csv': '.csv',
+    }
+
+    # 파일 내용으로 실제 타입 확인
+    file_content = await file.read()
+    await file.seek(0)  # 다시 처음으로
+
+    mime_type = magic.from_buffer(file_content, mime=True)
+
+    if mime_type not in ALLOWED_MIME_TYPES:
+        raise HTTPException(
+            status_code=415,
+            detail=f"지원하지 않는 파일 형식입니다. (감지된 타입: {mime_type})"
+        )
+
     # 파일 확장자 확인
     file_ext = Path(file.filename).suffix.lower()
     supported = ['.pdf', '.docx', '.pptx', '.txt', '.md', '.csv']
