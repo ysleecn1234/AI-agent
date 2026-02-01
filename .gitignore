@@ -19,3 +19,9 @@ Thumbs.db
 
 # 테스트 파일
 services/ai_drive/test_files/
+
+# 업로드 파일
+services/ai_drive/uploads/
+
+# 저장 파일
+services/ai_drive/storage/

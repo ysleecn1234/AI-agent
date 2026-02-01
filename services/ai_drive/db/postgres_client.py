@@ -44,6 +44,8 @@ class Document(Base):
     filename = Column(String(255)) # 원본 파일명
     source_type = Column(String(20)) # file/chat/agent
     chunk_count = Column(Integer, default=0)
+    file_path = Column(String(500))  # 저장된 파일 경로
+
 
 
 class ActivityLog(Base):
@@ -128,7 +130,8 @@ class PostgresClient:
         source_type: str = "file",
         chunk_count: int = 0,
         version: int = 1,
-        parent_doc_id: str = None
+        parent_doc_id: str = None,
+        file_path: str = ""
     ) -> str:
         """
         문서 메타데이터 생성
@@ -155,7 +158,8 @@ class PostgresClient:
                 source_type=source_type,
                 chunk_count=chunk_count,
                 version=version,
-                parent_doc_id=uuid.UUID(parent_doc_id) if parent_doc_id else None
+                parent_doc_id=uuid.UUID(parent_doc_id) if parent_doc_id else None,
+                file_path=file_path
             )
             
             session.add(doc)
@@ -255,6 +259,22 @@ class PostgresClient:
         finally:
             session.close()
     
+    def update_file_path(self, doc_id: str, file_path: str):
+        """문서 파일 경로 업데이트"""
+        session = self.Session()
+        
+        try:
+            doc = session.query(Document).filter(
+                Document.doc_id == doc_id
+            ).first()
+            
+            if doc:
+                doc.file_path = file_path
+                session.commit()
+                print(f"✓ 파일 경로 업데이트: {doc_id}")
+        finally:
+            session.close()
+
     def list_documents(
         self,
         creator_department: str = None,

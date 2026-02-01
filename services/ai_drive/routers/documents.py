@@ -32,6 +32,10 @@ router = APIRouter(
 UPLOAD_DIR = Path(__file__).parent.parent / "uploads"
 UPLOAD_DIR.mkdir(exist_ok=True)
 
+# 영구 파일 저장 경로
+STORAGE_DIR = Path(__file__).parent.parent / "storage"
+STORAGE_DIR.mkdir(exist_ok=True)
+
 
 # ==================== 요청/응답 모델 ====================
 
@@ -142,7 +146,7 @@ async def upload_document(
         
         # 파이프라인 실행
         pipeline = DocumentPipeline()
-        
+
         result = pipeline.process_file_upload(
             file_path=str(temp_file_path),
             creator_id=creator_id,
@@ -152,7 +156,15 @@ async def upload_document(
             visibility=visibility,
             tags=tag_list
         )
-        
+
+        # 영구 저장 경로로 파일 이동
+        doc_id = result["doc_id"]
+        permanent_path = STORAGE_DIR / f"{doc_id}{file_ext}"
+        shutil.move(str(temp_file_path), str(permanent_path))
+
+        # DB에 파일 경로 업데이트
+        pipeline.postgres_client.update_file_path(doc_id, str(permanent_path))
+
         pipeline.close()
         
         return DocumentResponse(
