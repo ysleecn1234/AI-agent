@@ -151,15 +151,17 @@ AI 드라이브 통합 테스트
 
 ## 📊 테스트 커버리지 목표
 
-| 모듈 | 목표 커버리지 | 현재 상태 |
-|------|--------------|----------|
-| `pipeline.py` | 80% | 🟢 달성 |
-| `core/rag_search.py` | 80% | 🟢 달성 |
-| `core/doc_chat.py` | 80% | 🟢 달성 |
-| `db/postgres_client.py` | 70% | 🟢 달성 |
-| `db/milvus_client.py` | 70% | 🟢 달성 |
-| `utils/file_parser.py` | 90% | 🟢 달성 |
-| `utils/chunker.py` | 90% | 🟢 달성 |
+| 모듈 | 목표 |
+|------|------|
+| core/rag_search.py | 80% |
+| core/doc_chat.py | 80% |
+| db/postgres_client.py | 70% |
+| db/milvus_client.py | 70% |
+| pipeline.py | 70% |
+| utils/file_parser.py | 80% |
+| utils/chunker.py | 80% |
+
+*커버리지 측정: `pytest --cov` 실행*
 
 ---
 
