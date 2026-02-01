@@ -184,7 +184,7 @@ class DocumentPipeline:
             self.postgres_client.update_document_status(doc_id, "active")
             
             # chunk_count 업데이트
-            # TODO: PostgresClient에 update_chunk_count 메서드 추가 필요
+            self.postgres_client.update_chunk_count(doc_id, len(chunks))
             
             # 처리 시간 계산
             duration_ms = int((time.time() - start_time) * 1000)
@@ -333,6 +333,38 @@ class DocumentPipeline:
                 visibility=visibility,
                 creator_department=creator_department
             )
+            # chunk_count 업데이트
+            self.postgres_client.update_chunk_count(doc_id, len(chunks))
+
+            # 비용 로그 기록 (임베딩 비용)
+            total_tokens = sum(self.chunker.get_token_count(c) for c in chunks)
+            cost_usd = total_tokens * 0.00000002
+            cost_krw = cost_usd * 1400
+
+            self.postgres_client.log_cost(
+                user_id=creator_id,
+                operation="embedding",
+                tokens_used=total_tokens,
+                cost_usd=cost_usd,
+                cost_krw=cost_krw,
+                doc_id=doc_id,
+                model_name="text-embedding-3-small"
+            )
+
+            # 크기별 저장 비용
+            file_size = len(chat_content.encode('utf-8'))
+            cost_manager = CostManager()
+            storage_cost = cost_manager.calculate_daily_cost(file_size)
+
+            self.postgres_client.log_cost(
+                user_id=creator_id,
+                operation="storage",
+                tokens_used=0,
+                cost_usd=storage_cost["daily_cost_krw"] / 1400,
+                cost_krw=storage_cost["daily_cost_krw"],
+                doc_id=doc_id,
+                model_name=f"storage_{storage_cost['size_category']}"
+            )
             
             self.postgres_client.update_document_status(doc_id, "active")
             
@@ -437,6 +469,39 @@ class DocumentPipeline:
                 creator_department=creator_department
             )
             
+            # chunk_count 업데이트
+            self.postgres_client.update_chunk_count(doc_id, len(chunks))
+
+            # 비용 로그 기록 (임베딩 비용)
+            total_tokens = sum(self.chunker.get_token_count(c) for c in chunks)
+            cost_usd = total_tokens * 0.00000002
+            cost_krw = cost_usd * 1400
+
+            self.postgres_client.log_cost(
+                user_id=creator_id,
+                operation="embedding",
+                tokens_used=total_tokens,
+                cost_usd=cost_usd,
+                cost_krw=cost_krw,
+                doc_id=doc_id,
+                model_name="text-embedding-3-small"
+            )
+
+            # 크기별 저장 비용
+            file_size = len(agent_output.encode('utf-8'))
+            cost_manager = CostManager()
+            storage_cost = cost_manager.calculate_daily_cost(file_size)
+
+            self.postgres_client.log_cost(
+                user_id=creator_id,
+                operation="storage",
+                tokens_used=0,
+                cost_usd=storage_cost["daily_cost_krw"] / 1400,
+                cost_krw=storage_cost["daily_cost_krw"],
+                doc_id=doc_id,
+                model_name=f"storage_{storage_cost['size_category']}"
+            )
+
             self.postgres_client.update_document_status(doc_id, "active")
             
             duration_ms = int((time.time() - start_time) * 1000)

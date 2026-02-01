@@ -239,6 +239,22 @@ class PostgresClient:
         finally:
             session.close()
     
+    def update_chunk_count(self, doc_id: str, chunk_count: int):
+        """문서 청크 수 업데이트"""
+        session = self.Session()
+        
+        try:
+            doc = session.query(Document).filter(
+                Document.doc_id == doc_id
+            ).first()
+            
+            if doc:
+                doc.chunk_count = chunk_count
+                session.commit()
+                print(f"✓ 청크 수 업데이트: {doc_id} → {chunk_count}개")
+        finally:
+            session.close()
+    
     def list_documents(
         self,
         creator_department: str = None,
