@@ -42,23 +42,21 @@ STORAGE_DIR.mkdir(exist_ok=True)
 class ChatSaveRequest(BaseModel):
     """채팅 저장 요청"""
     content: str
-    title: str
+    title: Optional[str] = None
     creator_id: str
     creator_department: str
-    description: str = ""
+    description: Optional[str] = None
     visibility: str = "team"
-
 
 class AgentSaveRequest(BaseModel):
     """에이전트 결과 저장 요청"""
     content: str
-    title: str
+    title: Optional[str] = None
     creator_id: str
     creator_department: str
     agent_name: str = ""
-    description: str = ""
+    description: Optional[str] = None
     visibility: str = "team"
-
 
 class DocumentResponse(BaseModel):
     """문서 처리 응답"""
@@ -187,26 +185,42 @@ async def upload_document(
 
 @router.post("/chat-save", response_model=DocumentResponse)
 async def save_chat(request: ChatSaveRequest):
-    """
-    채팅 결과 저장 API
-    
-    - 대화 내용을 문서로 저장
-    - 자동 처리: 청킹 → 임베딩 → 저장
-    """
+    """채팅 결과 저장 API"""
     try:
         pipeline = DocumentPipeline()
+        
+        # 제목/설명 자동 생성 (없으면)
+        title = request.title
+        description = request.description
+        
+        if not title:
+            from core.auto_tagger import AutoTagger
+            tagger = AutoTagger()
+            generated = tagger.generate_title_and_description(request.content)
+            title = generated["title"]
+            if not description:
+                description = generated["description"]
         
         result = pipeline.process_chat_save(
             chat_content=request.content,
             creator_id=request.creator_id,
             creator_department=request.creator_department,
-            title=request.title,
-            description=request.description,
+            title=title,
+            description=description or "",
             visibility=request.visibility
         )
-        
-        pipeline.close()
-        
+
+        # 원본 텍스트 파일로 저장
+        doc_id = result["doc_id"]
+        text_file_path = STORAGE_DIR / f"{doc_id}.txt"
+        with open(text_file_path, "w", encoding="utf-8") as f:
+            f.write(request.content)
+
+        # DB에 파일 경로 업데이트
+        pipeline.postgres_client.update_file_path(doc_id, str(text_file_path))
+
+        pipeline.close()    
+            
         return DocumentResponse(
             success=True,
             doc_id=result["doc_id"],
@@ -222,27 +236,43 @@ async def save_chat(request: ChatSaveRequest):
 
 @router.post("/agent-save", response_model=DocumentResponse)
 async def save_agent_result(request: AgentSaveRequest):
-    """
-    에이전트 결과 저장 API
-    
-    - 에이전트 실행 결과를 문서로 저장
-    - 자동 처리: 청킹 → 임베딩 → 저장
-    """
+    """에이전트 결과 저장 API"""
     try:
         pipeline = DocumentPipeline()
+        
+        # 제목/설명 자동 생성 (없으면)
+        title = request.title
+        description = request.description
+        
+        if not title:
+            from core.auto_tagger import AutoTagger
+            tagger = AutoTagger()
+            generated = tagger.generate_title_and_description(request.content)
+            title = generated["title"]
+            if not description:
+                description = generated["description"]
         
         result = pipeline.process_agent_save(
             agent_output=request.content,
             creator_id=request.creator_id,
             creator_department=request.creator_department,
-            title=request.title,
+            title=title,
             agent_name=request.agent_name,
-            description=request.description,
+            description=description or "",
             visibility=request.visibility
         )
         
-        pipeline.close()
+        # 원본 텍스트 파일로 저장
+        doc_id = result["doc_id"]
+        text_file_path = STORAGE_DIR / f"{doc_id}.txt"
+        with open(text_file_path, "w", encoding="utf-8") as f:
+            f.write(request.content)
         
+        # DB에 파일 경로 업데이트
+        pipeline.postgres_client.update_file_path(doc_id, str(text_file_path))
+        
+        pipeline.close()
+
         return DocumentResponse(
             success=True,
             doc_id=result["doc_id"],
@@ -460,6 +490,7 @@ async def get_document(doc_id: str):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 @router.get("/{doc_id}/versions")
 async def get_version_history(doc_id: str):
     """
