@@ -22,7 +22,7 @@ ai_drive/
 │   ├── postgres_client.py      # PostgreSQL 클라이언트
 │   └── milvus_client.py        # Milvus 벡터 DB 클라이언트
 ├── utils/
-│   ├── file_parser.py          # 파일 파싱 (PDF, DOCX, PPTX 등)
+│   ├── file_parser.py          # 파일 파싱 (PDF, DOCX, PPTX, XLSX 등)
 │   └── chunker.py              # 토큰 기반 텍스트 청킹
 ├── tests/                      # 테스트 (별도 README 참고)
 ├── storage/                    # 원본 파일 저장소
@@ -37,7 +37,7 @@ ai_drive/
 
 | 항목 | 내용 |
 |------|------|
-| 지원 형식 | PDF, DOCX, PPTX, TXT, MD, CSV |
+| 지원 형식 | PDF, DOCX, PPTX, XLSX, TXT, MD, CSV |
 | 파일 제한 | 최대 50MB |
 | 보안 | MIME 타입 검증 (파일 위조 방지) |
 

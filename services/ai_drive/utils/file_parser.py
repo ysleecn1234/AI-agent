@@ -8,7 +8,7 @@ from docx import Document
 from pptx import Presentation
 import csv
 from pathlib import Path
-
+from openpyxl import load_workbook
 
 class FileParser:
     """
@@ -16,7 +16,7 @@ class FileParser:
     """
     
     def __init__(self):
-        self.supported_formats = ['.pdf', '.docx', '.pptx', '.txt', '.md', '.csv']
+        self.supported_formats = ['.pdf', '.docx', '.pptx', '.txt', '.md', '.csv', '.xlsx']
     
     def parse(self, file_path: str) -> str:
         """
@@ -46,6 +46,8 @@ class FileParser:
             return self.parse_md(file_path)
         elif suffix == '.csv':
             return self.parse_csv(file_path)
+        elif suffix == '.xlsx':
+            return self.parse_xlsx(file_path)
         else:
             raise ValueError(f"지원하지 않는 파일 형식: {suffix}")
     
@@ -201,6 +203,42 @@ class FileParser:
                 
         except Exception as e:
             raise Exception(f"CSV 파싱 오류: {str(e)}")
+    
+    def parse_xlsx(self, file_path: str) -> str:
+        """
+        Excel 파일에서 텍스트 추출
+        
+        Args:
+            file_path: XLSX 파일 경로
+            
+        Returns:
+            추출된 텍스트
+        """
+        try:
+            wb = load_workbook(file_path, data_only=True)
+            text_content = []
+            
+            for sheet_name in wb.sheetnames:
+                sheet = wb[sheet_name]
+                sheet_text = [f"[Sheet: {sheet_name}]"]
+                
+                for row in sheet.iter_rows():
+                    row_values = []
+                    for cell in row:
+                        if cell.value is not None:
+                            row_values.append(str(cell.value))
+                    
+                    if row_values:
+                        sheet_text.append(" | ".join(row_values))
+                
+                if len(sheet_text) > 1:
+                    text_content.append("\n".join(sheet_text))
+            
+            wb.close()
+            return "\n\n".join(text_content)
+            
+        except Exception as e:
+            raise Exception(f"XLSX 파싱 오류: {str(e)}")
     
     def is_supported(self, file_path: str) -> bool:
         """

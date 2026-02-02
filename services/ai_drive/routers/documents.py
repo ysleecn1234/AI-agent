@@ -84,7 +84,7 @@ async def upload_document(
     """
     파일 업로드 API
     
-    - 지원 형식: PDF, DOCX, PPTX, TXT, MD, CSV
+    - 지원 형식: PDF, DOCX, PPTX, XLSX, TXT, MD, CSV
     - 자동 처리: 파싱 → 청킹 → 임베딩 → 저장
     """
 
@@ -106,6 +106,7 @@ async def upload_document(
         'application/pdf': '.pdf',
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx',
         'application/vnd.openxmlformats-officedocument.presentationml.presentation': '.pptx',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': '.xlsx',
         'text/plain': '.txt',
         'text/markdown': '.md',
         'text/csv': '.csv',
@@ -125,7 +126,7 @@ async def upload_document(
 
     # 파일 확장자 확인
     file_ext = Path(file.filename).suffix.lower()
-    supported = ['.pdf', '.docx', '.pptx', '.txt', '.md', '.csv']
+    supported = ['.pdf', '.docx', '.pptx', '.txt', '.md', '.csv', '.xlsx']
     
     if file_ext not in supported:
         raise HTTPException(

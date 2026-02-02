@@ -96,6 +96,10 @@ python -m pytest tests/test_integration.py::TestIntegration::test_chat_save -v
 - 직접 읽기
 - 인코딩 처리 확인
 
+##### ✅ XLSX 파싱
+- openpyxl로 텍스트 추출
+- 시트별 텍스트 확인
+
 #### 실행 방법
 
 ```bash
