@@ -12,6 +12,7 @@ from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from pydantic import BaseModel
 import magic
 from typing import Any
+from core.pii_detector import PIIDetector
 
 # 상위 디렉토리 import 설정
 import sys
@@ -142,6 +143,29 @@ async def upload_document(
         # 태그 처리
         tag_list = [t.strip() for t in tags.split(",") if t.strip()] if tags else []
         
+        # 개인정보 감지
+        from utils.file_parser import FileParser
+        parser = FileParser()
+        text_content = parser.parse(str(temp_file_path))
+        
+        pii_detector = PIIDetector()
+        pii_result = pii_detector.detect(text_content)
+        
+        # 주민등록번호 포함 시 무조건 차단
+        if pii_detector.contains_critical_pii(text_content):
+            raise HTTPException(
+                status_code=400,
+                detail="주민등록번호가 포함된 파일은 업로드할 수 없습니다."
+            )
+        
+        # 기타 개인정보 포함 시 경고 (일단 차단)
+        if pii_result["has_pii"]:
+            pii_types = [f["type"] for f in pii_result["findings"]]
+            raise HTTPException(
+                status_code=400,
+                detail=f"개인정보가 포함되어 업로드가 차단되었습니다. (감지: {', '.join(pii_types)})"
+            )
+
         # 파이프라인 실행
         pipeline = DocumentPipeline()
 
@@ -174,6 +198,8 @@ async def upload_document(
             message="문서 업로드 완료"
         )
         
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
@@ -188,6 +214,25 @@ async def save_chat(request: ChatSaveRequest):
     """채팅 결과 저장 API"""
     try:
         pipeline = DocumentPipeline()
+
+        # 개인정보 감지
+        pii_detector = PIIDetector()
+        pii_result = pii_detector.detect(request.content)
+        
+        # 주민등록번호 포함 시 무조건 차단
+        if pii_detector.contains_critical_pii(request.content):
+            raise HTTPException(
+                status_code=400,
+                detail="주민등록번호가 포함된 내용은 저장할 수 없습니다."
+            )
+        
+        # 기타 개인정보 포함 시 차단
+        if pii_result["has_pii"]:
+            pii_types = [f["type"] for f in pii_result["findings"]]
+            raise HTTPException(
+                status_code=400,
+                detail=f"개인정보가 포함되어 저장이 차단되었습니다. (감지: {', '.join(pii_types)})"
+            )
         
         # 제목/설명 자동 생성 (없으면)
         title = request.title
@@ -230,6 +275,8 @@ async def save_chat(request: ChatSaveRequest):
             message="채팅 저장 완료"
         )
         
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -239,6 +286,25 @@ async def save_agent_result(request: AgentSaveRequest):
     """에이전트 결과 저장 API"""
     try:
         pipeline = DocumentPipeline()
+
+        # 개인정보 감지
+        pii_detector = PIIDetector()
+        pii_result = pii_detector.detect(request.content)
+        
+        # 주민등록번호 포함 시 무조건 차단
+        if pii_detector.contains_critical_pii(request.content):
+            raise HTTPException(
+                status_code=400,
+                detail="주민등록번호가 포함된 내용은 저장할 수 없습니다."
+            )
+        
+        # 기타 개인정보 포함 시 차단
+        if pii_result["has_pii"]:
+            pii_types = [f["type"] for f in pii_result["findings"]]
+            raise HTTPException(
+                status_code=400,
+                detail=f"개인정보가 포함되어 저장이 차단되었습니다. (감지: {', '.join(pii_types)})"
+            )
         
         # 제목/설명 자동 생성 (없으면)
         title = request.title
@@ -282,6 +348,8 @@ async def save_agent_result(request: AgentSaveRequest):
             message="에이전트 결과 저장 완료"
         )
         
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

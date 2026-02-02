@@ -16,7 +16,8 @@ ai_drive/
 │   ├── auto_tagger.py          # AI 자동 태깅 및 제목 생성 (Gemini Flash)
 │   ├── cost_manager.py         # 크기별 과금 관리
 │   ├── rag_search.py           # RAG 4단계 검색
-│   └── doc_chat.py             # 문서별 채팅 (5단계 SLM)
+│   ├── doc_chat.py             # 문서별 채팅 (5단계 SLM)
+│   └── pii_detector.py         # 개인정보 감지 및 차단
 ├── db/
 │   ├── postgres_client.py      # PostgreSQL 클라이언트
 │   └── milvus_client.py        # Milvus 벡터 DB 클라이언트
@@ -95,6 +96,18 @@ ai_drive/
 | 소형 | < 50KB | 0.3원 |
 | 중형 | 50~500KB | 0.5원 |
 | 대형 | > 500KB | 1.0원 |
+
+### 7️⃣ 개인정보 보호
+
+업로드/저장 시 자동 감지 및 차단:
+
+| 항목 | 처리 |
+|------|------|
+| 주민등록번호 | 무조건 차단 |
+| 전화번호 | 차단 |
+| 이메일 | 차단 |
+| 계좌번호 | 차단 |
+| 신용카드번호 | 차단 |
 
 ---
 
