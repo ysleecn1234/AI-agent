@@ -27,7 +27,7 @@ class DocumentPipeline:
     AI 드라이브 문서 처리 파이프라인
     
     처리 흐름:
-    1. 파일 파싱 (PDF/DOCX/PPTX/TXT/MD/CSV)
+    1. 파일 파싱 (PDF/DOCX/PPTX/XLSX/TXT/MD/CSV)
     2. 청킹 (1000토큰, 200오버랩)
     3. 임베딩 생성 (OpenAI)
     4. Milvus 저장 (벡터)
@@ -311,6 +311,19 @@ class DocumentPipeline:
             chunks = self.chunker.chunk(chat_content)
             print(f"  → 생성된 청크: {len(chunks)}개")
 
+            # 빈 텍스트 처리
+            if len(chunks) == 0:
+                self.postgres_client.update_document_status(doc_id, "active")
+                duration_ms = int((time.time() - start_time) * 1000)
+                return {
+                    "success": True,
+                    "doc_id": doc_id,
+                    "title": title,
+                    "chunk_count": 0,
+                    "duration_ms": duration_ms,
+                    "warning": "텍스트가 비어있습니다"
+                }
+
             # AI 태깅
             tags_result = self.auto_tagger.generate_tags(chat_content, title)
             tags = tags_result.get("tags", [])
@@ -445,6 +458,19 @@ class DocumentPipeline:
             print("[Step 2/4] 텍스트 청킹")
             chunks = self.chunker.chunk(agent_output)
             print(f"  → 생성된 청크: {len(chunks)}개")
+
+            # 빈 텍스트 처리
+            if len(chunks) == 0:
+                self.postgres_client.update_document_status(doc_id, "active")
+                duration_ms = int((time.time() - start_time) * 1000)
+                return {
+                    "success": True,
+                    "doc_id": doc_id,
+                    "title": title,
+                    "chunk_count": 0,
+                    "duration_ms": duration_ms,
+                    "warning": "텍스트가 비어있습니다"
+                }
             
             # AI 태깅
             tags_result = self.auto_tagger.generate_tags(agent_output, title)

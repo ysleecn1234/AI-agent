@@ -214,9 +214,7 @@ async def upload_document(
 async def save_chat(request: ChatSaveRequest):
     """채팅 결과 저장 API"""
     try:
-        pipeline = DocumentPipeline()
-
-        # 개인정보 감지
+        # 개인정보 감지 (pipeline 생성 전에 체크)
         pii_detector = PIIDetector()
         pii_result = pii_detector.detect(request.content)
         
@@ -234,6 +232,9 @@ async def save_chat(request: ChatSaveRequest):
                 status_code=400,
                 detail=f"개인정보가 포함되어 저장이 차단되었습니다. (감지: {', '.join(pii_types)})"
             )
+        
+        # 개인정보 통과 후 pipeline 생성
+        pipeline = DocumentPipeline()
         
         # 제목/설명 자동 생성 (없으면)
         title = request.title
@@ -281,14 +282,11 @@ async def save_chat(request: ChatSaveRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
 @router.post("/agent-save", response_model=DocumentResponse)
 async def save_agent_result(request: AgentSaveRequest):
     """에이전트 결과 저장 API"""
     try:
-        pipeline = DocumentPipeline()
-
-        # 개인정보 감지
+        # 개인정보 감지 (pipeline 생성 전에 체크)
         pii_detector = PIIDetector()
         pii_result = pii_detector.detect(request.content)
         
@@ -306,6 +304,9 @@ async def save_agent_result(request: AgentSaveRequest):
                 status_code=400,
                 detail=f"개인정보가 포함되어 저장이 차단되었습니다. (감지: {', '.join(pii_types)})"
             )
+        
+        # 개인정보 통과 후 pipeline 생성
+        pipeline = DocumentPipeline()
         
         # 제목/설명 자동 생성 (없으면)
         title = request.title
