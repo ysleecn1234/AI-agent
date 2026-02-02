@@ -233,6 +233,20 @@ python -m routers.documents
 
 ---
 
+## ⏰ 스케줄러
+
+아카이브 문서 자동 삭제 (30일 경과 시):
+```bash
+# 테스트 실행
+python scheduler.py --test
+
+# 프로덕션 실행 (매일 새벽 2시)
+nohup python scheduler.py > scheduler.log 2>&1 &
+```
+
+---
+
+
 ## 🤝 오케스트레이터 연동
 
 ```python
