@@ -681,6 +681,62 @@ class PostgresClient:
         finally:
             session.close()
 
+    def get_old_archives(self, days: int = 30) -> List[Dict[str, Any]]:
+        """
+        N일 이상 된 아카이브 문서 조회
+        
+        Args:
+            days: 기준 일수 (기본 30일)
+            
+        Returns:
+            삭제 대상 문서 리스트
+        """
+        from datetime import timedelta
+        
+        session = self.Session()
+        
+        try:
+            cutoff_date = datetime.utcnow() - timedelta(days=days)
+            
+            docs = session.query(Document).filter(
+                Document.status == "archived",
+                Document.modified_at < cutoff_date
+            ).all()
+            
+            return [
+                {
+                    "doc_id": str(doc.doc_id),
+                    "title": doc.title,
+                    "file_path": doc.file_path,
+                    "modified_at": doc.modified_at.isoformat() if doc.modified_at else None
+                }
+                for doc in docs
+            ]
+            
+        finally:
+            session.close()
+
+    def hard_delete_document(self, doc_id: str):
+        """
+        문서 완전 삭제 (DB에서 실제 삭제)
+        
+        Args:
+            doc_id: 삭제할 문서 ID
+        """
+        session = self.Session()
+        
+        try:
+            doc = session.query(Document).filter(
+                Document.doc_id == uuid.UUID(doc_id)
+            ).first()
+            
+            if doc:
+                session.delete(doc)
+                session.commit()
+                print(f"✓ 문서 완전 삭제: {doc_id}")
+        finally:
+            session.close()
+
     def close(self):
         """연결 종료"""
         self.engine.dispose()
