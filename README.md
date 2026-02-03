@@ -187,3 +187,31 @@ AI-agent/
 
 ### 4. 인터페이스 우선 설계 (Contract First) 🤝
 - **독자 노선 금지**: 본인이 맡은 파트(`agent_hub`, `ai_drive`, `core`)의 함수 이름이나 주고받는 데이터 형식(JSON Schema 등)을 변경하고 싶다면, 반드시 관련 담당자(지석, 호성, 영민)와 상의 후 **'인터페이스 규격'**부터 업데이트해야 합니다.
+
+---
+
+## 🏗️ Project Infrastructure Files (Root)
+
+이 프로젝트를 실행하고 배포하기 위한 핵심 인프라 파일들입니다.
+
+*   **`deploy.sh`**: [Deployment Script] 서버에서 Git Pull -> Docker Build -> Docker Up 과정을 한 번에 수행하는 배포 자동화 스크립트입니다.
+*   **`docker-compose.yml`**: [Container Orchestration] App, PostgreSQL, Redis, Milvus(Standalone) 컨테이너를 정의하고 네트워크로 연결하는 설정 파일입니다.
+*   **`Dockerfile`**: [App Image] Python 3.11 환경에서 Fastapi 서버를 실행하기 위한 도커 이미지 빌드 명세서입니다.
+*   **`requirements.txt`**: [Dependencies] 프로젝트 실행에 필요한 Python 패키지 목록입니다. (Litellm, Fastapi, Pymilvus 등 포함)
+
+---
+
+## 🚀 How to Run (실행 방법)
+
+서버를 실행하려면 다음 단계를 따라주세요.
+
+1.  **Docker 실행:** Mac의 `Applications` > `Docker` 앱을 클릭하여 실행합니다. (상단 메뉴바에 고래 아이콘 확인)
+2.  **배포 스크립트 실행:** 터미널에서 다음 명령어를 입력하세요.
+    ```bash
+    ./deploy.sh
+    ```
+3.  **접속:** 잠시 후 로그가 멈추면 브라우저에서 아래 주소로 접속합니다.
+    *   **API 문서:** [http://localhost:8000/docs](http://localhost:8000/docs)
+    *   **헬스 체크:** [http://localhost:8000/health](http://localhost:8000/health)
+
+---
