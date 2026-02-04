@@ -3,7 +3,9 @@ version: '3.8'
 services:
   # 1. Backend Application
   backend:
-    build: .
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
     container_name: in7-backend
     ports:
       - "8000:8000"
@@ -16,7 +18,7 @@ services:
       - redis
       - milvus-standalone
     volumes:
-      - .:/app
+      - ..:/app
 
   # 2. PostgreSQL (Main DB)
   postgres:
