@@ -5,9 +5,9 @@ from passlib.context import CryptContext
 import os
 
 # 1. Configuration
-SECRET_KEY = os.getenv("SECRET_KEY", "change_this_to_a_secure_random_string")
-ALGORITHM = os.getenv("ALGORITHM", "HS256")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 30))
+SECRET_KEY = os.getenv("JWT_SECRET_KEY", "change_this_to_a_secure_random_string")
+ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
 
 # 2. Password Hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
