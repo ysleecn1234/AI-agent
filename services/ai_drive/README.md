@@ -70,17 +70,50 @@ ai_drive/
 | Step 3 | 권한 필터링 (visibility, department) |
 | Step 4 | Freshness Score 적용 → Top-5 반환 |
 
-### 4️⃣ 문서별 채팅 (5단계 SLM)
+### 4️⃣ 문서별 채팅 (5단계 SLM 파이프라인)
 
-특정 문서 내에서만 질문/답변하는 기능입니다.
+단일 문서에 대해 깊이 있는 질의응답을 수행하는 핵심 로직입니다. 비용 효율성을 위해 **Gemini Flash(Router/Researcher/Synthesizer)**와 **GPT-4o-mini(Reasoner)**를 혼합하여 사용합니다.
 
-| 단계 | 역할 |
-|------|------|
-| Router | 의도 파악 (query/summary/compare) |
-| Researcher | 문서 내 청크 검색 |
-| Reasoner | GPT-4o-mini로 답변 생성 |
-| Synthesizer | 답변 포맷팅 |
-| Guardrail | 민감정보 필터링 |
+**처리 흐름 (Sequence Diagram):**
+
+```mermaid
+sequenceDiagram
+    actor User as 사용자
+    participant Drive as DocumentChat<br>(core/doc_chat.py)
+    participant Router as LLM (Router)<br>(Gemini Flash)
+    participant Milvus as Milvus (Researcher)<br>(Vector DB)
+    participant Reasoner as LLM (Reasoner)<br>(GPT-4o-mini)
+    participant Syn as LLM (Synthesizer)<br>(Gemini Flash)
+
+    User->>Drive: chat(doc_id, question)
+    
+    Note right of Drive: Step 1. 의도 파악
+    Drive->>Router: classify_intent(question)
+    Router-->>Drive: "summary" / "search" / "analysis"
+
+    Note right of Drive: Step 2. 관련 청크 검색
+    Drive->>Milvus: search_by_doc_id(doc_id, vector)
+    Milvus-->>Drive: [Chunk1, Chunk2, ...] (Top-5)
+
+    Note right of Drive: Step 3. 답변 생성 (핵심 지능)
+    Drive->>Reasoner: generate_answer(question, chunks, intent)
+    Reasoner-->>Drive: Raw Answer (Text)
+    
+    Note right of Drive: Step 4. 답변 정리
+    Drive->>Syn: format_answer(raw_answer)
+    Syn-->>Drive: Markdown Formatted Answer
+
+    Note right of Drive: Step 5. 안전성 검증
+    Drive->>Drive: guardrail_check(pii_detection)
+    Drive-->>User: Final Result
+```
+
+**단계별 상세 역할:**
+1.  **Router (의도 파악)**: 사용자의 질문이 단순 조회인지, 요약인지, 비교 분석인지 분류합니다.
+2.  **Researcher (정보 검색)**: 질문을 벡터화하여 해당 문서 내에서 가장 관련성 높은 청크(Chunk)를 Milvus에서 찾아옵니다.
+3.  **Reasoner (추론 및 생성)**: 찾아낸 청크를 바탕으로 질문에 대한 답변을 생성합니다. (GPT-4o-mini 사용으로 추론 능력 강화)
+4.  **Synthesizer (정제)**: 생성된 답변을 읽기 좋은 마크다운 포맷으로 다듬습니다.
+5.  **Guardrail (보안)**: 답변에 포함된 개인정보(전화번호, 주민번호 등)를 마스킹합니다.
 
 ### 5️⃣ 버전 관리
 

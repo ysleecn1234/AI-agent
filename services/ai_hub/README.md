@@ -25,29 +25,54 @@ ai_hub/
 
 ## 기능 1: AI Agent (생성 마법사)
 
-사용자가 자신만의 에이전트를 쉽고 빠르게 만들 수 있도록 지원합니다.
+사용자가 자신만의 또는 팀의 에이전트를 쉽고 빠르게 만들 수 있도록 지원합니다.
 
-### 데이터 흐름 (Data Flow)
+### 데이터 흐름 (Data Flow: Creation)
 ```mermaid
 graph TD
-    User[사용자 UI] -->|1. 의도 입력| Draft[Redis 임시 저장 (Draft)]
-    Draft -->|2. 지식 연결| Docs[AI Drive (문서)]
-    Draft -->|3. 최종 확인| Logic[Core Logic (agent.py)]
-    Logic -->|4. 저장 요청| Repo[Repository (agent_repo.py)]
-    Repo -->|5. DB 반영| DB[(PostgreSQL)]
+    User[사용자 채팅] -->|1. 요청 (자연어)| Hub[AgentManager]
+    Hub -->|2. 의도/속성 분석| Orch[Orchestrator]
+    Orch -->|3. 스키마 반환| Hub
+    Hub -->|4. 초안 저장| Redis[(Redis)]
+    
+    User -->|5. 최종 배포| Hub
+    Hub -->|6. 벡터화 (Embedding)| Milvus[(Milvus - Vector)]
+    Hub -->|7. 메타데이터 저장| PG[(PostgreSQL - Meta)]
 ```
 
 ---
 
-## 기능 2: AI Hub (허브 및 검색)
+## 기능 2: AI Hub (검색 및 추천)
 
-만들어진 에이전트를 검색하고 필터링합니다.
+**핵심 알고리즘:** RAG (Retrieval-Augmented Generation) 패턴을 적용하여 정확도를 극대화했습니다.
 
-### 검색 및 추천 로직
-1.  **기본 보기 (Open Hub):**
-    *   기본적으로 **모든 공개 에이전트**를 보여줍니다.
-    *   *필터링:* 사용자가 원할 경우 '내 팀', '내 부서' 버튼을 눌러 목록을 좁힐 수 있습니다.
+### 검색 및 추천 로직 (Recommendation Logic)
+1.  **의도 파악 (Intent Analysis):** 
+    *   사용자의 질문을 Orchestrator가 분석하여 **Topic**과 **Keywords**를 추출합니다.
+    *   (예: "파이썬 코드 짜줘" -> Topic: Coding, Keywords: [Python, Algorithm])
 
-2.  **하이브리드 검색 (Hybrid Search):**
-    *   **현재 구현:** 키워드 매칭 (이름 또는 설명에 포함된 단어 검색).
-    *   *향후 계획:* 벡터 유사도 검색(Milvus) 추가 예정.
+2.  **벡터 검색 (Vector Search - Milvus):** 
+    *   추출된 키워드를 벡터로 변환하여, 의미적으로 가장 유사한 에이전트 ID를 찾습니다.
+    *   **Status**: ✅ Real Implementation (Mock Fallback Removed).
+
+3.  **메타데이터 조회 (Metadata Fetch - Postgres):** 
+    *   찾은 ID들을 Batch Query로 DB에서 한 번에 조회하여 상세 정보를 가져옵니다.
+
+4.  **필터링 (Filtering - Placeholder):**
+    *   '내 팀', '내 부서' 필터 기능은 현재 UI상 존재하나, **실제 로직은 "전체 공개"로 동작**합니다. (Placeholder 🚧)
+
+### 검색 흐름도 (Search Flow)
+```mermaid
+graph TD
+    User[사용자 질문] -->|1. 추천 요청| Hub[AgentManager]
+    Hub -->|2. 키워드 분석| Orch[Orchestrator]
+    Orch -->|3. 분석 결과 (Json)| Hub
+    
+    Hub -->|4. 임베딩 생성| Embed[Embedding Model]
+    Embed -->|5. 벡터 검색| Milvus[(Milvus)]
+    Milvus -->|6. 유사 에이전트 ID| Hub
+    
+    Hub -->|7. 메타데이터 조회| PG[(PostgreSQL)]
+    PG -->|8. 상세 정보 반환| Hub
+    Hub -->|9. 점수순 정렬| User
+```
