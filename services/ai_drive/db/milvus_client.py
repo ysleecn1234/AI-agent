@@ -140,6 +140,25 @@ class MilvusClient:
         print(f"✓ {len(chunks)}개 청크 저장 완료 (doc_id: {doc_id})")
         
         return result.primary_keys
+
+    def insert_agent(self, agent_data: Dict[str, Any], embedding: List[float]) -> str:
+        """
+        Agent 정보 및 벡터 저장
+        Collection: ai_agent_store (Todo: _create_collection에 추가 필요)
+        """
+        # Note: 현재는 데모/테스트를 위해 로그만 출력하고 실제 저장은 Skip하거나
+        # 별도 컬렉션 생성 로직이 필요함. 여기서는 구조만 잡음.
+        print(f"[Milvus] Agent Inserted: {agent_data.get('name')} (Dim: {len(embedding)})")
+        return agent_data.get("id")
+
+    def search_agents(self, query_vector: List[float], top_k: int = 5) -> List[Dict[str, Any]]:
+        """
+        Agent 유사도 검색
+        """
+        # Note: 실제 Agent Collection 검색 로직 구현 필요
+        # 현재는 Mock 동작으로 구조 유지
+        print(f"[Milvus] Searching Agents... (Query Dim: {len(query_vector)})")
+        return [] # Hub에서 Mock Fallback으로 처리됨
     
     def search(
         self,

@@ -1,5 +1,5 @@
 # AI-agent  
-🚀 IN7 기반 비용 최적화형 AI 에이전트 프로토타입  
+🚀 on7 기반 비용 최적화형 AI 에이전트 프로토타입  
 기존 '인세븐(IN7)'의 업무 워크플로우를 벤치마킹하여, 초저비용 오케스트레이션과 고효율 RAG 엔진을 결합한 차세대 AI 업무 환경 프로토타입입니다.  
 
 💡 Project Background & Goal  
@@ -72,7 +72,103 @@ python -m venv venv && .\venv\Scripts\activate
 - **Status**: 현재 테스트는 로컬 환경 및 NCP Standard 서버를 활용함.
 - **Plan**: MVP 구축 후 회사 내부 서버로 이관 예정.
 
-## 🤝 우리 팀 협업 가이드라인 (Ground Rules)
+### 4. 개발 현황
+현재 개발 진행 상황 및 완료된 작업은 별도 문서를 참고하세요:
+- 📊 **[개발 현황 문서](./docs/development_status.md)** - 상세 작업 내역 및 다음 단계
+- 📋 **[AI Drive 분석 리포트](./docs/ai_drive_analysis.md)** - Feature-H 분석 결과
+
+---
+
+## 빠른 시작
+
+### 1. 환경 설정
+```bash
+# 가상환경 생성 및 활성화
+python -m venv venv
+.\venv\Scripts\activate  # Windows
+source venv/bin/activate  # Mac/Linux
+
+# 패키지 설치
+pip install -r requirements.txt
+```
+
+### 2. 테스트 실행 (API 키 없이)
+
+> **💡 Mock 검색이란?**  
+> API 키나 데이터베이스 없이도 파이프라인을 테스트할 수 있도록 만든 **가짜 검색 기능**입니다.  
+> - **실제 RAG 검색**: Feature-H의 Milvus + 임베딩 (API 키 필요)  
+> - **Mock 검색**: 테스트용 더미 데이터 반환 (API 키 불필요)  
+> 
+> `Pipeline(use_rag=False)`로 실행하면 Mock 검색이 작동하여, 개발 초기 단계에서 전체 플로우를 빠르게 검증할 수 있습니다.
+
+```bash
+# Mock 데이터로 전체 파이프라인 테스트
+python tests/test_pipeline_integration.py
+```
+
+**예상 출력**:
+```
+[테스트 1] Simple 쿼리
+  [RAG] Mock 검색 모드 (use_rag=False)
+[OK] Simple 쿼리 테스트 통과
+
+[테스트 2] Complex 쿼리 (RAG Mock)
+  [Mock] '프로젝트 문서에서 비용 최적화...' 에 대한 Mock 검색 실행
+[OK] Complex 쿼리 테스트 통과
+
+...
+
+[SUCCESS] 모든 테스트 통과!
+```
+
+### 3. API 연동 (선택)
+```bash
+# .env 파일 생성
+cp .env.template .env
+
+# API 키 설정 (.env 파일 편집)
+OPENAI_API_KEY=your_key_here
+GOOGLE_API_KEY=your_key_here
+ANTHROPIC_API_KEY=your_key_here
+```
+
+### 4. AI Drive 연동 (선택)
+```bash
+# Docker 환경 실행
+cd services/ai_drive
+docker-compose up -d
+
+# RAG 활성화하여 파이프라인 실행 (실제 Milvus 검색 사용)
+python -c "from core.pipeline import Pipeline; p = Pipeline(use_rag=True); print(p.process('테스트 쿼리'))"
+```
+
+---
+
+## 프로젝트 구조
+```
+AI-agent/
+├── core/                      # 핵심 파이프라인
+│   ├── pipeline.py           # 5단계 레이어 (Router → Researcher → Reasoner → Synthesizer → Guardrail)
+│   ├── logger.py             # 로깅 시스템
+│   └── cost_calculator.py    # 비용 계산
+├── services/
+│   └── ai_drive/             # RAG 시스템 (Feature-H)
+│       ├── pipeline.py       # 문서 처리 파이프라인
+│       ├── core/             # 임베딩 생성
+│       ├── db/               # Milvus, PostgreSQL 클라이언트
+│       ├── utils/            # 파일 파싱, 청킹
+│       └── routers/          # FastAPI 엔드포인트
+├── tests/
+│   ├── test_router.py        # Router 단위 테스트
+│   └── test_pipeline_integration.py  # 통합 테스트
+├── docs/
+│   └── ai_drive_analysis.md  # AI Drive 분석 리포트
+└── README.md
+```
+
+---
+
+## 협업 가이드라인 (Ground Rules)
 
 ### 1. 보안 및 지갑 사수 (Security & Cost) 🔐
 - **.env 파일 업로드 절대 금지**: 어떤 이유에서든 실제 API 키가 포함된 `.env` 파일을 깃허브에 올리지 않습니다.
