@@ -1,7 +1,7 @@
 """
 AI Drive 서비스 통합
 --------------------
-App 쉘(FastAPI)과 AI Drive 로직(Feature-H)을 연결합니다.
+App 쉘(FastAPI)과 AI Drive 로직을 연결합니다.
 """
 
 import os
@@ -10,7 +10,7 @@ import tempfile
 from typing import List, Dict, Any
 from fastapi import UploadFile
 
-# 팀 코드 연동 (Feature-H)
+# 팀 코드 연동
 from services.ai_drive.pipeline import DocumentPipeline
 from services.ai_drive.db.postgres_client import PostgresClient
 
@@ -34,7 +34,7 @@ class AIDriveService:
         RAG에 사용할 수 있는 문서 목록을 반환합니다.
         Agent 생성 마법사 2단계에서 사용됩니다.
         """
-        # Feature-H DB 클라이언트 호출
+        # ai_drive DB 클라이언트 호출
         docs = self.db_client.list_documents(
             status="active",
             visibility="team" # 당분간 팀 공개를 기본값으로 설정

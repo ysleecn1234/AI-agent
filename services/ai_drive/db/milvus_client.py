@@ -168,7 +168,7 @@ class MilvusClient:
         include_company: bool = True
     ) -> List[Dict[str, Any]]:
         """
-        유사도 검색 (기획서 권한 필터 반영)
+        유사도 검색 (권한 필터 반영)
         
         검색 조건:
         - status = 'active'
