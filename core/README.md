@@ -26,6 +26,8 @@ Router → Researcher → Reasoner → Synthesizer → Guardrail
 
 #### 1️⃣ **Router** - 의도 분류 및 복잡도 판단
 - **역할**: 사용자 요청의 의도 파악 및 적절한 LLM 선택
+- **모델**: Gemini 3 Flash (`gemini/gemini-3-flash`)
+- **선정 사유**: TTFT 0.2s 미만, 빠른 의도 파싱
 - **주요 기능**:
   - 하이브리드 의도 분류 (키워드 기반 + LLM 기반)
   - 복잡도 판단 (simple, complex, bulk)
@@ -38,9 +40,9 @@ Router → Researcher → Reasoner → Synthesizer → Guardrail
 - `SEARCH`: 검색 요청
 
 **복잡도 레벨**:
-- `SIMPLE`: GPT-4o-mini 사용
-- `COMPLEX`: GPT-4o 사용
-- `BULK`: Claude-3.5-sonnet 사용
+- `SIMPLE`: Gemini 3 Flash 사용
+- `COMPLEX`: GPT-5 사용
+- `BULK`: Claude Opus 4.6 사용
 
 #### 2️⃣ **Researcher** - RAG 기반 정보 검색
 - **역할**: AI Drive에서 관련 문서 검색 및 정보 인출
@@ -51,6 +53,8 @@ Router → Researcher → Reasoner → Synthesizer → Guardrail
 
 #### 3️⃣ **Reasoner** - 논리적 답변 생성
 - **역할**: 복잡도에 따른 적절한 LLM 선택 및 답변 생성
+- **모델**: GPT-5 (COMPLEX), Gemini 3 Flash (SIMPLE), Gemini 3 Pro (BULK)
+- **선정 사유**: MMLU 최상위 추론 능력
 - **주요 기능**:
   - CoT(Chain of Thought) 기반 팩트체크
   - 모델 실패 시 Fallback 메커니즘
@@ -58,22 +62,31 @@ Router → Researcher → Reasoner → Synthesizer → Guardrail
 
 **Fallback 체인**:
 ```
-GPT-4o → Claude-3.5-sonnet → GPT-4o-mini
+SIMPLE: Gemini 3 Flash → GPT-4o-mini → Claude 4.5 → DeepSeek Chat
+COMPLEX: GPT-5 → GPT-5-mini → Claude 4.5 → DeepSeek-R1 → Llama 4
+BULK: Gemini 3 Pro → GPT-5 → Claude Opus 4.6 → Llama 4
 ```
 
 #### 4️⃣ **Synthesizer** - 최종 답변 정제
 - **역할**: 답변을 사용자 친화적으로 정제
+- **모델**: Claude 4.5 (`claude-sonnet-4-5-20250514`)
+- **선정 사유**: 일관성, JSON 스키마 준수 능력
 - **주요 기능**:
-  - 마크다운 형식 변환
+  - LLM 기반 마크다운 포맷팅
   - 출처 정보 추가
   - 답변 구조화
+  - Fallback: 기본 마크다운 변환
 
 #### 5️⃣ **Guardrail** - 품질 검증
 - **역할**: 최종 답변의 품질 및 안전성 검증
+- **모델**: DeepSeek-R1 (`deepseek/deepseek-r1`)
+- **선정 사유**: CoT 기반 논리 검증, 팩트체크 특화
 - **주요 기능**:
+  - LLM 기반 품질 검수 (COMPLEX/BULK만)
   - 유해성 필터링
   - 민감정보 탐지
-  - 답변 품질 검증 (완성도, 관련성, 정확성)
+  - 답변 품질 검증 (완성도, 논리적 일관성, 사실 정확성)
+  - Fallback: 기본 검수 로직
 
 ---
 
@@ -86,10 +99,11 @@ GPT-4o → Claude-3.5-sonnet → GPT-4o-mini
 
 #### 1. 모델별 가격 정보 관리
 지원 모델:
-- **OpenAI**: GPT-4o, GPT-4o-mini
-- **Anthropic**: Claude-3.5-sonnet, Claude-3-haiku
-- **Google**: Gemini-1.5-pro, Gemini-1.5-flash
-- **Meta**: Llama-3.1-405b, Llama-3.1-70b
+- **OpenAI**: GPT-5, GPT-5-mini, GPT-4o, GPT-4o-mini
+- **Anthropic**: Claude Opus 4.6, Claude Sonnet 4.5, Claude Haiku 4.5
+- **Google**: Gemini 3 Pro, Gemini 3 Flash
+- **DeepSeek**: DeepSeek-R1, DeepSeek Chat, DeepSeek V3.2
+- **Meta**: Llama 4, Llama 3.3-70b
 
 #### 2. 실시간 비용 계산
 ```python
@@ -257,9 +271,9 @@ pipeline = Pipeline(use_rag=True)
 - **비용 절감**: 약 60-70%
 
 ### 2. 복잡도 기반 모델 선택
-- Simple 요청 → GPT-4o-mini (저비용)
-- Complex 요청 → GPT-4o (고성능)
-- Bulk 요청 → Claude-3.5-sonnet (대용량)
+- Simple 요청 → Gemini 3 Flash (저비용, 고속)
+- Complex 요청 → GPT-5 (고성능, 최고 추론력)
+- Bulk 요청 → Gemini 3 Pro (대용량 컨텍스트)
 
 ### 3. Fallback 메커니즘
 - 1차 모델 실패 시 자동 대체
