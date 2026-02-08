@@ -17,7 +17,7 @@ ai_drive/
 │   ├── auto_tagger.py          # AI 자동 태깅 및 제목 생성 (Gemini Flash)
 │   ├── cost_manager.py         # 크기별 과금 관리
 │   ├── rag_search.py           # RAG 4단계 검색
-│   ├── doc_chat.py             # 문서별 채팅 (5단계 SLM)
+│   ├── doc_chat.py             # 문서별 채팅 (2단계 간소화 버전)
 │   └── pii_detector.py         # 개인정보 감지 및 차단
 ├── db/
 │   ├── postgres_client.py      # PostgreSQL 클라이언트
