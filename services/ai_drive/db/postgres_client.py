@@ -96,7 +96,7 @@ class PostgresClient:
         """
         self.database_url = database_url or os.getenv(
             "POSTGRES_URL",
-            "postgresql://aiagent:aiagent123@localhost:5432/ai_drive"
+            "postgresql://in7user:in7password@localhost:5432/in7platform"
         )
         
         self.engine = create_engine(self.database_url)
