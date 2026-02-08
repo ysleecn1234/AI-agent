@@ -123,44 +123,52 @@ class Router:
         """
         LLM을 사용한 의도 분류 (신뢰도가 낮을 때만 사용)
         
-        Note:
-            실제 API 연동 전까지는 키워드 기반 결과 반환
+        Uses Gemini Flash for fast and accurate intent classification.
         """
-        # TODO: 실제 LLM API 연동
-        # prompt = f'''다음 사용자 요청의 의도를 정확히 하나만 선택하세요:
-        # "{user_input}"
-        # 
-        # 선택지:
-        # - QUERY: 단순 질문이나 정보 요청
-        # - SEARCH: 특정 정보나 문서 검색
-        # - ANALYSIS: 데이터 분석, 비교, 평가
-        # - GENERATION: 문서나 콘텐츠 생성
-        # 
-        # 답변은 위 4가지 중 하나만 출력하세요.'''
-        # 
-        # try:
-        #     response = litellm.completion(
-        #         model=self.model,
-        #         messages=[{"role": "user", "content": prompt}],
-        #         temperature=0.1
-        #     )
-        #     result = response.choices[0].message.content.strip().upper()
-        #     
-        #     # 결과 매핑
-        #     intent_map = {
-        #         "QUERY": IntentType.QUERY,
-        #         "SEARCH": IntentType.SEARCH,
-        #         "ANALYSIS": IntentType.ANALYSIS,
-        #         "GENERATION": IntentType.GENERATION
-        #     }
-        #     return intent_map.get(result, IntentType.QUERY)
-        # except:
-        #     # LLM 실패 시 키워드 기반으로 폴백
-        #     return self.classify_intent_keyword(user_input)
+        import litellm
         
-        # 임시: API 연동 전까지는 키워드 기반 사용
-        print("  [LLM 분류 모드] API 연동 대기 중, 키워드 기반 사용")
-        return self.classify_intent_keyword(user_input)
+        prompt = f'''다음 사용자 요청의 의도를 정확히 하나만 선택하세요:
+"{user_input}"
+
+선택지:
+- QUERY: 단순 질문이나 정보 요청
+- SEARCH: 특정 정보나 문서 검색
+- ANALYSIS: 데이터 분석, 비교, 평가
+- GENERATION: 문서나 콘텐츠 생성
+
+답변은 위 4가지 중 하나만 출력하세요 (QUERY, SEARCH, ANALYSIS, GENERATION).'''
+        
+        try:
+            response = litellm.completion(
+                model=self.model,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.1,
+                max_tokens=10
+            )
+            result = response.choices[0].message.content.strip().upper()
+            
+            # 결과 매핑
+            intent_map = {
+                "QUERY": IntentType.QUERY,
+                "SEARCH": IntentType.SEARCH,
+                "ANALYSIS": IntentType.ANALYSIS,
+                "GENERATION": IntentType.GENERATION
+            }
+            
+            # 부분 매칭 지원 (예: "SEARCH입니다" -> SEARCH)
+            for key in intent_map.keys():
+                if key in result:
+                    print(f"  [LLM 분류] {user_input[:30]}... → {key}")
+                    return intent_map[key]
+            
+            # 매핑 실패 시 기본값
+            print(f"  [LLM 분류] 매핑 실패 (응답: {result}), QUERY로 폴백")
+            return IntentType.QUERY
+            
+        except Exception as e:
+            # LLM 실패 시 키워드 기반으로 폴백
+            print(f"  [LLM 분류 실패] {str(e)}, 키워드 기반으로 폴백")
+            return self.classify_intent_keyword(user_input)
     
     def classify_intent_keyword(self, user_input: str) -> IntentType:
         """
@@ -509,27 +517,42 @@ class Reasoner:
     
     def generate_response_with_fallback(self, context: Dict[str, Any]) -> tuple[str, str]:
         """Fallback 메커니즘을 포함한 답변 생성"""
+        import litellm
+        
         complexity = context["complexity"]
         user_input = context["user_input"]
         documents = context.get("retrieved_documents", [])
         
         # Fallback 모델 리스트 가져오기
-        models_to_try = self.fallback_models.get(complexity, ["gemini-2.0-flash"])
+        models_to_try = self.fallback_models.get(complexity, ["gpt-4o-mini"])
+        
+        # RAG 컨텍스트 구성
+        rag_context = ""
+        if documents:
+            rag_context = "\n\n참고 문서:\n"
+            for i, doc in enumerate(documents[:3], 1):  # 최대 3개
+                rag_context += f"{i}. {doc.get('content', '')[:200]}...\n"
+        
+        # 프롬프트 구성
+        prompt = f"""{user_input}
+
+{rag_context}
+
+위 정보를 바탕으로 정확하고 유용한 답변을 제공해주세요."""
         
         last_error = None
         for model in models_to_try:
             try:
-                # TODO: 실제 LLM 호출 구현 (litellm 사용)
-                # response = litellm.completion(
-                #     model=model,
-                #     messages=[{"role": "user", "content": user_input}]
-                # )
-                # return response.choices[0].message.content, model
-                
-                # 임시 응답 (실제 구현 시 위 코드로 대체)
                 print(f"  → 모델 시도: {model}")
-                response = f"[{model}] {user_input}에 대한 답변입니다."
-                return response, model
+                response = litellm.completion(
+                    model=model,
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=0.7,
+                    max_tokens=1000
+                )
+                answer = response.choices[0].message.content
+                print(f"  ✓ 모델 {model} 성공")
+                return answer, model
                 
             except Exception as e:
                 last_error = e
