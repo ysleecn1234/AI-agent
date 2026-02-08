@@ -479,8 +479,8 @@ class Reasoner:
         # 복잡도별 주 모델 매핑 (기획서 기준 최신 모델)
         self.model_mapping = {
             ComplexityLevel.SIMPLE.value: "gemini/gemini-2.0-flash-exp",
-            ComplexityLevel.COMPLEX.value: "gpt-4o",  # GPT-5 대신 GPT-4o (현재 최신)
-            ComplexityLevel.BULK.value: "claude-3-5-sonnet-20241022"  # Claude-4 대신 3.5
+            ComplexityLevel.COMPLEX.value: "gpt-4o",
+            ComplexityLevel.BULK.value: "claude-sonnet-4-5-20250514"  # Claude Sonnet 4.5 (최신)
         }
         
         # 복잡도별 Fallback 모델 우선순위 (실제 사용 가능한 모델)
@@ -489,20 +489,20 @@ class Reasoner:
             ComplexityLevel.SIMPLE.value: [
                 "gemini/gemini-2.0-flash-exp",      # 주력: 0.72초 초고속
                 "gpt-4o-mini",                       # 대체1: OpenAI 경량
-                "claude-3-5-haiku-20241022",         # 대체2: Anthropic 경량 (최신)
+                "claude-haiku-4-5-20250514",         # 대체2: Claude Haiku 4.5 (최신)
                 "deepseek/deepseek-chat",            # 대체3: Deepseek 경량
             ],
             # COMPLEX: 정밀 분석 + 고품질 추론
             ComplexityLevel.COMPLEX.value: [
                 "gpt-4o",                            # 주력: GPT-4o (현재 최신)
-                "claude-3-5-sonnet-20241022",        # 대체1: Claude 3.5 Sonnet (최신)
+                "claude-sonnet-4-5-20250514",        # 대체1: Claude Sonnet 4.5 (최신)
                 "gemini/gemini-2.0-pro-exp",         # 대체2: Gemini Pro
                 "deepseek/deepseek-reasoner",        # 대체3: Deepseek R1 추론 모델
                 "meta-llama/llama-3.3-70b-instruct", # 대체4: Llama 3.3 (최신)
             ],
             # BULK: 대량 처리 + 병렬 최적화
             ComplexityLevel.BULK.value: [
-                "claude-3-5-sonnet-20241022",        # 주력: 긴 컨텍스트 처리
+                "claude-sonnet-4-5-20250514",        # 주력: 긴 컨텍스트 처리
                 "gpt-4o",                            # 대체1: GPT-4o
                 "gemini/gemini-2.0-pro-exp",         # 대체2: Gemini Pro
                 "meta-llama/llama-3.3-70b-instruct", # 대체3: Llama 3.3
