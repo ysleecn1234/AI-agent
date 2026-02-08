@@ -6,8 +6,7 @@ from .database import engine
 from . import models
 from .api import auth, chat, agents, integrations
 
-# TODO: Import Routers (etc.)
-# from app.api import etc
+# ✅ 주요 라우터 import 완료
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
