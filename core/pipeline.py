@@ -479,33 +479,33 @@ class Reasoner:
         # 복잡도별 주 모델 매핑 (기획서 기준 최신 모델)
         self.model_mapping = {
             ComplexityLevel.SIMPLE.value: "gemini/gemini-2.0-flash-exp",
-            ComplexityLevel.COMPLEX.value: "gpt-5",
-            ComplexityLevel.BULK.value: "claude-4-sonnet"
+            ComplexityLevel.COMPLEX.value: "gpt-4o",  # GPT-5 대신 GPT-4o (현재 최신)
+            ComplexityLevel.BULK.value: "claude-3-5-sonnet-20241022"  # Claude-4 대신 3.5
         }
         
-        # 복잡도별 Fallback 모델 우선순위 (다양한 후보군)
+        # 복잡도별 Fallback 모델 우선순위 (실제 사용 가능한 모델)
         self.fallback_models = {
             # SIMPLE: 초고속 응답 + 저비용 우선
             ComplexityLevel.SIMPLE.value: [
                 "gemini/gemini-2.0-flash-exp",      # 주력: 0.72초 초고속
                 "gpt-4o-mini",                       # 대체1: OpenAI 경량
-                "claude-3-haiku",                    # 대체2: Anthropic 경량
-                "meta-llama/llama-4-8b",            # 대체3: 오픈소스 경량
+                "claude-3-5-haiku-20241022",         # 대체2: Anthropic 경량 (최신)
+                "deepseek/deepseek-chat",            # 대체3: Deepseek 경량
             ],
             # COMPLEX: 정밀 분석 + 고품질 추론
             ComplexityLevel.COMPLEX.value: [
-                "gpt-5",                             # 주력: 최신 GPT
-                "claude-4-sonnet",                   # 대체1: Claude 최신
-                "gemini/gemini-2.0-pro-exp",        # 대체2: Gemini Pro
-                "openai/o1",                         # 대체3: 사고 체인 특화
-                "meta-llama/llama-4-70b",           # 대체4: 오픈소스 대형
+                "gpt-4o",                            # 주력: GPT-4o (현재 최신)
+                "claude-3-5-sonnet-20241022",        # 대체1: Claude 3.5 Sonnet (최신)
+                "gemini/gemini-2.0-pro-exp",         # 대체2: Gemini Pro
+                "deepseek/deepseek-reasoner",        # 대체3: Deepseek R1 추론 모델
+                "meta-llama/llama-3.3-70b-instruct", # 대체4: Llama 3.3 (최신)
             ],
             # BULK: 대량 처리 + 병렬 최적화
             ComplexityLevel.BULK.value: [
-                "claude-4-sonnet",                   # 주력: 긴 컨텍스트 처리
-                "gpt-5",                             # 대체1: GPT 최신
-                "gemini/gemini-2.0-pro-exp",        # 대체2: Gemini Pro
-                "meta-llama/llama-4-70b",           # 대체3: 오픈소스 대형
+                "claude-3-5-sonnet-20241022",        # 주력: 긴 컨텍스트 처리
+                "gpt-4o",                            # 대체1: GPT-4o
+                "gemini/gemini-2.0-pro-exp",         # 대체2: Gemini Pro
+                "meta-llama/llama-3.3-70b-instruct", # 대체3: Llama 3.3
             ]
         }
         
