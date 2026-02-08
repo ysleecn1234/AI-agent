@@ -141,6 +141,24 @@ class DocumentChat:
             embedding_gen = EmbeddingGenerator()
             question_embedding = embedding_gen.create(question)
             
+            # 비용 로깅
+            try:
+                tokens = len(question) * 2  # 추정치
+                cost_usd = tokens * 0.00000002  # $0.02/1M tokens
+                cost_krw = cost_usd * 1400
+                
+                self.postgres_client.log_cost(
+                    user_id="system",  # 문서 채팅 임베딩
+                    operation="chat_embedding",
+                    tokens_used=tokens,
+                    cost_usd=cost_usd,
+                    cost_krw=cost_krw,
+                    doc_id=doc_id,
+                    model_name="text-embedding-3-small"
+                )
+            except Exception as log_error:
+                print(f"  ⚠️ 비용 로그 실패: {log_error}")
+            
             # Milvus에서 해당 doc_id의 청크만 검색
             results = self.milvus_client.search_by_doc_id(
                 doc_id=doc_id,

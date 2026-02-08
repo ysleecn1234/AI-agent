@@ -4,14 +4,22 @@ AI 드라이브 - PostgreSQL 메타데이터 DB 클라이언트
 """
 
 import os
+import sys
 import uuid
 from datetime import datetime
 from typing import List, Dict, Any, Optional
+from pathlib import Path
 from sqlalchemy import create_engine, Column, String, Text, Integer, Boolean, DateTime, DECIMAL, JSON
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from dotenv import load_dotenv
+
+# 공통 모듈 임포트를 위한 경로 설정
+current_dir = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(current_dir))
+
+from services.common.db.models import ActivityLogMixin, CostLogMixin
 
 load_dotenv()
 
@@ -48,35 +56,14 @@ class Document(Base):
 
 
 
-class ActivityLog(Base):
-    """활동 로그 테이블"""
+class ActivityLog(Base, ActivityLogMixin):
+    """활동 로그 테이블 (Common Mixin 사용)"""
     __tablename__ = 'activity_logs'
-    
-    log_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), nullable=False)
-    user_name = Column(String(100))
-    doc_id = Column(UUID(as_uuid=True), nullable=True)
-    action = Column(String(50), nullable=False)  # upload/chat_save/agent_save/delete
-    timestamp = Column(DateTime, default=datetime.utcnow)
-    success = Column(Boolean, default=True)
-    ip_address = Column(String(45))
-    details = Column(JSONB, default=dict)
-    duration_ms = Column(Integer)
 
 
-class CostLog(Base):
-    """비용 로그 테이블"""
+class CostLog(Base, CostLogMixin):
+    """비용 로그 테이블 (Common Mixin 사용)"""
     __tablename__ = 'cost_logs'
-    
-    cost_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), nullable=False)
-    doc_id = Column(UUID(as_uuid=True), nullable=True)
-    operation = Column(String(50), nullable=False)  # embedding/tagging/chat
-    tokens_used = Column(Integer, default=0)
-    cost_usd = Column(DECIMAL(10, 6), default=0)
-    cost_krw = Column(DECIMAL(10, 2), default=0)
-    timestamp = Column(DateTime, default=datetime.utcnow)
-    model_name = Column(String(50))
 
 
 # ==================== 클라이언트 클래스 ====================

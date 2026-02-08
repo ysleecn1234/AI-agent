@@ -4,11 +4,11 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 # 1. 데이터베이스 설정
-POSTGRES_USER = os.getenv("POSTGRES_USER", "in7user")
-POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "in7password")
+POSTGRES_USER = os.getenv("POSTGRES_USER", "aiagent")
+POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "aiagent123")
 POSTGRES_SERVER = os.getenv("POSTGRES_SERVER", "localhost")
 POSTGRES_PORT = os.getenv("POSTGRES_PORT", "5432")
-POSTGRES_DB = os.getenv("POSTGRES_DB", "in7platform")
+POSTGRES_DB = os.getenv("POSTGRES_DB", "ai_hub")
 
 SQLALCHEMY_DATABASE_URL = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_SERVER}:{POSTGRES_PORT}/{POSTGRES_DB}"
 

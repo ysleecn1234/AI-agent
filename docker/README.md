@@ -37,7 +37,7 @@
 *   **Default Info:**
     *   User: `in7user`
     *   PW: `in7password`
-    *   DB: `in7platform`
+    *   DB: `ai_hub`
 
 ### 2.3 Redis (`in7-redis`)
 *   **Port:** `6379:6379`
