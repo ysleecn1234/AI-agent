@@ -595,19 +595,58 @@ class Synthesizer:
     """
     
     def format_response(self, reasoning_result: Dict[str, Any]) -> str:
-        """응답 포맷팅"""
+        """Claude 4.5를 사용한 응답 포맷팅"""
+        import litellm
+        
+        response = reasoning_result["response"]
+        user_input = reasoning_result.get("user_input", "")
+        intent = reasoning_result.get("intent", "")
+        
+        # Claude 4.5에게 포맷팅 요청
+        prompt = f"""다음 AI 답변을 사용자 친화적인 마크다운 형식으로 정리해주세요.
+
+사용자 질문: {user_input}
+의도: {intent}
+원본 답변:
+{response}
+
+요구사항:
+1. 명확한 구조 (제목, 본문, 요약)
+2. 가독성 높은 마크다운 포맷
+3. 중요 정보 강조 (볼드, 이탤릭)
+4. 필요시 리스트나 표 사용
+
+마크다운 형식으로만 답변해주세요."""
+
+        try:
+            print(f"  → Synthesizer (Claude 4.5) 포맷팅 중...")
+            result = litellm.completion(
+                model="claude-sonnet-4-5-20250514",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.3,  # 일관성 중시
+                max_tokens=2000
+            )
+            formatted = result.choices[0].message.content
+            print(f"  ✓ Synthesizer (Claude 4.5) 포맷팅 완료")
+            return formatted
+            
+        except Exception as e:
+            print(f"  [!] Synthesizer 실패: {e}, Fallback 사용")
+            # Fallback: 기본 포맷팅
+            return self._format_fallback(reasoning_result)
+    
+    def _format_fallback(self, reasoning_result: Dict[str, Any]) -> str:
+        """Fallback 포맷팅 (LLM 실패 시)"""
         response = reasoning_result["response"]
         confidence = reasoning_result["confidence"]
         
-        # 마크다운 형식으로 포맷팅
-        formatted = f"""
-## 답변
+        formatted = f"""## 답변
 
 {response}
 
 ---
 **신뢰도**: {confidence * 100:.1f}%
-**모델**: {reasoning_result.get('complexity', 'unknown')}
+**모델**: {reasoning_result.get('model_used', 'unknown')}
 """
         return formatted.strip()
     
@@ -655,7 +694,9 @@ class Guardrail:
         return True
     
     def verify_quality(self, synthesis_result: Dict[str, Any]) -> Dict[str, Any]:
-        """품질 검수 (복잡한 작업에 대해서만 수행)"""
+        """DeepSeek-R1을 사용한 품질 검수"""
+        import litellm
+        
         complexity = synthesis_result.get("complexity")
         
         # SIMPLE 작업은 품질 검수 스킵
@@ -667,9 +708,75 @@ class Guardrail:
                 "needs_regeneration": False
             }
         
-        # COMPLEX, BULK 작업은 품질 검수 수행
-        print("  → 품질 검수 수행 중...")
+        # COMPLEX, BULK 작업은 DeepSeek-R1로 검수
+        print("  → DeepSeek-R1 품질 검수 중...")
         
+        user_input = synthesis_result.get("user_input", "")
+        response = synthesis_result.get("response", "")
+        intent = synthesis_result.get("intent", "")
+        
+        # DeepSeek-R1에게 검수 요청 (CoT 활용)
+        prompt = f"""다음 AI 답변의 품질을 검수해주세요.
+
+사용자 질문: {user_input}
+의도: {intent}
+AI 답변:
+{response}
+
+다음 항목을 검증하고 JSON 형식으로 답변해주세요:
+{{
+    "completeness": true/false,
+    "logical_consistency": true/false,
+    "factual_accuracy": true/false,
+    "issues": ["이슈1", "이슈2", ...],
+    "quality_score": 0.0-1.0
+}}
+
+단계별로 사고하여 정확히 검증해주세요."""
+
+        try:
+            result = litellm.completion(
+                model="deepseek/deepseek-r1",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.1,  # 정확성 중시
+                max_tokens=1500
+            )
+            response_text = result.choices[0].message.content
+            
+            # JSON 파싱
+            import json
+            import re
+            json_match = re.search(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}', response_text, re.DOTALL)
+            if json_match:
+                quality_data = json.loads(json_match.group())
+                
+                quality_score = quality_data.get("quality_score", 0.8)
+                issues = quality_data.get("issues", [])
+                
+                print(f"  ✓ DeepSeek-R1 검수 완료 (점수: {quality_score:.2f})")
+                
+                if issues:
+                    print(f"  [!] 품질 이슈 발견: {len(issues)}개")
+                    for issue in issues:
+                        print(f"     - {issue}")
+                else:
+                    print("  [OK] 품질 검수 통과")
+                
+                return {
+                    "quality_verified": quality_score >= 0.7,
+                    "quality_score": quality_score,
+                    "quality_issues": issues,
+                    "needs_regeneration": quality_score < 0.6
+                }
+        
+        except Exception as e:
+            print(f"  [!] DeepSeek-R1 검수 실패: {e}, Fallback 사용")
+        
+        # Fallback: 기본 검수
+        return self._verify_fallback(synthesis_result)
+    
+    def _verify_fallback(self, synthesis_result: Dict[str, Any]) -> Dict[str, Any]:
+        """Fallback 검수 (LLM 실패 시)"""
         user_input = synthesis_result.get("user_input", "")
         response = synthesis_result.get("response", "")
         intent = synthesis_result.get("intent", "")
