@@ -29,6 +29,14 @@ class AutoTagger:
         else:
             self.use_mock = False
             self._init_client()
+        
+        # 비용 로깅을 위한 PostgresClient
+        try:
+            from db.postgres_client import PostgresClient
+            self.postgres_client = PostgresClient()
+        except Exception as e:
+            print(f"⚠️ PostgresClient 초기화 실패: {e}")
+            self.postgres_client = None
     
     def _init_client(self):
         """Gemini 클라이언트 초기화"""
@@ -258,6 +266,29 @@ class AutoTagger:
         except Exception as e:
             print(f"⚠️ Gemini 호출 실패: {e}")
             return self._mock_generate(text, title)
+        finally:
+            # 비용 로깅
+            if self.postgres_client:
+                try:
+                    # 입력 토큰 추정
+                    tokens_input = min(len(text) // 4, 750)  # 최대 750 토큰
+                    tokens_output = 50  # 태그/키워드 안정
+                    total_tokens = tokens_input + tokens_output
+                    
+                    # Gemini Flash 비용
+                    cost_usd = (tokens_input * 0.000000075) + (tokens_output * 0.0000003)
+                    cost_krw = cost_usd * 1400
+                    
+                    self.postgres_client.log_cost(
+                        user_id="system",
+                        operation="tagging",
+                        tokens_used=total_tokens,
+                        cost_usd=cost_usd,
+                        cost_krw=cost_krw,
+                        model_name="gemini-2.0-flash"
+                    )
+                except Exception as log_error:
+                    print(f"⚠️ 비용 로그 기록 실패: {log_error}")
     
     def _mock_generate(self, text: str, title: str) -> Dict[str, any]:
         """Mock 태깅 (API 없을 때)"""

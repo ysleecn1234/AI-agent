@@ -112,6 +112,24 @@ class RAGSearcher:
         """질문을 임베딩 벡터로 변환"""
         try:
             embedding = self.embedding_generator.create(query)
+            
+            # 비용 로깅
+            try:
+                tokens = len(query) * 2  # 추정치
+                cost_usd = tokens * 0.00000002  # $0.02/1M tokens
+                cost_krw = cost_usd * 1400
+                
+                self.postgres_client.log_cost(
+                    user_id="system",  # RAG 검색은 시스템 레벨
+                    operation="search_embedding",
+                    tokens_used=tokens,
+                    cost_usd=cost_usd,
+                    cost_krw=cost_krw,
+                    model_name="text-embedding-3-small"
+                )
+            except Exception as log_error:
+                print(f"  ⚠️ 비용 로그 실패: {log_error}")
+            
             return embedding
         except Exception as e:
             print(f"  ❌ 임베딩 생성 실패: {str(e)}")

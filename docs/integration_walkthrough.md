@@ -45,7 +45,7 @@ result = pipeline.process(user_input=user_input, user_id=user_id)
 POSTGRES_SERVER=localhost
 POSTGRES_USER=in7user
 POSTGRES_PASSWORD=in7password
-POSTGRES_DB=in7platform
+POSTGRES_DB=ai_hub
 POSTGRES_PORT=5432
 
 # Milvus (Vector Database)

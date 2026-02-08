@@ -29,11 +29,11 @@ services:
     environment:
       - POSTGRES_USER=in7user
       - POSTGRES_PASSWORD=in7password
-      - POSTGRES_DB=in7platform
+      - POSTGRES_DB=ai_hub
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U in7user -d in7platform" ]
+      test: [ "CMD-SHELL", "pg_isready -U aiagent -d ai_hub" ]
       interval: 10s
       timeout: 5s
       retries: 5

@@ -2,7 +2,15 @@ from sqlalchemy import Column, String, Boolean, Text, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 import uuid
+import sys
+from pathlib import Path
+
 from application.database import Base
+
+# 공통 모듈 임포트
+current_dir = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(current_dir))
+from services.common.db.models import ActivityLogMixin, CostLogMixin
 
 # ==========================================
 # 2. 에이전트 테이블 (통합 저장소)
@@ -33,3 +41,16 @@ class Agent(Base):
 
     # 관계 설정
     creator = relationship("application.database.User", back_populates="agents")
+
+
+# ==========================================
+# 3. 로깅 테이블 (Common Mixin 사용)
+# ==========================================
+class ActivityLog(Base, ActivityLogMixin):
+    """활동 로그 테이블 (Hub DB)"""
+    __tablename__ = "activity_logs"
+
+
+class CostLog(Base, CostLogMixin):
+    """비용 로그 테이블 (Hub DB)"""
+    __tablename__ = "cost_logs"

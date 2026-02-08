@@ -10,6 +10,7 @@ import time
 import sys
 from pathlib import Path
 from dotenv import load_dotenv
+import litellm  
 
 # 프로젝트 루트를 Python 경로에 추가
 project_root = Path(__file__).parent.parent.parent # services/orchestrator -> services -> root
@@ -124,44 +125,51 @@ class Router:
         """
         LLM을 사용한 의도 분류 (신뢰도가 낮을 때만 사용)
         
-        Note:
-            실제 API 연동 전까지는 키워드 기반 결과 반환
+        Uses Gemini Flash for fast and accurate intent classification.
         """
-        # TODO: 실제 LLM API 연동
-        # prompt = f'''다음 사용자 요청의 의도를 정확히 하나만 선택하세요:
-        # "{user_input}"
-        # 
-        # 선택지:
-        # - QUERY: 단순 질문이나 정보 요청
-        # - SEARCH: 특정 정보나 문서 검색
-        # - ANALYSIS: 데이터 분석, 비교, 평가
-        # - GENERATION: 문서나 콘텐츠 생성
-        # 
-        # 답변은 위 4가지 중 하나만 출력하세요.'''
-        # 
-        # try:
-        #     response = litellm.completion(
-        #         model=self.model,
-        #         messages=[{"role": "user", "content": prompt}],
-        #         temperature=0.1
-        #     )
-        #     result = response.choices[0].message.content.strip().upper()
-        #     
-        #     # 결과 매핑
-        #     intent_map = {
-        #         "QUERY": IntentType.QUERY,
-        #         "SEARCH": IntentType.SEARCH,
-        #         "ANALYSIS": IntentType.ANALYSIS,
-        #         "GENERATION": IntentType.GENERATION
-        #     }
-        #     return intent_map.get(result, IntentType.QUERY)
-        # except:
-        #     # LLM 실패 시 키워드 기반으로 폴백
-        #     return self.classify_intent_keyword(user_input)
         
-        # 임시: API 연동 전까지는 키워드 기반 사용
-        print("  [LLM 분류 모드] API 연동 대기 중, 키워드 기반 사용")
-        return self.classify_intent_keyword(user_input)
+        prompt = f'''다음 사용자 요청의 의도를 정확히 하나만 선택하세요:
+"{user_input}"
+
+선택지:
+- QUERY: 단순 질문이나 정보 요청
+- SEARCH: 특정 정보나 문서 검색
+- ANALYSIS: 데이터 분석, 비교, 평가
+- GENERATION: 문서나 콘텐츠 생성
+
+답변은 위 4가지 중 하나만 출력하세요 (QUERY, SEARCH, ANALYSIS, GENERATION).'''
+        
+        try:
+            response = litellm.completion(
+                model=self.model,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.1,
+                max_tokens=10
+            )
+            result = response.choices[0].message.content.strip().upper()
+            
+            # 결과 매핑
+            intent_map = {
+                "QUERY": IntentType.QUERY,
+                "SEARCH": IntentType.SEARCH,
+                "ANALYSIS": IntentType.ANALYSIS,
+                "GENERATION": IntentType.GENERATION
+            }
+            
+            # 부분 매칭 지원 (예: "SEARCH입니다" -> SEARCH)
+            for key in intent_map.keys():
+                if key in result:
+                    print(f"  [LLM 분류] {user_input[:30]}... → {key}")
+                    return intent_map[key]
+            
+            # 매핑 실패 시 기본값
+            print(f"  [LLM 분류] 매핑 실패 (응답: {result}), QUERY로 폴백")
+            return IntentType.QUERY
+            
+        except Exception as e:
+            # LLM 실패 시 키워드 기반으로 폴백
+            print(f"  [LLM 분류 실패] {str(e)}, 키워드 기반으로 폴백")
+            return self.classify_intent_keyword(user_input)
     
     def classify_intent_keyword(self, user_input: str) -> IntentType:
         """
@@ -510,27 +518,41 @@ class Reasoner:
     
     def generate_response_with_fallback(self, context: Dict[str, Any]) -> tuple[str, str]:
         """Fallback 메커니즘을 포함한 답변 생성"""
+        
         complexity = context["complexity"]
         user_input = context["user_input"]
         documents = context.get("retrieved_documents", [])
         
         # Fallback 모델 리스트 가져오기
-        models_to_try = self.fallback_models.get(complexity, ["gemini-2.0-flash"])
+        models_to_try = self.fallback_models.get(complexity, ["gpt-4o-mini"])
+        
+        # RAG 컨텍스트 구성
+        rag_context = ""
+        if documents:
+            rag_context = "\n\n참고 문서:\n"
+            for i, doc in enumerate(documents[:3], 1):  # 최대 3개
+                rag_context += f"{i}. {doc.get('content', '')[:200]}...\n"
+        
+        # 프롬프트 구성
+        prompt = f"""{user_input}
+
+{rag_context}
+
+위 정보를 바탕으로 정확하고 유용한 답변을 제공해주세요."""
         
         last_error = None
         for model in models_to_try:
             try:
-                # TODO: 실제 LLM 호출 구현 (litellm 사용)
-                # response = litellm.completion(
-                #     model=model,
-                #     messages=[{"role": "user", "content": user_input}]
-                # )
-                # return response.choices[0].message.content, model
-                
-                # 임시 응답 (실제 구현 시 위 코드로 대체)
                 print(f"  → 모델 시도: {model}")
-                response = f"[{model}] {user_input}에 대한 답변입니다."
-                return response, model
+                response = litellm.completion(
+                    model=model,
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=0.7,
+                    max_tokens=1000
+                )
+                answer = response.choices[0].message.content
+                print(f"  ✓ 모델 {model} 성공")
+                return answer, model
                 
             except Exception as e:
                 last_error = e
@@ -573,19 +595,57 @@ class Synthesizer:
     """
     
     def format_response(self, reasoning_result: Dict[str, Any]) -> str:
-        """응답 포맷팅"""
-        response = reasoning_result["response"]
-        confidence = reasoning_result["confidence"]
+        """Claude 4.5를 사용한 응답 포맷팅"""
         
-        # 마크다운 형식으로 포맷팅
-        formatted = f"""
-## 답변
+        response = reasoning_result["response"]
+        user_input = reasoning_result.get("user_input", "")
+        intent = reasoning_result.get("intent", "")
+        
+        # Claude 4.5에게 포맷팅 요청
+        prompt = f"""다음 AI 답변을 사용자 친화적인 마크다운 형식으로 정리해주세요.
+
+사용자 질문: {user_input}
+의도: {intent}
+원본 답변:
+{response}
+
+요구사항:
+1. 명확한 구조 (제목, 본문, 요약)
+2. 가독성 높은 마크다운 포맷
+3. 중요 정보 강조 (볼드, 이탤릭)
+4. 필요시 리스트나 표 사용
+
+마크다운 형식으로만 답변해주세요."""
+
+        try:
+            print(f"  → Synthesizer (Claude 4.5) 포맷팅 중...")
+            result = litellm.completion(
+                model="claude-sonnet-4-5-20250514",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.3,  # 일관성 중시
+                max_tokens=2000
+            )
+            formatted = result.choices[0].message.content
+            print(f"  ✓ Synthesizer (Claude 4.5) 포맷팅 완료")
+            return formatted
+            
+        except Exception as e:
+            print(f"  [!] Synthesizer 실패: {e}, Fallback 사용")
+            # Fallback: 기본 포맷팅
+            return self._format_fallback(reasoning_result)
+    
+    def _format_fallback(self, reasoning_result: Dict[str, Any]) -> str:
+        """Fallback 포맷팅 (LLM 실패 시)"""
+        response = reasoning_result["response"]
+        confidence = reasoning_result.get("confidence", 0.95)
+        
+        formatted = f"""## 답변
 
 {response}
 
 ---
 **신뢰도**: {confidence * 100:.1f}%
-**모델**: {reasoning_result.get('complexity', 'unknown')}
+**모델**: {reasoning_result.get('model_used', 'unknown')}
 """
         return formatted.strip()
     
@@ -633,7 +693,8 @@ class Guardrail:
         return True
     
     def verify_quality(self, synthesis_result: Dict[str, Any]) -> Dict[str, Any]:
-        """품질 검수 (복잡한 작업에 대해서만 수행)"""
+        """DeepSeek-R1을 사용한 품질 검수"""
+        
         complexity = synthesis_result.get("complexity")
         
         # SIMPLE 작업은 품질 검수 스킵
@@ -645,13 +706,79 @@ class Guardrail:
                 "needs_regeneration": False
             }
         
-        # COMPLEX, BULK 작업은 품질 검수 수행
-        print("  → 품질 검수 수행 중...")
+        # COMPLEX, BULK 작업은 DeepSeek-R1로 검수
+        print("  → DeepSeek-R1 품질 검수 중...")
         
         user_input = synthesis_result.get("user_input", "")
         response = synthesis_result.get("response", "")
         intent = synthesis_result.get("intent", "")
         
+        # DeepSeek-R1에게 검수 요청 (CoT 활용)
+        prompt = f"""다음 AI 답변의 품질을 검수해주세요.
+
+사용자 질문: {user_input}
+의도: {intent}
+AI 답변:
+{response}
+
+다음 항목을 검증하고 JSON 형식으로 답변해주세요:
+{{
+    "completeness": true/false,
+    "logical_consistency": true/false,
+    "factual_accuracy": true/false,
+    "issues": ["이슈1", "이슈2", ...],
+    "quality_score": 0.0-1.0
+}}
+
+단계별로 사고하여 정확히 검증해주세요."""
+
+        try:
+            result = litellm.completion(
+                model="deepseek/deepseek-r1",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.1,  # 정확성 중시
+                max_tokens=1500
+            )
+            response_text = result.choices[0].message.content
+            
+            # JSON 파싱
+            import json
+            import re
+            json_match = re.search(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}', response_text, re.DOTALL)
+            if json_match:
+                quality_data = json.loads(json_match.group())
+                
+                quality_score = quality_data.get("quality_score", 0.8)
+                issues = quality_data.get("issues", [])
+                
+                print(f"  ✓ DeepSeek-R1 검수 완료 (점수: {quality_score:.2f})")
+                
+                if issues:
+                    print(f"  [!] 품질 이슈 발견: {len(issues)}개")
+                    for issue in issues:
+                        print(f"     - {issue}")
+                else:
+                    print("  [OK] 품질 검수 통과")
+                
+                return {
+                    "quality_verified": quality_score >= 0.7,
+                    "quality_score": quality_score,
+                    "quality_issues": issues,
+                    "needs_regeneration": quality_score < 0.6
+                }
+        
+        except Exception as e:
+            print(f"  [!] DeepSeek-R1 검수 실패: {e}, Fallback 사용")
+        
+        # Fallback: 기본 검수
+        return self._verify_fallback(synthesis_result)
+    
+    def _verify_fallback(self, synthesis_result: Dict[str, Any]) -> Dict[str, Any]:
+        """Fallback 검수 (LLM 실패 시)"""
+        user_input = synthesis_result.get("user_input", "")
+        response = synthesis_result.get("response", "")
+        intent = synthesis_result.get("intent", "")
+
         quality_issues = []
         
         # 1. 요청사항 충족도 검증
@@ -666,20 +793,15 @@ class Guardrail:
         missing_info = self._check_missing_information(user_input, response, intent)
         if missing_info:
             quality_issues.extend(missing_info)
-        
-        # 품질 점수 계산 (이슈 개수에 따라)
+            
         quality_score = max(0.0, 1.0 - (len(quality_issues) * 0.2))
-        
-        # 재생성 필요 여부 (품질 점수 0.6 미만)
         needs_regeneration = quality_score < 0.6
         
         if quality_issues:
-            print(f"  [!] 품질 이슈 발견: {len(quality_issues)}개")
-            for issue in quality_issues:
-                print(f"     - {issue}")
+            print(f"  [!] 품질 이슈 발견 (Fallback): {len(quality_issues)}개")
         else:
-            print("  [OK] 품질 검수 통과")
-        
+            print("  [OK] 품질 검수 통과 (Fallback)")
+            
         return {
             "quality_verified": len(quality_issues) == 0,
             "quality_score": quality_score,

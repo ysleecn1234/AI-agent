@@ -7,6 +7,8 @@ from sqlalchemy.orm import Session
 from typing import List, Optional, Dict
 
 from services.ai_hub.db.agent_repo import AgentRepository
+from services.ai_hub.db.hub_repo import HubRepository
+from application.database import SessionLocal  # Hub DB 세션
 
 # Redis Connection
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
@@ -34,6 +36,9 @@ class AgentManager:
         except ImportError:
             self.use_rag = False
             print("[Hub] AI Drive 모듈 없음: Mock Search 모드")
+
+        # [Logging] Hub Repository 초기화
+        self.hub_repo = HubRepository()
 
     # --- 1. Recommendation (Hub-Centric Pattern) ---
 
@@ -92,6 +97,26 @@ class AgentManager:
                         candidate_map[str(res_id)] = score
                 
                 print(f"[Hub] Vector Search executed for: '{search_query}' -> IDs: {list(candidate_map.keys())}")
+                
+                # [Log] Cost (Embedding)
+                try:
+                    db = SessionLocal()
+                    tokens = len(search_query) * 2
+                    cost_usd = tokens * 0.00000002
+                    cost_krw = cost_usd * 1400
+                    
+                    self.hub_repo.log_cost(
+                        db=db,
+                        user_id="00000000-0000-0000-0000-000000000000",
+                        operation="hub_search",
+                        tokens_used=tokens,
+                        cost_usd=cost_usd,
+                        cost_krw=cost_krw,
+                        model_name="text-embedding-3-small"
+                    )
+                    db.close()
+                except Exception as e:
+                    print(f"[Hub] Failed to log searching cost: {e}")
                 
             except Exception as e:
                 print(f"[Hub] Vector Search Failed: {e}")
@@ -164,6 +189,20 @@ class AgentManager:
         
         user_list_key = f"user_drafts:{user_id}"
         redis_client.sadd(user_list_key, draft_id)
+        
+        # [Log] Activity
+        try:
+            db = SessionLocal()
+            self.hub_repo.log_activity(
+                db=db,
+                user_id=user_id,
+                action="create_draft",
+                details={"intent": intent, "draft_id": draft_id},
+                success=True
+            )
+            db.close()
+        except Exception as e:
+            print(f"[Hub] Failed to log activity: {e}")
         
         return draft_id
 
@@ -241,6 +280,40 @@ class AgentManager:
                 # Agent Vector Store 저장
                 self.milvus_client.insert_agent(draft, embedding)
                 print(f"[Hub] Agent Vectorized & Saved to Milvus: {draft.get('name')}")
+                
+                # [Log] Cost & Activity (Publishing)
+                try:
+                    db = SessionLocal()
+                    
+                    # 1. Cost (Embedding)
+                    tokens = len(text_to_embed) * 2
+                    cost_usd = tokens * 0.00000002
+                    cost_krw = cost_usd * 1400
+                    
+                    self.hub_repo.log_cost(
+                        db=db,
+                        user_id=draft['user_id'],
+                        operation="agent_publish_embedding",
+                        tokens_used=tokens,
+                        cost_usd=cost_usd,
+                        cost_krw=cost_krw,
+                        model_name="text-embedding-3-small"
+                    )
+                    
+                    # 2. Activity
+                    self.hub_repo.log_activity(
+                        db=db,
+                        user_id=draft['user_id'],
+                        action="publish_agent",
+                        details={"agent_name": draft.get('name'), "draft_id": draft_id},
+                        success=True
+                    )
+                    
+                    db.close()
+                except Exception as e:
+                    print(f"[Hub] Failed to log publishing: {e}")
+                        
+                        
             except Exception as e:
                 print(f"[Hub] Vectorization Failed: {e}")
                 # 실패해도 DB 저장은 진행할지 여부 결정 (현재는 진행)
