@@ -56,7 +56,7 @@ class ActivityLog(Base):
     user_id = Column(UUID(as_uuid=True), nullable=False)
     user_name = Column(String(100))
     doc_id = Column(UUID(as_uuid=True), nullable=True)
-    action = Column(String(50), nullable=False)  # upload/search/chat/delete
+    action = Column(String(50), nullable=False)  # upload/chat_save/agent_save/delete
     timestamp = Column(DateTime, default=datetime.utcnow)
     success = Column(Boolean, default=True)
     ip_address = Column(String(45))

@@ -56,7 +56,7 @@ core/
 ```
 embedding.py → OpenAI API
 auto_tagger.py → Google Gemini API
-doc_chat.py → OpenAI API, Gemini API, db/milvus_client.py
+doc_chat.py → OpenAI API, db/milvus_client.py
 rag_search.py → db/milvus_client.py, embedding.py
 pii_detector.py → (외부 의존성 없음)
 cost_manager.py → (외부 의존성 없음)
