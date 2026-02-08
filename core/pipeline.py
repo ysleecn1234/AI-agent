@@ -46,7 +46,7 @@ class Router:
     """
     
     def __init__(self):
-        self.model = "gemini/gemini-3-flash"  # 빠른 의도 분류용 (Gemini 3 Flash, 2026 최신)
+        self.model = "gemini/gemini-2.0-flash-exp"  # 빠른 의도 분류용 (TTFT 0.2s, 기획서 기준)
         
         # 의도별 키워드 사전 (확장)
         self.intent_keywords = {
@@ -478,34 +478,34 @@ class Reasoner:
     def __init__(self):
         # 복잡도별 주 모델 매핑 (기획서 기준 최신 모델)
         self.model_mapping = {
-            ComplexityLevel.SIMPLE.value: "gemini/gemini-3-flash",
-            ComplexityLevel.COMPLEX.value: "gpt-5",  # GPT-5 (2026 최신)
-            ComplexityLevel.BULK.value: "claude-opus-4-6-20260201"  # Claude Opus 4.6 (2026 최신)
+            ComplexityLevel.SIMPLE.value: "gemini/gemini-2.0-flash-exp",  # Router (속도)
+            ComplexityLevel.COMPLEX.value: "gpt-5.2",  # Reasoner (지능)
+            ComplexityLevel.BULK.value: "gemini/gemini-2.0-pro-exp"  # Researcher (대용량 컨텍스트)
         }
         
-        # 복잡도별 Fallback 모델 우선순위 (2026년 최신 모델)
+        # 복잡도별 Fallback 모델 우선순위 (기획서 역할 기준)
         self.fallback_models = {
             # SIMPLE: 초고속 응답 + 저비용 우선
             ComplexityLevel.SIMPLE.value: [
-                "gemini/gemini-3-flash",             # 주력: Gemini 3 Flash (2026 최신)
+                "gemini/gemini-2.0-flash-exp",       # 주력: Router (TTFT 0.2s)
                 "gpt-4o-mini",                       # 대체1: OpenAI 경량
-                "claude-haiku-4-5-20250514",         # 대체2: Claude Haiku 4.5
-                "deepseek/deepseek-v3-2-chat",       # 대체3: DeepSeek V3.2 (2026 최신)
+                "claude-sonnet-4-5-20250514",        # 대체2: Claude 4.5
+                "deepseek/deepseek-chat",            # 대체3: DeepSeek 경량
             ],
             # COMPLEX: 정밀 분석 + 고품질 추론
             ComplexityLevel.COMPLEX.value: [
-                "gpt-5",                             # 주력: GPT-5 (2026 최신)
-                "claude-opus-4-6-20260201",          # 대체1: Claude Opus 4.6 (2026 최신)
-                "gemini/gemini-3-pro",               # 대체2: Gemini 3 Pro (2026 최신)
-                "deepseek/deepseek-v3-2-speciale",   # 대체3: DeepSeek V3.2 Speciale (추론 특화)
-                "meta-llama/llama-4-maverick-17b-128e-instruct",  # 대체4: Llama 4 Maverick (2026 최신)
+                "gpt-5.2",                           # 주력: Reasoner (MMLU 최상위)
+                "gpt-5.2-mini",                      # 대체1: GPT-5.2 Mini
+                "claude-sonnet-4-5-20250514",        # 대체2: Synthesizer (일관성)
+                "deepseek/deepseek-r1",              # 대체3: Verification (CoT 팩트체크)
+                "meta-llama/llama-4-maverick-17b-128e-instruct",  # 대체4: Guardrail (보안)
             ],
             # BULK: 대량 처리 + 병렬 최적화
             ComplexityLevel.BULK.value: [
-                "claude-opus-4-6-20260201",          # 주력: Claude Opus 4.6 (긴 컨텍스트)
-                "gpt-5",                             # 대체1: GPT-5
-                "gemini/gemini-3-pro",               # 대체2: Gemini 3 Pro (2M context)
-                "meta-llama/llama-4-maverick-17b-128e-instruct",  # 대체3: Llama 4 (10M context)
+                "gemini/gemini-2.0-pro-exp",         # 주력: Researcher (멀티모달, 대용량)
+                "gpt-5.2",                           # 대체1: Reasoner
+                "claude-sonnet-4-5-20250514",        # 대체2: Synthesizer
+                "meta-llama/llama-4-maverick-17b-128e-instruct",  # 대체3: Guardrail (로컬)
             ]
         }
         
