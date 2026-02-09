@@ -30,12 +30,6 @@ class Orchestrator:
         """
         return await self.pipeline.analyze_for_draft(messages, template_schema)
 
-    async def vectorize_agent(self, agent_data: Dict) -> bool:
-        """
-        에이전트 벡터화 작업을 서비스 계층으로 위임합니다.
-        """
-        return await self.pipeline.vectorize_agent(agent_data)
-
     async def recommend_agents(self, current_message: str, conversation_history: List[Dict] = None) -> Dict:
         """
         에이전트 추천을 위한 분석 작업을 서비스 계층으로 위임합니다.
