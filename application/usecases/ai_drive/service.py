@@ -32,7 +32,11 @@ class AIDriveService:
     """
     
     def __init__(self):
-        self.pipeline = DocumentPipeline()
+        # 오케스트레이터 연동 (중앙 LLM 관제)
+        from application.usecases.orchestrator.service import orchestrator
+        self._orchestrator = orchestrator
+        
+        self.pipeline = DocumentPipeline(orchestrator=self._orchestrator)
         self.db_client = PostgresClient()
         self._rag_searcher = None
         self._doc_chat = None
@@ -212,7 +216,7 @@ class AIDriveService:
         # Lazy initialization
         if not self._doc_chat:
             from services.ai_drive.core.doc_chat import DocumentChat
-            self._doc_chat = DocumentChat()
+            self._doc_chat = DocumentChat(orchestrator=self._orchestrator)
         
         return self._doc_chat.chat(
             doc_id=doc_id,
