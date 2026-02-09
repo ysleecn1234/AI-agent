@@ -4,13 +4,12 @@ from contextlib import asynccontextmanager
 
 from .database import engine
 from application import models
-from . import auth, chat, agents
+from . import auth, chat, agents, drive
 
-# TODO: Import Routers (etc.)
+# TODO: Import Routers (etc.
 # from api import etc
 
 
-@asynccontextmanager
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # 시작 시: 테이블 생성 및 DB 연결
@@ -32,6 +31,7 @@ app = FastAPI(
 app.include_router(auth.router)
 app.include_router(chat.router)
 app.include_router(agents.router)
+app.include_router(drive.router)  # AI Drive 라우터 추가
 
 # CORS 미들웨어 (개발 환경에서는 전체 허용)
 app.add_middleware(
