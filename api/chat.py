@@ -52,10 +52,16 @@ async def chat_endpoint(
         use_rag=req.use_rag
     )
 
+    # B-2. 에러 체크
+    if "error" in result:
+        raise HTTPException(status_code=500, detail=result["error"])
+
     # C. Save AI Response to DB (Log)
+    session_id = result.get("session_id", req.context_id or "new-session")
+
     new_log = ChatLog(
         user_id=user_id,
-        session_id=req.context_id or "new-session",
+        session_id=session_id,
         user_input=req.message,
         ai_response=result["response"]
     )
@@ -64,6 +70,6 @@ async def chat_endpoint(
 
     return {
         "response": result["response"],
-        "used_model": result["used_model"],
-        "sources": result["sources"]
+        "used_model": result.get("used_model", "unknown"),
+        "sources": result.get("sources", [])
     }

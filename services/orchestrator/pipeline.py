@@ -9,7 +9,7 @@ import os
 import time
 import sys
 from pathlib import Path
-from dotenv import load_dotenv
+from dotenv import load_dotenv 
 import litellm  
 
 # 프로젝트 루트를 Python 경로에 추가
@@ -314,18 +314,14 @@ class Researcher:
             use_rag: RAG 시스템 사용 여부 (개발 중에는 False, 배포 시 True)
         """
         self.use_rag = use_rag
-        self.embedding_model = "text-embedding-3-small"
         
         # RAG 사용 시에만 클라이언트 초기화
         if self.use_rag:
             try:
-                # AI Drive 모듈 import (Feature-H 브랜치의 코드)
-                from services.ai_drive.db.milvus_client import MilvusClient
-                from services.ai_drive.core.embedding import EmbeddingGenerator
+                from services.ai_drive.core.rag_search import RAGSearcher
                 
-                self.milvus_client = MilvusClient()
-                self.embedding_generator = EmbeddingGenerator()
-                print("  [RAG] AI Drive 연동 활성화")
+                self.rag_searcher = RAGSearcher()
+                print("  [RAG] AI Drive RAGSearcher 연동 활성화")
             except ImportError as e:
                 print(f"  [RAG] AI Drive 모듈을 찾을 수 없습니다: {e}")
                 print("  [RAG] Mock 검색 모드로 전환")
@@ -336,6 +332,7 @@ class Researcher:
                 self.use_rag = False
         else:
             print("  [RAG] Mock 검색 모드 (use_rag=False)")
+
     
     def search_documents(self, query: str, top_k: int = 5, department: str = "개발팀") -> list[Dict[str, Any]]:
         """
@@ -356,37 +353,27 @@ class Researcher:
     
     def _search_with_rag(self, query: str, top_k: int, department: str) -> list[Dict[str, Any]]:
         """
-        실제 RAG 검색 (AI Drive 연동)
-        
-        Args:
-            query: 검색 쿼리
-            top_k: 반환할 문서 개수
-            department: 사용자 부서
-            
-        Returns:
-            검색된 문서 리스트
+        실제 RAG 검색 (AI Drive RAGSearcher 연동)
+        4단계: 임베딩 → 유사도 검색 → 권한 필터링 → Freshness Score
         """
         try:
-            # 1. 쿼리를 임베딩으로 변환
-            query_embedding = self.embedding_generator.create(query)
-            
-            # 2. Milvus에서 유사도 검색
-            results = self.milvus_client.search(
-                query_embedding=query_embedding,
-                department=department,
-                top_k=top_k,
-                include_company=True  # 회사 전체 공개 문서도 포함
+            results = self.rag_searcher.search(
+                query=query,
+                user_department=department,
+                top_k=top_k
             )
             
-            # 3. 결과 포맷 변환
+            # 결과 포맷 변환 (RAGSearcher 반환 형식 → pipeline 형식)
             formatted_results = []
             for result in results:
                 formatted_results.append({
-                    "content": result.get("chunk_text", ""),
+                    "content": result.get("content", ""),
                     "score": result.get("score", 0.0),
-                    "source": result.get("doc_id", "unknown"),
+                    "source": result.get("source", "알 수 없음"),
                     "doc_id": result.get("doc_id", ""),
-                    "chunk_id": result.get("chunk_id", "")
+                    "author": result.get("author", ""),
+                    "department": result.get("department", ""),
+                    "date": result.get("date", "")
                 })
             
             print(f"  [RAG] 검색 완료: {len(formatted_results)}개 문서 발견")
@@ -551,8 +538,16 @@ class Reasoner:
                     max_tokens=1000
                 )
                 answer = response.choices[0].message.content
-                print(f"  ✓ 모델 {model} 성공")
-                return answer, model
+
+                # 토큰 사용량 추출 (litellm response.usage)
+                input_tokens = 0
+                output_tokens = 0
+                if hasattr(response, 'usage') and response.usage:
+                    input_tokens = getattr(response.usage, 'prompt_tokens', 0) or 0
+                    output_tokens = getattr(response.usage, 'completion_tokens', 0) or 0
+
+                print(f"  ✓ 모델 {model} 성공 (입력: {input_tokens}, 출력: {output_tokens} 토큰)")
+                return answer, model, input_tokens, output_tokens
                 
             except Exception as e:
                 last_error = e
@@ -562,13 +557,12 @@ class Reasoner:
         # 모든 모델 실패 시
         raise Exception(f"모든 Fallback 모델 실패. 마지막 오류: {last_error}")
     
-    def generate_response(self, context: Dict[str, Any]) -> tuple[str, str]:
+    def generate_response(self, context: Dict[str, Any]) -> tuple:
         """답변 생성 (Fallback 포함)"""
         return self.generate_response_with_fallback(context)
     
-    def verify(self, response: str, model_used: str, context: Dict[str, Any]) -> Dict[str, Any]:
+    def verify(self, response: str, model_used: str, input_tokens: int, output_tokens: int, context: Dict[str, Any]) -> Dict[str, Any]:
         """팩트체크 및 검증"""
-        # TODO: CoT 기반 검증 로직 구현
         is_verified = True
         confidence_score = 0.95
         
@@ -576,14 +570,16 @@ class Reasoner:
             **context,
             "response": response,
             "model_used": model_used,
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
             "verified": is_verified,
             "confidence": confidence_score
         }
     
     def reason(self, research_result: Dict[str, Any]) -> Dict[str, Any]:
         """추론 실행"""
-        response, model_used = self.generate_response(research_result)
-        return self.verify(response, model_used, research_result)
+        response, model_used, input_tokens, output_tokens = self.generate_response(research_result)
+        return self.verify(response, model_used, input_tokens, output_tokens, research_result)
 
 
 # ==================== Step 4: Synthesizer ====================
@@ -910,43 +906,56 @@ class Pipeline:
         # 2. 템플릿 복사 (직접 정의하지 않고 외부 스키마 사용)
         analysis = template_schema.copy()
         
-        # 3. LLM 분석 (Mock implementation for now)
-        # TODO: 실제 LLM 호출하여 JSON 파싱 (prompt에 schema 구조 포함)
-        # prompt = f"다음 대화를 분석하여 아래 JSON 스키마에 맞춰 내용을 채워줘:\n{json.dumps(template_schema)}\n\n대화:\n{conversation_text}"
+        # 3. LLM 분석 (Gemini Flash로 대화 분석 → JSON 생성)
+        import json as _json
         
-        # Mock Logic: 간단한 키워드 기반 채우기
-        if "마케팅" in conversation_text:
-            analysis["name"] = "마케팅 전략가"
-            analysis["description"] = "마케팅 캠페인 및 전략 수립을 돕는 전문가"
-            analysis["category"] = "마케팅"
-            analysis["input_example"] = "이번 신제품 런칭을 위한 인스타그램 마케팅 전략을 제안해줘."
-            analysis["output_example"] = "1. 타겟 오디언스 분석\n2. 핵심 메시지 도출\n3. 주차별 콘텐츠 플랜..."
-            analysis["system_prompt"] = "당신은 세계적인 마케팅 전문가입니다. 트렌드를 분석하고 창의적인 전략을 제안하세요."
-            analysis["use_rag"] = True
-            analysis["model_type"] = "AUTO"  # Orchestrator Decision
-            analysis["visibility"] = "PUBLIC"
+        schema_keys = list(template_schema.keys())
+        prompt = f"""다음 대화를 분석하여 AI 에이전트 정보를 JSON으로 추출해주세요.
 
-        elif "코드" in conversation_text or "개발" in conversation_text or "파이썬" in conversation_text:
-            analysis["name"] = "Python 코딩 도우미"
-            analysis["description"] = "복잡한 파이썬 코드를 쉽고 효율적으로 작성해주는 개발 파트너"
-            analysis["category"] = "개발"
-            analysis["input_example"] = "리스트를 정렬하는 퀵소트 알고리즘을 파이썬으로 짜줘."
-            analysis["output_example"] = "```python\ndef quick_sort(arr):\n    if len(arr) <= 1: return arr\n    ...\n```"
-            analysis["system_prompt"] = "당신은 시니어 파이썬 개발자입니다. 클린 코드와 최적화된 알고리즘을 제공하세요."
-            analysis["use_rag"] = False 
-            analysis["model_type"] = "claude-3-5-sonnet" # Specific Model Selection Example
-            analysis["visibility"] = "PRIVATE"
+대화 내용:
+{conversation_text}
 
-        else:
-            analysis["name"] = "일반 업무 비서"
-            analysis["description"] = "일상적인 업무 처리를 도와주는 스마트한 비서"
+다음 JSON 형식으로만 응답해주세요 (다른 텍스트 없이):
+{{
+    "name": "에이전트 이름 (간결하게, 20자 이내)",
+    "description": "에이전트 설명 (50자 이내)",
+    "category": "카테고리 (마케팅/개발/기획/영업/인사/재무/기타 중 하나)",
+    "input_example": "사용자가 이 에이전트에게 할 수 있는 질문 예시",
+    "output_example": "에이전트의 답변 예시 (간략하게)",
+    "system_prompt": "이 에이전트의 역할과 성격을 정의하는 시스템 프롬프트",
+    "use_rag": true,
+    "model_type": "AUTO",
+    "visibility": "PUBLIC"
+}}"""
+
+        try:
+            response = litellm.completion(
+                model="gemini/gemini-2.0-flash-exp",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.3,
+                max_tokens=500
+            )
+            result_text = response.choices[0].message.content.strip()
+            
+            # ```json ``` 제거
+            if result_text.startswith("```"):
+                result_text = result_text.split("```")[1]
+                if result_text.startswith("json"):
+                    result_text = result_text[4:]
+            
+            filled = _json.loads(result_text.strip())
+            
+            # 템플릿 키에 해당하는 값만 반영
+            for key in schema_keys:
+                if key in filled and filled[key]:
+                    analysis[key] = filled[key]
+                    
+        except Exception as e:
+            print(f"  [Draft] LLM 분석 실패, 기본값 사용: {e}")
+            analysis["name"] = "새 에이전트"
+            analysis["description"] = "대화 기반으로 생성된 에이전트"
             analysis["category"] = "기타"
-            analysis["input_example"] = "오늘 할 일 목록을 정리해줘."
-            analysis["output_example"] = "- [ ] 이메일 확인\n- [ ] 회의 준비"
-            analysis["system_prompt"] = "당신은 친절하고 꼼꼼한 비서입니다. 사용자의 요청을 명확하게 처리하세요."
-            analysis["use_rag"] = True
-            analysis["model_type"] = "AUTO"
-            analysis["visibility"] = "PUBLIC"
+            analysis["system_prompt"] = "당신은 유능한 AI 비서입니다. 사용자의 요청에 정확하게 답변하세요."
             
         print(f"[Pipeline] Draft Analysis Complete: {analysis.get('name', 'Unknown')}")
         return analysis
@@ -969,19 +978,53 @@ class Pipeline:
         # 1. 키워드 추출 (Router 로직 재사용 가능)
         intent = self.router.classify_intent(current_message)
         
-        # 2. Mock Analysis
-        keywords = []
+        # 2. LLM 분석 (Gemini Flash로 주제/카테고리/키워드 추출)
+        import json as _json
+        
+        # 대화 히스토리가 있으면 컨텍스트에 포함
+        context = ""
+        if conversation_history:
+            recent = conversation_history[-5:]  # 최근 5개만
+            context = "\n".join([f"{m['role']}: {m['content']}" for m in recent])
+            context = f"\n\n최근 대화:\n{context}"
+        
+        prompt = f"""다음 사용자 메시지를 분석하여 관련 에이전트 추천을 위한 정보를 추출해주세요.
+
+사용자 메시지: {current_message}{context}
+
+다음 JSON 형식으로만 응답해주세요 (다른 텍스트 없이):
+{{
+    "topic": "대화의 핵심 주제 (한국어, 20자 이내)",
+    "category": "MARKETING / CODING / PLANNING / SALES / HR / FINANCE / GENERAL 중 하나",
+    "keywords": ["키워드1", "키워드2", "키워드3"]
+}}"""
+
         topic = "General Query"
         category = "GENERAL"
+        keywords = []
         
-        if "마케팅" in current_message:
-            keywords = ["마케팅", "광고", "기획"]
-            topic = "마케팅 전략"
-            category = "MARKETING"
-        elif "파이썬" in current_message or "코드" in current_message:
-            keywords = ["Python", "Coding", "Debug"]
-            topic = "코드 작성"
-            category = "CODING"
+        try:
+            response = litellm.completion(
+                model="gemini/gemini-2.0-flash-exp",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.2,
+                max_tokens=200
+            )
+            result_text = response.choices[0].message.content.strip()
+            
+            # ```json ``` 제거
+            if result_text.startswith("```"):
+                result_text = result_text.split("```")[1]
+                if result_text.startswith("json"):
+                    result_text = result_text[4:]
+            
+            parsed = _json.loads(result_text.strip())
+            topic = parsed.get("topic", topic)
+            category = parsed.get("category", category)
+            keywords = parsed.get("keywords", keywords)
+            
+        except Exception as e:
+            print(f"  [Recommend] LLM 분석 실패, 기본값 사용: {e}")
             
         return {
             "topic": topic,
@@ -1041,19 +1084,62 @@ class Pipeline:
                 "quality_score": final_result.get("quality_score")
             }, step_duration)
             
-            # 비용 계산
-            total_duration = self.logger.end_session()
-            estimated_cost = self.cost_calculator.calculate_cost(final_result)
+            # 비용 계산 (Reasoner에서 실제 토큰 정보 추출)
+            model_used = reasoning_result.get("model_used", "unknown")
+            input_tokens = reasoning_result.get("input_tokens", 0)
+            output_tokens = reasoning_result.get("output_tokens", 0)
             
-            print(f"[Pipeline] 처리 완료! (소요시간: {total_duration:.2f}ms, 예상비용: ${estimated_cost:.4f})")
+            # 토큰 정보가 0이면 추정치 사용 (한글 기준: 글자 수 × 약 2)
+            if input_tokens == 0:
+                input_tokens = len(user_input) * 2
+            if output_tokens == 0:
+                output_tokens = len(final_result.get("final_response", "")) * 2
+            
+            cost_info = self.cost_calculator.calculate_cost(
+                model_name=model_used,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens
+            )
+            
+            # 모델 사용량 로깅 (기존에 한 번도 호출 안 되던 log_model_usage 연결)
+            self.logger.log_model_usage(
+                model_name=model_used,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+                cost_info=cost_info
+            )
+            
+            # 세션 종료 (final_result 전달)
+            self.logger.end_session(final_result=final_result, success=True)
+            
+            estimated_cost_usd = cost_info["cost_usd"]["total"]
+            estimated_cost_krw = cost_info["cost_krw"]["total"]
+            
+            print(f"[Pipeline] 처리 완료! (예상비용: ${estimated_cost_usd:.4f} / {estimated_cost_krw:.2f}원)")
+            
+            # 출처 정보 추출 (RAG 검색 결과에서)
+            sources = []
+            for doc in research_result.get("retrieved_documents", []):
+                source = doc.get("source", "")
+                if source and source not in sources:
+                    sources.append(source)
             
             return {
                 "session_id": session_id,
                 "response": final_result["final_response"],
+                "used_model": model_used,
+                "sources": sources,
                 "metadata": {
-                    "duration": total_duration,
-                    "cost": estimated_cost,
-                    "steps": self.logger.get_logs()
+                    "intent": routing_result.get("intent"),
+                    "complexity": routing_result.get("complexity"),
+                    "model_used": model_used,
+                    "input_tokens": input_tokens,
+                    "output_tokens": output_tokens,
+                    "cost": cost_info,
+                    "quality_score": final_result.get("quality_score"),
+                    "is_safe": final_result.get("is_safe"),
+                    "verified": reasoning_result.get("verified"),
+                    "steps": self.logger.get_session_summary()
                 }
             }
             

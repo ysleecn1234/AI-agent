@@ -13,13 +13,22 @@ class AgentService:
         pass
 
     async def generate_draft_from_chat(self, user_id: str, messages: list):
-        """
-        Agent 생성 마법사 - Step 1 진입점
-        """
         print(f"[App] Requesting draft creation to AgentManager for user: {user_id}")
         
-        # AgentManager 호출 (Orchestration & Saving)
-        return await agent_manager.create_draft_from_chat(user_id, messages)
+        # 1. Orchestrator에게 대화 분석 요청 (LLM이 템플릿 채움)
+        template = agent_manager.get_standard_template()
+        filled_template = await orchestrator.analyze_for_draft(messages, template)
+        
+        # 2. 분석된 intent 추출
+        intent = filled_template.get("description", "")
+        
+        # 3. Redis에 Draft 저장
+        draft_id = await agent_manager.create_draft(user_id, intent, messages)
+        
+        # 4. 분석 결과로 Draft 업데이트
+        agent_manager.update_draft_step(draft_id, 1, filled_template)
+        
+        return draft_id
 
     def list_drafts(self, user_id: str):
         return agent_manager.list_drafts(user_id)
