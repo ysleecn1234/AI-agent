@@ -1,84 +1,131 @@
-# Application Layer (Tier 2) Documentation
+# Application Layer (Facade Pattern)
 
-**`application/`** 디렉토리는 3-Tier 아키텍처의 **2단계 (Application Core Layer)**입니다.
+## 역할
+Service Layer를 조율하는 **Facade 패턴**을 따릅니다.
 
-이 계층의 핵심 역할은 **"비즈니스 흐름의 조율(Orchestration)"**과 **"공통 인프라 관리"**입니다.
-Tier 1(API)에서 받은 요청을 해석하여, Tier 3(Domain Services)의 도구들을 조합해 원하는 결과를 만들어냅니다.
+## Facade 패턴이란?
+복잡한 Service Layer를 단순한 인터페이스로 감싸는 디자인 패턴입니다.
 
----
+## 왜 Facade 패턴인가?
 
-##  디렉토리 구조 및 역할
+### 현재 구조
+- 대부분의 요청이 **단일 Service 호출**로 처리됨
+- 복잡한 워크플로우가 많지 않음
+- Service Layer로 **일단 단순 위임**이 주요 역할
 
-### 1. `usecases/` (서비스 활용 사례)
-**Role:** 실제 비즈니스 시나리오(Use Case)를 구현하는 **Wrapper Service**. Tier 3의 도구들을 조립하는 **작업대**입니다.
-
-#### 1-1. `orchestrator/service.py` (채팅 로직)
-*   **Role:** 채팅 요청의 흐름 제어 및 파이프라인 호출.
-*   **Key Features:**
-    *   **Core 호출:** `services/orchestrator`의 `Pipeline` 엔진을 호출하여 실제 작업을 위임.
-    *   **대화 이력 저장(Chat History Save):** 대화 내용 및 답변을 DB(ChatLog)에 저장.
-*   **Flow:**
-    > User Input → `OrchestratorWrapper` → **Pipeline Engine (Tier 3)** → Result
-
-#### 1-2. `ai_hub/service.py` (에이전트 관리)
-*   **Role:** 에이전트 등록, 검색, 관리를 위한 퍼사드(Facade).
-*   **Key Features:**
-    *   **DTO 변환:** API 계층의 요청 데이터(Pydantic)를 내부 도메인 객체로 변환.
-    *   **레포지토리 연결:** `services/ai_hub`의 DB 로직(Repository) 연결.
-*   **Flow:**
-    > "에이전트 찾기" 요청 → `HubWrapper` → **HubManager (Tier 3)** → DB Query
-
-#### 1-3. `ai_agent/service.py` (제작 마법사)
-*   **Role:** 에이전트 생성 마법사(Wizard)의 단계별 상태 관리.
-*   **Key Features:**
-    *   **임시 저장:** 제작 중인 에이전트 데이터를 Redis(Tier 3)에 임시 저장.
-    *   **배포(Publish):** 완료된 에이전트를 최종 DB(Postgres)로 이관.
-*   **Flow:**
-    > "Step 1 저장" → `AgentService` → **Redis Client (Tier 3)** → Cache Update
-
-### 2. `database.py` (데이터베이스 인프라)
-*   **Role:** DB 연결 설정(Session) 및 핵심 모델 정의.
-*   **Key Features:**
-    *   `get_db()`: API 요청마다 DB 세션을 생성하고 닫는 의존성 주입(Dependency Injection) 함수.
-    *   `User`: 시스템 전반에서 사용되는 사용자 계정 모델 정의.
-
-### 3. `auth.py` (권한 관리 유틸)
-*   **Role:** 보안 관련 공통 로직.
-*   **Key Features:**
-    *   JWT 토큰 생성 및 검증 (`create_access_token`, `decode_access_token`).
-    *   비밀번호 해싱 (`verify_password`).
+### 향후 확장 가능성
+프로젝트가 커지면 이 레이어에서:
+- ✅ **여러 Service 조합**: Pipeline + RAGSearcher + Orchestrator
+- ✅ **복잡한 워크플로우**: 단계별 처리 및 조율
+- ✅ **트랜잭션 관리**: 여러 DB 작업 통합
+- ✅ **공통 에러 핸들링**: 일관된 에러 처리
 
 ---
 
-##  계층 간 관계 (Flow)
-
-**Tier 1 (API)** → **Tier 2 (Application)** → **Tier 3 (Services)**
-
-1.  **API**: "채팅 메시지 왔어, 처리해줘." (`application` 호출)
-2.  **Application**: "오케이, 먼저 유저 권한 확인하고(`auth.py`), 오케스트레이터 파이프라인 돌려(`usecases/orchestrator`)"
-3.  **Services**: "DB에서 에이전트 정보 가져오고(`ai_hub`), LLM 호출해서 답변 생성해(`ai_drive`)."
-
----
-
-##  개발 가이드
-*   **비즈니스 로직 작성 시**: 단순 CRUD는 `usecases`에 바로 작성해도 되지만, 복잡한 도메인 규칙은 반드시 **Tier 3 (`services/`)**로 위임하세요.
-*   **테이블(Table) 정의 시**:
-    *   **서비스 전용 테이블**: 해당 서비스의 `db/tables.py`에 작성 (`services/ai_hub/db/tables.py`).
-    *   **전역 공통 테이블**: `application/database.py` (User 등)에 작성.
-
----
-
-## 상세 디렉토리 구조
+## 폴더 구조
 
 ```
 application/
-├── auth.py                     # [Core] 인증/보안 유틸리티
-├── database.py                 # [Core] DB 세션/엔진 설정 & User 테이블
-└── usecases/                   # [Wrapper] 서비스 오케스트레이션
-    ├── orchestrator/           # 채팅/RAG 파이프라인 제어
-    │   └── service.py
-    ├── ai_hub/                 # 에이전트 검색/관리
-    │   └── service.py
-    └── ai_agent/               # 에이전트 생성 마법사
-        └── service.py
+├── usecases/
+│   ├── ai_agent/
+│   │   └── service.py     # Hub Facade (에이전트 생성/관리)
+│   ├── ai_drive/
+│   │   └── service.py     # Drive Facade (문서 처리)
+│   └── orchestrator/
+│       └── service.py     # Orchestrator Facade (통합 채팅)
+├── database.py            # DB 설정
+├── auth.py                # 인증 유틸리티
+└── README.md              # 이 파일
 ```
+
+---
+
+## 파일별 설명
+
+### `usecases/ai_agent/service.py` - Hub Facade
+AI Hub의 에이전트 관련 비즈니스 워크플로우를 조율합니다.
+
+**주요 메서드**:
+- `generate_draft_from_chat()` - 대화에서 초안 생성
+- `list_drafts()` - 초안 목록 조회
+- `update_draft()` - 초안 업데이트
+- `publish_agent()` - 에이전트 배포
+- `recommend_agents_for_chat()` - 에이전트 추천
+
+**현재**: `AgentManager`로 단순 위임  
+**향후**: 권한 체크, 검증, 여러 서비스 조합 가능
+
+### `usecases/ai_drive/service.py` - Drive Facade
+AI Drive의 문서 관련 비즈니스 워크플로우를 조율합니다.
+
+**주요 메서드**:
+- `upload_document()` - 파일 업로드 (임시 저장 → Pipeline 호출 → 정리)
+- `save_chat()` - 채팅 저장
+- `save_agent_result()` - 에이전트 결과 저장
+- `search_documents()` - RAG 검색
+- `list_documents()` - 문서 목록
+- `get_document()` - 문서 상세
+- `delete_document()` - 문서 삭제 (DB + Milvus)
+- `chat_with_document()` - 문서 채팅
+
+**현재**: `Pipeline`, `RAGSearcher`, `DocumentChat`으로 단순 위임  
+**향후**: PII 검증, 권한 체크, 사용량 제한 등 추가 가능
+
+### `usecases/orchestrator/service.py` - Orchestrator Facade
+Orchestrator의 채팅 워크플로우를 조율합니다.
+
+**주요 메서드**:
+- `process_chat()` - 통합 채팅 처리
+
+**현재**: `OrchestratorPipeline`으로 단순 위임  
+**향후**: Hub + Drive 연동, 복잡한 멀티턴 대화 관리 가능
+
+### `database.py`
+데이터베이스 설정 및 연결 관리:
+- Hub DB 설정 (`ai_hub`)
+- Drive DB 설정 (`ai_drive`)
+- Orchestrator DB 설정 (`orchestrator`)
+- `get_db()` dependency
+
+### `auth.py`
+인증 및 권한 관련 유틸리티:
+- JWT 토큰 생성/검증
+- 비밀번호 해싱
+- 사용자 인증 헬퍼
+
+---
+
+## 예시: Drive Facade
+
+```python
+class AIDriveService:
+    """Drive Application Service (Facade)"""
+    
+    def __init__(self):
+        self.pipeline = DocumentPipeline()
+    
+    async def upload_document(self, file, creator_id, ...):
+        """
+        파일 업로드 (Facade)
+        
+        현재: Pipeline으로 단순 위임
+        향후: PII 검증, 권한 체크 등 추가 가능
+        """
+        # 최소한의 전처리
+        temp_path = await self._save_temp_file(file)
+        
+        try:
+            # Service Layer 호출
+            return self.pipeline.process_file_upload(temp_path, ...)
+        finally:
+            os.remove(temp_path)
+```
+
+---
+
+## 일관성
+모든 서비스가 동일한 Facade 패턴을 따릅니다:
+- Hub: `AgentService` → `AgentManager`
+- Drive: `AIDriveService` → `Pipeline`, `RAGSearcher`, `DocumentChat`
+- Orchestrator: `OrchestratorService` → `OrchestratorPipeline`
+
