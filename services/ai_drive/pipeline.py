@@ -19,8 +19,8 @@ from utils.chunker import TextChunker
 from core.embedding import EmbeddingGenerator
 from db.milvus_client import MilvusClient
 from db.postgres_client import PostgresClient
-from core.auto_tagger import AutoTagger
 from core.cost_manager import CostManager
+import json
 
 class DocumentPipeline:
     """
@@ -40,7 +40,7 @@ class DocumentPipeline:
         self.embedding_generator = EmbeddingGenerator()
         self.milvus_client = MilvusClient()
         self.postgres_client = PostgresClient()
-        self.auto_tagger = AutoTagger(orchestrator=orchestrator)
+        self.orchestrator = orchestrator
 
     def process_file_upload(
         self,
@@ -156,11 +156,8 @@ class DocumentPipeline:
                     "duration_ms": duration_ms,
                     "warning": "텍스트 추출 없음"
                 }
-            # AI 태깅
-            tags_result = self.auto_tagger.generate_tags(text, title)
-            tags = tags_result.get("tags", [])
-            keywords = tags_result.get("keywords", [])
-            doc_type = tags_result.get("doc_type", "기타")
+            # AI 태깅 (Orchestrator 사용)
+            tags, keywords, doc_type = self._generate_tags_with_llm(text[:3000]) # 텍스트 길이 제한
 
             # PostgreSQL에 태그 업데이트
             self.postgres_client.update_document_tags(doc_id, tags, keywords, doc_type)
@@ -324,11 +321,8 @@ class DocumentPipeline:
                     "warning": "텍스트가 비어있습니다"
                 }
 
-            # AI 태깅
-            tags_result = self.auto_tagger.generate_tags(chat_content, title)
-            tags = tags_result.get("tags", [])
-            keywords = tags_result.get("keywords", [])
-            doc_type = tags_result.get("doc_type", "기타")
+            # AI 태깅 (Orchestrator 사용)
+            tags, keywords, doc_type = self._generate_tags_with_llm(chat_content)
 
             # PostgreSQL에 태그 업데이트
             self.postgres_client.update_document_tags(doc_id, tags, keywords, doc_type)
@@ -563,6 +557,42 @@ class DocumentPipeline:
         self.milvus_client.close()
         self.postgres_client.close()
         print("[Pipeline] 연결 종료")
+
+    def _generate_tags_with_llm(self, text: str) -> tuple[List[str], List[str], str]:
+        """
+        Orchestrator를 사용한 태깅 및 메타데이터 추출
+        """
+        if not self.orchestrator:
+            print("[Pipeline] Orchestrator 없음, 태깅 스킵")
+            return [], [], "기타"
+            
+        try:
+            # 태깅 태스크 호출
+            llm_result = self.orchestrator.call_llm(
+                task="tagging",
+                prompt=f"다음 텍스트를 분석하여 태그와 키워드, 문서 유형을 추출하세요:\n\n{text[:2000]}"
+            )
+            
+            # JSON 파싱
+            response_text = llm_result["content"]
+            
+            # 마크다운 코드블록 제거
+            if "```" in response_text:
+                response_text = response_text.split("```")[1]
+                if response_text.startswith("json"):
+                    response_text = response_text[4:]
+            
+            data = json.loads(response_text.strip())
+            
+            tags = data.get("tags", [])
+            keywords = data.get("keywords", [])
+            doc_type = data.get("doc_type", "기타")
+            
+            return tags, keywords, doc_type
+            
+        except Exception as e:
+            print(f"[Pipeline] 태깅 실패: {e}")
+            return [], [], "기타"
 
 
 # 테스트 코드

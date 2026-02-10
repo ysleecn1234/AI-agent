@@ -11,6 +11,7 @@ import shutil
 import tempfile
 from typing import List, Dict, Any
 from fastapi import UploadFile
+import json
 
 # Service Layer
 from services.ai_drive.pipeline import DocumentPipeline
@@ -109,12 +110,44 @@ class AIDriveService:
         현재: Pipeline으로 단순 위임
         향후: 제목 자동 생성, PII 체크 등 추가 가능
         """
+        title = request.title
+        description = request.description or ""
+        
+        # 제목이 없으면 자동 생성 (Orchestrator 사용)
+        if not title:
+            try:
+                # Orchestrator에게 제목/설명 생성 요청
+                llm_result = self._orchestrator.call_llm(
+                    task="title_gen",
+                    prompt=f"다음 대화 내용을 바탕으로 적절한 제목과 설명을 생성하세요:\n\n{request.content[:1000]}"
+                )
+                
+                # JSON 파싱
+                response_text = llm_result["content"]
+                if "```" in response_text:
+                    response_text = response_text.split("```")[1]
+                    if response_text.startswith("json"):
+                        response_text = response_text[4:]
+                
+                data = json.loads(response_text.strip())
+                title = data.get("title", "채팅 대화")
+                
+                # 설명이 비어있으면 자동 생성된 설명 사용
+                if not description:
+                    description = data.get("description", "")
+                    
+                print(f"[App] 제목 자동 생성 완료: {title}")
+                    
+            except Exception as e:
+                print(f"[App] 제목 생성 실패: {e}")
+                title = "채팅 대화"
+        
         return self.pipeline.process_chat_save(
             chat_content=request.content,
             creator_id=request.creator_id,
             creator_department=request.creator_department,
-            title=request.title or "채팅 대화",
-            description=request.description or "",
+            title=title,
+            description=description,
             visibility=request.visibility
         )
     
