@@ -20,15 +20,21 @@ class AutoTagger:
     - 문서 유형: 보고서/제안서/회의록/계약서/기타
     """
     
-    def __init__(self):
-        self.api_key = os.getenv("GOOGLE_API_KEY")
+    def __init__(self, orchestrator=None):
+        self.orchestrator = orchestrator  # 중앙 LLM 호출용
         
-        if not self.api_key:
-            print("⚠️ GOOGLE_API_KEY 없음 - Mock 모드로 실행")
-            self.use_mock = True
-        else:
+        # orchestrator가 있으면 중앙 관제 모드, 없으면 기존 방식
+        if self.orchestrator:
+            print("✓ AutoTagger: 오케스트레이터 연동 모드")
             self.use_mock = False
-            self._init_client()
+        else:
+            self.api_key = os.getenv("GOOGLE_API_KEY")
+            if not self.api_key:
+                print("⚠️ GOOGLE_API_KEY 없음 - Mock 모드로 실행")
+                self.use_mock = True
+            else:
+                self.use_mock = False
+                self._init_client()
         
         # 비용 로깅을 위한 PostgresClient
         try:
@@ -108,15 +114,11 @@ class AutoTagger:
     """
     
         try:
-            response = self.model.generate_content(
-                prompt,
-                generation_config={
-                    "temperature": 0.3,
-                    "max_output_tokens": 100
-                }
-              )
-        
-            result_text = response.text.strip()
+            llm_result = self.orchestrator.call_llm(
+                task="title_gen",
+                prompt=prompt,
+            )
+            result_text = llm_result["content"].strip()
 
             # ```json ``` 제거
             if result_text.startswith("```"):
@@ -234,16 +236,11 @@ class AutoTagger:
 """
         
         try:
-            response = self.model.generate_content(
-                prompt,
-                generation_config={
-                    "temperature": 0.3,
-                    "max_output_tokens": 200
-                }
+            llm_result = self.orchestrator.call_llm(
+                task="tagging",
+                prompt=prompt,
             )
-            
-            # JSON 파싱
-            result_text = response.text.strip()
+            result_text = llm_result["content"].strip()
             
             # ```json ``` 제거
             if result_text.startswith("```"):
@@ -266,29 +263,6 @@ class AutoTagger:
         except Exception as e:
             print(f"⚠️ Gemini 호출 실패: {e}")
             return self._mock_generate(text, title)
-        finally:
-            # 비용 로깅
-            if self.postgres_client:
-                try:
-                    # 입력 토큰 추정
-                    tokens_input = min(len(text) // 4, 750)  # 최대 750 토큰
-                    tokens_output = 50  # 태그/키워드 안정
-                    total_tokens = tokens_input + tokens_output
-                    
-                    # Gemini Flash 비용
-                    cost_usd = (tokens_input * 0.000000075) + (tokens_output * 0.0000003)
-                    cost_krw = cost_usd * 1400
-                    
-                    self.postgres_client.log_cost(
-                        user_id="system",
-                        operation="tagging",
-                        tokens_used=total_tokens,
-                        cost_usd=cost_usd,
-                        cost_krw=cost_krw,
-                        model_name="gemini-2.0-flash"
-                    )
-                except Exception as log_error:
-                    print(f"⚠️ 비용 로그 기록 실패: {log_error}")
     
     def _mock_generate(self, text: str, title: str) -> Dict[str, any]:
         """Mock 태깅 (API 없을 때)"""

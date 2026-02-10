@@ -36,5 +36,20 @@ class Orchestrator:
         """
         return await self.pipeline.recommend_agents(current_message, conversation_history)
 
+    def call_llm(self, task: str, prompt: str, options: dict = None) -> dict:
+        """
+        중앙 LLM 호출 프록시.
+        서비스 계층의 Pipeline.call_llm()에 위임합니다.
+        
+        Args:
+            task: TASK_MODEL_CONFIG의 키 (예: "tagging", "doc_chat")
+            prompt: 사용자/작업 프롬프트
+            options: 오버라이드 옵션 (선택)
+            
+        Returns:
+            Pipeline.call_llm()의 반환값 dict
+        """
+        return self.pipeline.call_llm(task=task, prompt=prompt, options=options)
+
 # Singleton Instance
 orchestrator = Orchestrator()

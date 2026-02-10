@@ -18,7 +18,7 @@ router = APIRouter(
 )
 
 # 상수
-MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
+MAX_FILE_SIZE = 1 * 1024 * 1024 * 1024  # 1GB
 
 # ==================== 요청/응답 모델 ====================
 
@@ -149,9 +149,9 @@ async def upload_document(
     if not file:
         raise HTTPException(400, "파일이 없습니다")
     
-    # 파일 크기 검증 (필요시)
-    # if file.size and file.size > MAX_FILE_SIZE:
-    #     raise HTTPException(413, "파일 크기가 너무 큽니다")
+    # 파일 크기 검증
+    if file.size and file.size > MAX_FILE_SIZE:
+        raise HTTPException(413, "파일 크기가 1GB를 초과합니다")
     
     # Application Layer로 위임
     try:

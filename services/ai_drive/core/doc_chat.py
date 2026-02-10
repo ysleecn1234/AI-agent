@@ -27,17 +27,22 @@ class DocumentChat:
     해당 문서에 대해서만 질문/답변 가능
     """
     
-    def __init__(self):
-        self.openai_api_key = os.getenv("OPENAI_API_KEY")
+    def __init__(self, orchestrator=None):
+        self.orchestrator = orchestrator  # 중앙 LLM 호출용
         
-        # Mock 모드 체크
-        self.use_mock = False
-        if not self.openai_api_key:
-            print("⚠️ OPENAI_API_KEY 없음 - Mock 모드")
-            self.use_mock = True
-        
-        if not self.use_mock:
-            self._init_clients()
+        # orchestrator가 있으면 중앙 관제 모드, 없으면 기존 방식
+        if self.orchestrator:
+            print("✓ DocumentChat: 오케스트레이터 연동 모드")
+            self.use_mock = False
+        else:
+            self.openai_api_key = os.getenv("OPENAI_API_KEY")
+            self.use_mock = False
+            if not self.openai_api_key:
+                print("⚠️ OPENAI_API_KEY 없음 - Mock 모드")
+                self.use_mock = True
+            
+            if not self.use_mock:
+                self._init_clients()
         
         # DB 클라이언트
         from db.postgres_client import PostgresClient
@@ -215,16 +220,11 @@ class DocumentChat:
 ## 답변:"""
         
         try:
-            response = self.openai_client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": "문서 기반으로만 답변하는 AI입니다. 문서에 없는 내용은 답하지 않습니다."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.2,  # 낮은 temperature로 할루시네이션 감소
-                max_tokens=1000
+            llm_result = self.orchestrator.call_llm(
+                task="doc_chat",
+                prompt=prompt,
             )
-            return response.choices[0].message.content
+            return llm_result["content"]
             
         except Exception as e:
             print(f"  ⚠️ 답변 생성 오류: {e}")
@@ -277,31 +277,10 @@ class DocumentChat:
     # ==================== 비용 로깅 ====================
     
     def _log_cost(self, doc_id: str, user_id: str, processing_time: int):
-        """비용 로그 기록"""
-        try:
-            if not user_id or user_id == "anonymous":
-                return
-            
-            # 간소화 버전: GPT-4o-mini 1회만 호출
-            # 입력 ~1500 토큰, 출력 ~500 토큰
-            estimated_tokens = 2000
-            
-            # GPT-4o-mini: $0.15/1M input, $0.60/1M output
-            # 평균 약 $0.0003 per request
-            estimated_cost_usd = 0.0003
-            estimated_cost_krw = estimated_cost_usd * 1400
-            
-            self.postgres_client.log_cost(
-                user_id=user_id,
-                doc_id=doc_id,
-                operation="doc_chat",
-                tokens_used=estimated_tokens,
-                cost_usd=estimated_cost_usd,
-                cost_krw=estimated_cost_krw,
-                model_name="gpt-4o-mini"
-            )
-        except Exception as e:
-            print(f"  ⚠️ 비용 로그 실패: {e}")
+        """비용 로그 기록 - LLM 비용은 orchestrator.call_llm()에서 자동 처리"""
+        # orchestrator 모드에서는 LLM 비용 로깅이 call_llm()에서 자동 처리됨
+        # 이 메서드는 향후 활동 로그 등 추가 용도로 유지
+        pass
     
     def close(self):
         """리소스 정리"""

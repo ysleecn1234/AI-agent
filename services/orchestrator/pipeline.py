@@ -23,6 +23,185 @@ from .cost_calculator import get_cost_calculator
 # 환경 변수 로드
 load_dotenv()
 
+# ==================== 중앙 모델 설정 (TASK_MODEL_CONFIG) ====================
+# 모든 LLM 호출은 이 설정을 통해 관리됩니다.
+# models[0] = 후보 모델 (Primary), models[1] = 대체 모델 (Fallback)
+# 지석이 모델 확정 후 채워넣기: "(후보 미정)" → 실제 모델명
+TASK_MODEL_CONFIG = {
+    
+    # ── 채팅 파이프라인 (5단계) ──
+    "chat_routing": {
+        "models": ["(후보 미정)", "(대체 미정)"],
+        "temperature": 0.1,
+        "max_tokens": 10,
+        "description": "의도 분류 및 복잡도 판단 (Router)",
+        "system_prompt": None,  # Router는 user prompt만 사용
+    },
+    "chat_simple": {
+        "models": ["(후보 미정)", "(대체 미정)"],
+        "temperature": 0.7,
+        "max_tokens": 1000,
+        "description": "단순 질의 답변 생성 (Reasoner - SIMPLE)",
+        "system_prompt": None,
+    },
+    "chat_complex": {
+        "models": ["(후보 미정)", "(대체 미정)"],
+        "temperature": 0.7,
+        "max_tokens": 1000,
+        "description": "정밀 분석 답변 생성 (Reasoner - COMPLEX)",
+        "system_prompt": None,
+    },
+    "chat_bulk": {
+        "models": ["(후보 미정)", "(대체 미정)"],
+        "temperature": 0.7,
+        "max_tokens": 1000,
+        "description": "대량 문서 분석 답변 생성 (Reasoner - BULK)",
+        "system_prompt": None,
+    },
+    "chat_synthesize": {
+        "models": ["(후보 미정)", "(대체 미정)"],
+        "temperature": 0.3,
+        "max_tokens": 2000,
+        "description": "응답 Markdown 포맷팅 (Synthesizer)",
+        "system_prompt": (
+            "당신은 AI 응답 포맷팅 전문가입니다.\n"
+            "원본 AI 답변을 사용자 친화적인 마크다운 형식으로 재구조화하세요.\n"
+            "규칙:\n"
+            "1. 명확한 구조 (제목, 본문, 요약)\n"
+            "2. 가독성 높은 마크다운 포맷\n"
+            "3. 중요 정보 강조 (볼드, 이탤릭)\n"
+            "4. 필요시 리스트나 표 사용\n"
+            "5. 원본 내용을 누락하지 마세요\n"
+            "6. 마크다운 형식으로만 답변하세요"
+        ),
+    },
+    "chat_guardrail": {
+        "models": ["(후보 미정)", "(대체 미정)"],
+        "temperature": 0.1,
+        "max_tokens": 1500,
+        "description": "품질 검수 및 팩트체크 (Guardrail)",
+        "system_prompt": (
+            "당신은 AI 답변 품질 검수 전문가입니다.\n"
+            "사용자 질문과 AI 답변을 비교하여 품질을 검증하세요.\n"
+            "다음 항목을 반드시 검증하고 JSON으로만 응답하세요:\n"
+            "{\n"
+            '    "completeness": true/false,      // 요청사항 충족 여부\n'
+            '    "logical_consistency": true/false, // 논리적 일관성\n'
+            '    "factual_accuracy": true/false,   // 사실 정확성\n'
+            '    "issues": ["이슈1", ...],          // 발견된 문제\n'
+            '    "quality_score": 0.0~1.0          // 종합 품질 점수\n'
+            "}\n"
+            "단계별로 사고하여 정확히 검증하세요."
+        ),
+    },
+    
+    # ── 드라이브 (Phase 3) ──
+    "tagging": {
+        "models": ["(후보 미정)", "(대체 미정)"],
+        "temperature": 0.2,
+        "max_tokens": 300,
+        "description": "문서 자동 태깅 - 태그/키워드/문서유형 추출",
+        "system_prompt": (
+            "당신은 기업 문서 분류 전문가입니다.\n"
+            "제공된 문서 텍스트를 분석하여 다음 정보를 JSON으로만 추출하세요:\n"
+            "{\n"
+            '    "tags": ["태그1", "태그2", "태그3"],  // 3~5개 주제 태그\n'
+            '    "keywords": ["키워드1", "키워드2"],    // 핵심 키워드 3~5개\n'
+            '    "doc_type": "보고서"                  // 보고서/제안서/회의록/매뉴얼/기획서/기타 중 하나\n'
+            "}\n"
+            "규칙:\n"
+            "1. 태그는 한국어, 명사형, 구체적으로 (예: 'Q4 매출', '마케팅 전략')\n"
+            "2. 키워드는 검색에 유용한 핵심 단어\n"
+            "3. 문서 유형은 내용의 목적 기반으로 판단\n"
+            "4. JSON 외 다른 텍스트를 출력하지 마세요"
+        ),
+    },
+    "title_gen": {
+        "models": ["(후보 미정)", "(대체 미정)"],
+        "temperature": 0.3,
+        "max_tokens": 200,
+        "description": "채팅/에이전트 결과 저장 시 제목·설명 자동 생성",
+        "system_prompt": (
+            "당신은 문서 제목 생성 전문가입니다.\n"
+            "제공된 대화 내용 또는 문서 텍스트를 분석하여 제목과 설명을 생성하세요.\n"
+            "JSON으로만 응답하세요:\n"
+            "{\n"
+            '    "title": "문서 제목 (20자 이내, 핵심 내용 반영)",\n'
+            '    "description": "문서 설명 (50자 이내, 내용 요약)"\n'
+            "}\n"
+            "규칙:\n"
+            "1. 제목은 간결하고 구체적으로\n"
+            "2. 설명은 문서의 핵심 내용을 한 문장으로\n"
+            "3. JSON 외 다른 텍스트를 출력하지 마세요"
+        ),
+    },
+    "doc_chat": {
+        "models": ["(후보 미정)", "(대체 미정)"],
+        "temperature": 0.3,
+        "max_tokens": 1500,
+        "description": "문서별 채팅 - 특정 문서 기반 질의응답",
+        "system_prompt": (
+            "당신은 기업 내부 문서 전문 AI 어시스턴트입니다.\n"
+            "제공된 문서 청크만을 기반으로 사용자 질문에 답변하세요.\n"
+            "규칙:\n"
+            "1. 반드시 제공된 문서 내용만 기반으로 답변\n"
+            "2. 문서에 없는 내용은 '제공된 문서에서 해당 정보를 찾을 수 없습니다'라고 답변\n"
+            "3. 답변 시 출처를 명시 (문서명, 페이지, 작성자)\n"
+            "4. 숫자/데이터는 문서 원문 그대로 인용\n"
+            "5. 추측이나 외부 지식을 사용하지 마세요"
+        ),
+    },
+    
+    # ── 에이전트 허브 (Phase 2~3) ──
+    "agent_draft": {
+        "models": ["(후보 미정)", "(대체 미정)"],
+        "temperature": 0.3,
+        "max_tokens": 500,
+        "description": "대화 분석 → 에이전트 생성 템플릿 채우기 (Pull-Fill)",
+        "system_prompt": (
+            "당신은 AI 에이전트 설계 전문가입니다.\n"
+            "제공된 대화 내용을 분석하여 에이전트 정보를 추출하세요.\n"
+            "JSON으로만 응답하세요:\n"
+            "{\n"
+            '    "name": "에이전트 이름 (20자 이내)",\n'
+            '    "description": "에이전트 설명 (50자 이내)",\n'
+            '    "category": "카테고리",\n'
+            '    "input_example": "사용자 질문 예시",\n'
+            '    "output_example": "답변 예시 (간략하게)",\n'
+            '    "system_prompt": "이 에이전트의 역할과 성격을 정의하는 시스템 프롬프트",\n'
+            '    "use_rag": true/false,\n'
+            '    "model_type": "AUTO",\n'
+            '    "visibility": "PUBLIC"\n'
+            "}\n"
+            "규칙:\n"
+            "1. 카테고리: 마케팅/개발/기획/영업/인사/재무/문서작성/데이터분석/기타 중 하나\n"
+            "2. system_prompt는 에이전트가 수행할 역할을 구체적으로 정의\n"
+            "3. 대화 내용에서 추출 불가능한 필드는 합리적 기본값 사용\n"
+            "4. JSON 외 다른 텍스트를 출력하지 마세요"
+        ),
+    },
+    "agent_recommend": {
+        "models": ["(후보 미정)", "(대체 미정)"],
+        "temperature": 0.2,
+        "max_tokens": 200,
+        "description": "실시간 에이전트 추천을 위한 의도/주제/키워드 분석",
+        "system_prompt": (
+            "당신은 사용자 의도 분석 전문가입니다.\n"
+            "사용자 메시지를 분석하여 적합한 에이전트 추천을 위한 정보를 추출하세요.\n"
+            "JSON으로만 응답하세요:\n"
+            "{\n"
+            '    "topic": "핵심 주제 (한국어, 20자 이내)",\n'
+            '    "category": "MARKETING/CODING/PLANNING/SALES/HR/FINANCE/GENERAL 중 하나",\n'
+            '    "keywords": ["키워드1", "키워드2", "키워드3"]\n'
+            "}\n"
+            "규칙:\n"
+            "1. topic은 대화의 핵심 주제를 간결하게\n"
+            "2. category는 반드시 7개 선택지 중 하나\n"
+            "3. keywords는 에이전트 매칭에 유용한 핵심 단어 3개\n"
+            "4. JSON 외 다른 텍스트를 출력하지 마세요"
+        ),
+    },
+}
 
 class ComplexityLevel(Enum):
     """요청 복잡도 레벨"""
@@ -47,8 +226,8 @@ class Router:
     - 복잡도에 따라 적절한 LLM 선택
     """
     
-    def __init__(self):
-        self.model = "gemini/gemini-2.0-flash-exp"  # 빠른 의도 분류용 (0.72초)
+    def __init__(self, pipeline=None):
+        self.pipeline = pipeline  # 중앙 call_llm 접근용
         
         # 의도별 키워드 사전 (확장)
         self.intent_keywords = {
@@ -140,13 +319,11 @@ class Router:
 답변은 위 4가지 중 하나만 출력하세요 (QUERY, SEARCH, ANALYSIS, GENERATION).'''
         
         try:
-            response = litellm.completion(
-                model=self.model,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.1,
-                max_tokens=10
+            llm_result = self.pipeline.call_llm(
+                task="chat_routing",
+                prompt=prompt,
             )
-            result = response.choices[0].message.content.strip().upper()
+            result = llm_result["content"].strip().upper()
             
             # 결과 매핑
             intent_map = {
@@ -463,99 +640,49 @@ class Reasoner:
     - 답변의 논리적 일관성 검증
     """
     
-    def __init__(self):
-        # 복잡도별 주 모델 매핑 (기획서 기준 최신 모델)
-        self.model_mapping = {
-            ComplexityLevel.SIMPLE.value: "gemini/gemini-2.0-flash-exp",
-            ComplexityLevel.COMPLEX.value: "gpt-5",
-            ComplexityLevel.BULK.value: "claude-4-sonnet"
-        }
+    def __init__(self, pipeline=None):
+        self.pipeline = pipeline  # 중앙 call_llm 접근용
         
-        # 복잡도별 Fallback 모델 우선순위 (다양한 후보군)
-        self.fallback_models = {
-            # SIMPLE: 초고속 응답 + 저비용 우선
-            ComplexityLevel.SIMPLE.value: [
-                "gemini/gemini-2.0-flash-exp",      # 주력: 0.72초 초고속
-                "gpt-4o-mini",                       # 대체1: OpenAI 경량
-                "claude-3-haiku",                    # 대체2: Anthropic 경량
-                "meta-llama/llama-4-8b",            # 대체3: 오픈소스 경량
-            ],
-            # COMPLEX: 정밀 분석 + 고품질 추론
-            ComplexityLevel.COMPLEX.value: [
-                "gpt-5",                             # 주력: 최신 GPT
-                "claude-4-sonnet",                   # 대체1: Claude 최신
-                "gemini/gemini-2.0-pro-exp",        # 대체2: Gemini Pro
-                "openai/o1",                         # 대체3: 사고 체인 특화
-                "meta-llama/llama-4-70b",           # 대체4: 오픈소스 대형
-            ],
-            # BULK: 대량 처리 + 병렬 최적화
-            ComplexityLevel.BULK.value: [
-                "claude-4-sonnet",                   # 주력: 긴 컨텍스트 처리
-                "gpt-5",                             # 대체1: GPT 최신
-                "gemini/gemini-2.0-pro-exp",        # 대체2: Gemini Pro
-                "meta-llama/llama-4-70b",           # 대체3: 오픈소스 대형
-            ]
+        # 복잡도 → task명 매핑
+        self.complexity_task_map = {
+            ComplexityLevel.SIMPLE.value: "chat_simple",
+            ComplexityLevel.COMPLEX.value: "chat_complex",
+            ComplexityLevel.BULK.value: "chat_bulk",
         }
-        
-        self.max_retries = 3
     
-    def select_model(self, complexity: str) -> str:
-        """복잡도에 따른 모델 선택"""
-        return self.model_mapping.get(complexity, "gemini-2.0-flash")
-    
-    def generate_response_with_fallback(self, context: Dict[str, Any]) -> tuple[str, str]:
-        """Fallback 메커니즘을 포함한 답변 생성"""
+    def generate_response_with_fallback(self, context: Dict[str, Any]) -> tuple[str, str, int, int]:
+        """Fallback 메커니즘을 포함한 답변 생성 (call_llm 위임)"""
         
         complexity = context["complexity"]
         user_input = context["user_input"]
         documents = context.get("retrieved_documents", [])
         
-        # Fallback 모델 리스트 가져오기
-        models_to_try = self.fallback_models.get(complexity, ["gpt-4o-mini"])
+        # 복잡도 → task명
+        task = self.complexity_task_map.get(complexity, "chat_simple")
         
-        # RAG 컨텍스트 구성
+        # RAG 컨텍스트 구성 (기존 프롬프트 로직 유지)
         rag_context = ""
         if documents:
             rag_context = "\n\n참고 문서:\n"
-            for i, doc in enumerate(documents[:3], 1):  # 최대 3개
+            for i, doc in enumerate(documents[:3], 1):
                 rag_context += f"{i}. {doc.get('content', '')[:200]}...\n"
         
-        # 프롬프트 구성
+        # 프롬프트 구성 (기존과 동일)
         prompt = f"""{user_input}
 
 {rag_context}
 
 위 정보를 바탕으로 정확하고 유용한 답변을 제공해주세요."""
         
-        last_error = None
-        for model in models_to_try:
-            try:
-                print(f"  → 모델 시도: {model}")
-                response = litellm.completion(
-                    model=model,
-                    messages=[{"role": "user", "content": prompt}],
-                    temperature=0.7,
-                    max_tokens=1000
-                )
-                answer = response.choices[0].message.content
-
-                # 토큰 사용량 추출 (litellm response.usage)
-                input_tokens = 0
-                output_tokens = 0
-                if hasattr(response, 'usage') and response.usage:
-                    input_tokens = getattr(response.usage, 'prompt_tokens', 0) or 0
-                    output_tokens = getattr(response.usage, 'completion_tokens', 0) or 0
-
-                print(f"  ✓ 모델 {model} 성공 (입력: {input_tokens}, 출력: {output_tokens} 토큰)")
-                return answer, model, input_tokens, output_tokens
-                
-            except Exception as e:
-                last_error = e
-                print(f"  [!] 모델 {model} 실패: {str(e)}")
-                continue
+        # call_llm이 Fallback + 토큰 추출 + 비용 로깅 전부 처리
+        llm_result = self.pipeline.call_llm(task=task, prompt=prompt)
         
-        # 모든 모델 실패 시
-        raise Exception(f"모든 Fallback 모델 실패. 마지막 오류: {last_error}")
+        return (
+            llm_result["content"],
+            llm_result["model_used"],
+            llm_result["input_tokens"],
+            llm_result["output_tokens"],
+        )
     
     def generate_response(self, context: Dict[str, Any]) -> tuple:
         """답변 생성 (Fallback 포함)"""
@@ -589,15 +716,18 @@ class Synthesizer:
     - 응답을 사용자 친화적인 형식으로 변환
     - 마크다운, HTML 등 다양한 포맷 지원
     """
+
+    def __init__(self, pipeline=None):
+        self.pipeline = pipeline  # 중앙 call_llm 접근용
     
     def format_response(self, reasoning_result: Dict[str, Any]) -> str:
-        """Claude 4.5를 사용한 응답 포맷팅"""
+        """응답 포맷팅 (call_llm 위임)"""
         
         response = reasoning_result["response"]
         user_input = reasoning_result.get("user_input", "")
         intent = reasoning_result.get("intent", "")
         
-        # Claude 4.5에게 포맷팅 요청
+        # 프롬프트 구성 (기존과 동일)
         prompt = f"""다음 AI 답변을 사용자 친화적인 마크다운 형식으로 정리해주세요.
 
 사용자 질문: {user_input}
@@ -614,20 +744,14 @@ class Synthesizer:
 마크다운 형식으로만 답변해주세요."""
 
         try:
-            print(f"  → Synthesizer (Claude 4.5) 포맷팅 중...")
-            result = litellm.completion(
-                model="claude-sonnet-4-5-20250514",
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.3,  # 일관성 중시
-                max_tokens=2000
+            llm_result = self.pipeline.call_llm(
+                task="chat_synthesize",
+                prompt=prompt,
             )
-            formatted = result.choices[0].message.content
-            print(f"  ✓ Synthesizer (Claude 4.5) 포맷팅 완료")
-            return formatted
+            return llm_result["content"]
             
         except Exception as e:
             print(f"  [!] Synthesizer 실패: {e}, Fallback 사용")
-            # Fallback: 기본 포맷팅
             return self._format_fallback(reasoning_result)
     
     def _format_fallback(self, reasoning_result: Dict[str, Any]) -> str:
@@ -664,12 +788,12 @@ class Guardrail:
     - 복잡한 작업의 품질 검수 (COMPLEX, BULK)
     """
     
-    def __init__(self):
+    def __init__(self, pipeline=None):
+        self.pipeline = pipeline  # 중앙 call_llm 접근용
         self.sensitive_patterns = [
             r'\d{3}-\d{4}-\d{4}',  # 전화번호
             r'\d{6}-\d{7}',        # 주민등록번호
         ]
-        self.quality_check_model = "gemini/gemini-2.0-flash-exp"  # 빠른 검수용
     
     def mask_sensitive_info(self, text: str) -> str:
         """민감 정보 마스킹"""
@@ -729,13 +853,11 @@ AI 답변:
 단계별로 사고하여 정확히 검증해주세요."""
 
         try:
-            result = litellm.completion(
-                model="deepseek/deepseek-r1",
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.1,  # 정확성 중시
-                max_tokens=1500
+            llm_result = self.pipeline.call_llm(
+                task="chat_guardrail",
+                prompt=prompt,
             )
-            response_text = result.choices[0].message.content
+            response_text = llm_result["content"]
             
             # JSON 파싱
             import json
@@ -879,13 +1001,120 @@ class Pipeline:
         Args:
             use_rag: RAG 시스템 사용 여부 (기본값: False)
         """
-        self.router = Router()
+        self.router = Router(pipeline=self)
         self.researcher = Researcher(use_rag=use_rag)  # RAG 플래그 전달
-        self.reasoner = Reasoner()
-        self.synthesizer = Synthesizer()
-        self.guardrail = Guardrail()
+        self.reasoner = Reasoner(pipeline=self)
+        self.synthesizer = Synthesizer(pipeline=self)
+        self.guardrail = Guardrail(pipeline=self)
         self.logger = get_logger()
         self.cost_calculator = get_cost_calculator()
+
+    def call_llm(self, task: str, prompt: str, options: dict = None) -> dict:
+        """
+        중앙 LLM 호출 메서드 (모든 LLM 호출의 단일 진입점)
+        
+        Args:
+            task: TASK_MODEL_CONFIG의 키 (예: "chat_routing", "tagging", "doc_chat")
+            prompt: 사용자/작업 프롬프트 (user role 메시지)
+            options: 오버라이드 옵션 (선택)
+                - system_prompt: 시스템 프롬프트 (None이면 CONFIG의 기본값 사용)
+                - temperature: 온도 오버라이드
+                - max_tokens: 최대 토큰 오버라이드
+                - models: 모델 리스트 오버라이드 (Fallback 순서)
+                
+        Returns:
+            {
+                "content": str,          # LLM 응답 텍스트
+                "model_used": str,       # 실제 사용된 모델명
+                "input_tokens": int,     # 입력 토큰 수
+                "output_tokens": int,    # 출력 토큰 수
+                "cost_info": dict,       # 비용 정보 (cost_calculator 결과)
+                "task": str,             # 작업명
+            }
+            
+        Raises:
+            ValueError: 알 수 없는 task명
+            Exception: 모든 모델 실패 시
+        """
+        # 1. CONFIG에서 task 설정 가져오기
+        if task not in TASK_MODEL_CONFIG:
+            raise ValueError(f"알 수 없는 task: '{task}'. 가능한 task: {list(TASK_MODEL_CONFIG.keys())}")
+        
+        config = TASK_MODEL_CONFIG[task]
+        options = options or {}
+        
+        # 2. 옵션 병합 (options가 우선, 없으면 CONFIG 기본값)
+        models = options.get("models", config["models"])
+        temperature = options.get("temperature", config["temperature"])
+        max_tokens = options.get("max_tokens", config["max_tokens"])
+        
+        # system_prompt: options > CONFIG > None 순서
+        system_prompt = options.get("system_prompt", config.get("system_prompt"))
+        
+        # 3. messages 구성
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": prompt})
+        
+        # 4. Fallback 체인 실행
+        last_error = None
+        for model in models:
+            try:
+                print(f"  [call_llm] task={task}, 모델 시도: {model}")
+                
+                response = litellm.completion(
+                    model=model,
+                    messages=messages,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                )
+                
+                content = response.choices[0].message.content
+                
+                # 5. 토큰 추출
+                input_tokens = 0
+                output_tokens = 0
+                if hasattr(response, 'usage') and response.usage:
+                    input_tokens = getattr(response.usage, 'prompt_tokens', 0) or 0
+                    output_tokens = getattr(response.usage, 'completion_tokens', 0) or 0
+                
+                # 6. 비용 계산
+                cost_info = self.cost_calculator.calculate_cost(
+                    model_name=model,
+                    input_tokens=input_tokens,
+                    output_tokens=output_tokens,
+                )
+                
+                # 7. 비용 로깅
+                self.logger.log_model_usage(
+                    model_name=model,
+                    input_tokens=input_tokens,
+                    output_tokens=output_tokens,
+                    cost_info=cost_info,
+                )
+                
+                print(f"  [call_llm] ✓ {model} 성공 (입력: {input_tokens}, 출력: {output_tokens} 토큰)")
+                
+                return {
+                    "content": content,
+                    "model_used": model,
+                    "input_tokens": input_tokens,
+                    "output_tokens": output_tokens,
+                    "cost_info": cost_info,
+                    "task": task,
+                }
+                
+            except Exception as e:
+                last_error = e
+                print(f"  [call_llm] ✗ {model} 실패: {str(e)}")
+                continue
+        
+        # 8. 모든 모델 실패
+        raise Exception(
+            f"[call_llm] task='{task}' 모든 모델 실패. "
+            f"시도한 모델: {models}, 마지막 오류: {last_error}"
+        )
     
     async def analyze_for_draft(self, messages: List[Dict], template_schema: Dict) -> Dict:
         """
@@ -929,13 +1158,11 @@ class Pipeline:
 }}"""
 
         try:
-            response = litellm.completion(
-                model="gemini/gemini-2.0-flash-exp",
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.3,
-                max_tokens=500
+            llm_result = self.call_llm(
+                task="agent_draft",
+                prompt=prompt,
             )
-            result_text = response.choices[0].message.content.strip()
+            result_text = llm_result["content"].strip()
             
             # ```json ``` 제거
             if result_text.startswith("```"):
@@ -1004,13 +1231,11 @@ class Pipeline:
         keywords = []
         
         try:
-            response = litellm.completion(
-                model="gemini/gemini-2.0-flash-exp",
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.2,
-                max_tokens=200
+            llm_result = self.call_llm(
+                task="agent_recommend",
+                prompt=prompt,
             )
-            result_text = response.choices[0].message.content.strip()
+            result_text = llm_result["content"].strip()
             
             # ```json ``` 제거
             if result_text.startswith("```"):
@@ -1084,39 +1309,17 @@ class Pipeline:
                 "quality_score": final_result.get("quality_score")
             }, step_duration)
             
-            # 비용 계산 (Reasoner에서 실제 토큰 정보 추출)
+            # 비용은 call_llm()에서 자동 로깅됨 (이중 로깅 방지)
+            # process() 결과용으로 Reasoner 정보만 추출
             model_used = reasoning_result.get("model_used", "unknown")
             input_tokens = reasoning_result.get("input_tokens", 0)
             output_tokens = reasoning_result.get("output_tokens", 0)
             
-            # 토큰 정보가 0이면 추정치 사용 (한글 기준: 글자 수 × 약 2)
-            if input_tokens == 0:
-                input_tokens = len(user_input) * 2
-            if output_tokens == 0:
-                output_tokens = len(final_result.get("final_response", "")) * 2
-            
-            cost_info = self.cost_calculator.calculate_cost(
-                model_name=model_used,
-                input_tokens=input_tokens,
-                output_tokens=output_tokens
-            )
-            
-            # 모델 사용량 로깅 (기존에 한 번도 호출 안 되던 log_model_usage 연결)
-            self.logger.log_model_usage(
-                model_name=model_used,
-                input_tokens=input_tokens,
-                output_tokens=output_tokens,
-                cost_info=cost_info
-            )
-            
             # 세션 종료 (final_result 전달)
             self.logger.end_session(final_result=final_result, success=True)
             
-            estimated_cost_usd = cost_info["cost_usd"]["total"]
-            estimated_cost_krw = cost_info["cost_krw"]["total"]
-            
-            print(f"[Pipeline] 처리 완료! (예상비용: ${estimated_cost_usd:.4f} / {estimated_cost_krw:.2f}원)")
-            
+            print(f"[Pipeline] 처리 완료!")   
+
             # 출처 정보 추출 (RAG 검색 결과에서)
             sources = []
             for doc in research_result.get("retrieved_documents", []):
@@ -1135,7 +1338,6 @@ class Pipeline:
                     "model_used": model_used,
                     "input_tokens": input_tokens,
                     "output_tokens": output_tokens,
-                    "cost": cost_info,
                     "quality_score": final_result.get("quality_score"),
                     "is_safe": final_result.get("is_safe"),
                     "verified": reasoning_result.get("verified"),

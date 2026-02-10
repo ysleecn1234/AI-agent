@@ -34,13 +34,13 @@ class DocumentPipeline:
     5. PostgreSQL 저장 (메타데이터)
     """
     
-    def __init__(self):
+    def __init__(self, orchestrator=None):
         self.file_parser = FileParser()
         self.chunker = TextChunker()
         self.embedding_generator = EmbeddingGenerator()
         self.milvus_client = MilvusClient()
         self.postgres_client = PostgresClient()
-        self.auto_tagger = AutoTagger()
+        self.auto_tagger = AutoTagger(orchestrator=orchestrator)
 
     def process_file_upload(
         self,
