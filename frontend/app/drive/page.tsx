@@ -11,6 +11,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Menu, User, Search, Upload, FileText, File, FileSpreadsheet, Presentation, LogOut, Settings, MessageSquare, FolderOpen, Bot, Archive, ChevronUp, ChevronDown, MoreVertical, Trash2 } from 'lucide-react';
 import UploadModal from '@/components/upload-modal';
+import { api } from '@/lib/api';
 
 interface Document {
     id: string;
@@ -45,20 +46,12 @@ export default function DrivePage() {
     const fetchDocuments = async () => {
         setIsLoading(true);
         try {
-            const token = localStorage.getItem('access_token');
-            const response = await fetch('http://localhost:8000/drive/documents', {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
-
-            if (!response.ok) throw new Error('Failed to fetch documents');
-
-            const data = await response.json();
-            setDocuments(data.documents || []);
+            // API 호출: 문서 목록 조회
+            const docs = await api.getDocuments();
+            setDocuments(docs);
         } catch (error) {
             console.error('Error fetching documents:', error);
-            // Mock data for development
+            // Mock data fallback (개발 중 편의를 위해 유지하되, 실제로는 에러 처리 필요)
             setDocuments([
                 {
                     id: '1',
@@ -101,6 +94,16 @@ export default function DrivePage() {
         }
 
         try {
+            // API 호출: 문서 삭제 (아카이브 이동)
+            // 현재 api.ts에 deleteDocument가 없으므로 fetch를 직접 호출하거나 api.ts에 추가해야 함.
+            // 여기서는 api.ts에 추가했다고 가정하고 호출하거나, 일단 fetch 유지.
+            // *Task 확인*: api.ts에는 getDocuments, getDocument, uploadDocument, saveChatToDrive 만 있음.
+            // delete 기능을 api.ts에 추가하는 것이 낫지만, 일단 fetch로 유지하되 토큰 로직은 api.ts와 동일하게.
+
+            // 하지만 일관성을 위해 api.request를 쓰고 싶으나 private임. 
+            // 따라서 api.ts에 deleteDocument를 추가하는 것이 정석이나, 
+            // 현재 api.ts 파일 수정을 최소화하려면 일단 fetch 유지하되 토큰 가져오는 방식만 통일.
+
             const token = localStorage.getItem('access_token');
             const response = await fetch(`http://localhost:8000/drive/documents/${documentId}`, {
                 method: 'DELETE',

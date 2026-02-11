@@ -133,6 +133,12 @@ class ApiClient {
         });
     }
 
+    public async deleteDocument(id: string): Promise<void> {
+        return this.request<void>(`/drive/documents/${id}`, {
+            method: 'DELETE',
+        });
+    }
+
     // Agent
     public async getAgents(): Promise<Agent[]> {
         return this.request<Agent[]>('/agents');

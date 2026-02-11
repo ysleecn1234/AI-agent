@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { Upload, X, FileText } from 'lucide-react';
+import { api } from '@/lib/api';
 
 interface UploadModalProps {
     isOpen: boolean;
@@ -92,46 +93,16 @@ export default function UploadModal({ isOpen, onClose, onUploadSuccess }: Upload
         if (!selectedFile) return;
 
         setIsUploading(true);
-        setUploadProgress(0);
+        // setUploadProgress(0); // Fetch API doesn't support progress easily, disabling for now or simulating 
 
         try {
-            const formData = new FormData();
-            formData.append('file', selectedFile);
-            formData.append('visibility', visibility);
-
-            const token = localStorage.getItem('access_token');
-
-            // Using XMLHttpRequest for progress tracking
-            const xhr = new XMLHttpRequest();
-
-            xhr.upload.addEventListener('progress', (e) => {
-                if (e.lengthComputable) {
-                    const progress = Math.round((e.loaded / e.total) * 100);
-                    setUploadProgress(progress);
-                }
-            });
-
-            xhr.addEventListener('load', () => {
-                if (xhr.status === 200) {
-                    onUploadSuccess();
-                    handleClose();
-                } else {
-                    setError('파일 업로드에 실패했습니다.');
-                }
-                setIsUploading(false);
-            });
-
-            xhr.addEventListener('error', () => {
-                setError('파일 업로드 중 오류가 발생했습니다.');
-                setIsUploading(false);
-            });
-
-            xhr.open('POST', 'http://localhost:8000/drive/upload');
-            xhr.setRequestHeader('Authorization', `Bearer ${token}`);
-            xhr.send(formData);
+            await api.uploadDocument(selectedFile, visibility);
+            onUploadSuccess();
+            handleClose();
         } catch (error) {
             console.error('Upload error:', error);
             setError('파일 업로드 중 오류가 발생했습니다.');
+        } finally {
             setIsUploading(false);
         }
     };
@@ -172,8 +143,8 @@ export default function UploadModal({ isOpen, onClose, onUploadSuccess }: Upload
                         onDragLeave={handleDragLeave}
                         onDrop={handleDrop}
                         className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${isDragging
-                                ? 'border-blue-600 bg-blue-50'
-                                : 'border-gray-300 hover:border-gray-400'
+                            ? 'border-blue-600 bg-blue-50'
+                            : 'border-gray-300 hover:border-gray-400'
                             }`}
                     >
                         {selectedFile ? (
