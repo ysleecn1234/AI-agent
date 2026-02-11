@@ -1,36 +1,70 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AI-Agent Frontend
 
-## Getting Started
+이 디렉토리는 AI-Agent 프로젝트의 사용자 인터페이스를 담당하는 Next.js 애플리케이션입니다.
 
-First, run the development server:
+## 🛠️ 기술 스택
+- **Framework**: Next.js 15 (App Router)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS, Shadcn/UI
+- **Icons**: Lucide React
+
+## 📂 폴더 구조 및 주요 변경 사항
+
+현재까지 구현된 주요 기능과 파일 구조에 대한 설명입니다.
+
+### 1. `app/` (페이지)
+- **`/auth`**: 로그인 및 회원가입 페이지
+  - `login/page.tsx`: 이메일/비밀번호 로그인 폼 (백엔드 API 연동 준비)
+  - `register/page.tsx`: 회원가입 폼
+- **`/chat`**: 메인 채팅 인터페이스 (핵심 기능)
+  - `page.tsx`:
+    - 사이드바(Sheet) 네비게이션 구현
+    - 메시지 버블 UI (User/AI 구분)
+    - 모델 선택 기능 (GPT-5, Claude 등)
+    - '드라이브 저장', '에이전트 생성' 퀵 액션 버튼 추가
+- **`/drive`**: AI Drive (RAG 문서 관리)
+  - `page.tsx`: 업로드된 문서 목록 조회 및 검색
+  - `documents/[id]/page.tsx`: 문서 상세 보기 및 문서 기반 Q&A (Split View)
+- **`/agents`**: Agent Hub
+  - `page.tsx`: 사용 가능한 에이전트 목록 카드 뷰
+  - `create/`: 에이전트 생성 마법사 (Step 1, 2)
+
+### 2. `components/` (UI 컴포넌트)
+- **`ui/`**: Shadcn/UI 기반의 재사용 가능한 원자(Atomic) 컴포넌트들
+  - `button.tsx`, `input.tsx`, `card.tsx` 등
+- **`chat-action-modals.tsx`**: 채팅 화면에서 사용되는 팝업 모달
+  - `SaveToDriveModal`: 대화 내용을 문서로 저장하는 모달
+  - `CreateAgentModal`: 대화 내용을 바탕으로 에이전트를 생성하는 모달
+
+### 3. `lib/` (유틸리티 및 통신)
+- **`api.ts`** (New!): 백엔드 API와의 통신을 담당하는 클라이언트 모듈
+  - 인증 토큰 자동 관리
+  - 로그인, 채팅, 드라이브, 에이전트 관련 API 메서드 제공
+- **`utils.ts`**: 클래스 이름 병합(cn) 등 유틸리티 함수
+
+### 4. `types/` (타입 정의)
+- **`api.ts`**: API 요청/응답 데이터의 타입 인터페이스 정의
+- **`agent.ts`**: 에이전트 관련 타입 정의
+
+## 🚀 실행 방법
 
 ```bash
+# 의존성 설치
+npm install
+
+# 개발 서버 실행
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+브라우저에서 [http://localhost:3000](http://localhost:3000)으로 접속하여 확인하세요.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## ✅ 최근 작업 내역 (Changelog)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **feat: 프론트엔드 초기 구조 세팅**
+  - Next.js + Tailwind CSS + Shadcn/UI 환경 설정
+  - 주요 페이지(Chat, Drive, Agents, Auth) 라우팅 및 껍데기(UI) 구현
+- **feat: API 클라이언트 모듈 구현 (`lib/api.ts`)**
+  - 백엔드와 통신하기 위한 Axios 대체(Fetch API) 래퍼 구현
+  - 토큰 기반 인증 로직 추가
+- **docs: 프로젝트 문서화**
+  - README.md 한글화 및 구조 상세 설명 추가
