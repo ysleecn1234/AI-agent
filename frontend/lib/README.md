@@ -8,7 +8,7 @@
 백엔드 API와의 통신을 전담하는 클라이언트 모듈입니다.
 - `fetch` API 기반 래퍼 클래스 (`ApiClient`)
 - JWT 토큰 기반 인증 관리 (자동 헤더 주입)
-- `login`, `sendMessage`, `saveChatToDrive` 등 주요 API 메서드 제공
+- `login`, `sendMessage`, `saveChatToDrive`, `getDocuments`, `deleteDocument`, `uploadDocument` 등 주요 API 메서드 제공
 
 ### `utils.ts`
 범용 유틸리티 함수들의 모음입니다.

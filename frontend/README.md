@@ -68,3 +68,6 @@ npm run dev
   - 토큰 기반 인증 로직 추가
 - **docs: 프로젝트 문서화**
   - README.md 한글화 및 구조 상세 설명 추가
+- **feat: AI Drive (문서 관리) 백엔드 연동**
+  - 문서 목록 조회(GET) 및 삭제(DELETE) 실제 API 연결
+  - 파일 업로드(POST) 기능 구현 및 연동 (`upload-modal.tsx`)
