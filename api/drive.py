@@ -117,6 +117,14 @@ class DocChatRequest(BaseModel):
     question: str
     user_id: str = ""
 
+class UpdateMetadataRequest(BaseModel):
+    """메타데이터 수정 요청"""
+    user_id: str
+    title: Optional[str] = None
+    description: Optional[str] = None
+    visibility: Optional[str] = None
+    tags: Optional[List[str]] = None
+
 class DocChatResponse(BaseModel):
     """문서별 채팅 응답"""
     success: bool
@@ -268,6 +276,34 @@ async def get_document(doc_id: str):
         raise
     except Exception as e:
         raise HTTPException(500, f"문서 조회 실패: {str(e)}")
+
+
+@router.patch("/documents/{doc_id}")
+async def update_document_metadata(doc_id: str, request: UpdateMetadataRequest):
+    """
+    문서 메타데이터 수정 API
+    
+    수정 가능: 제목, 설명, 공개범위, 태그
+    재임베딩 불필요 (메타데이터만 변경)
+    """
+    # 최소 1개 필드는 있어야 함
+    if all(v is None for v in [request.title, request.description, request.visibility, request.tags]):
+        raise HTTPException(400, "수정할 필드가 없습니다")
+    
+    try:
+        result = await drive_service.update_metadata(
+            doc_id=doc_id,
+            user_id=request.user_id,
+            title=request.title,
+            description=request.description,
+            visibility=request.visibility,
+            tags=request.tags
+        )
+        return result
+    except ValueError as e:
+        raise HTTPException(404, str(e))
+    except Exception as e:
+        raise HTTPException(500, f"메타데이터 수정 실패: {str(e)}")
 
 
 @router.delete("/documents/{doc_id}")
