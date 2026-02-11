@@ -1,185 +1,153 @@
-// ==========================================
-// API Configuration
-// ==========================================
+import {
+    LoginRequest,
+    AuthResponse,
+    RegisterRequest,
+    ChatRequest,
+    ChatResponse,
+    Document,
+    DocumentDetail,
+    CreateAgentRequest,
+    Agent,
+    AgentDetail,
+    ChatSaveRequest,
+    AgentSaveRequest
+} from '@/types/api';
 
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-
-// API Endpoints
-export const API_ENDPOINTS = {
-    // Auth
-    AUTH: {
-        LOGIN: '/auth/login',
-        REGISTER: '/auth/register',
-    },
-
-    // Drive
-    DRIVE: {
-        DOCUMENTS: '/drive/documents',
-        UPLOAD: '/drive/upload',
-        DOCUMENT_DETAIL: (id: string) => `/drive/documents/${id}`,
-        DOCUMENT_CHAT: (id: string) => `/drive/documents/${id}/chat`,
-        DELETE: (id: string) => `/drive/documents/${id}`,
-        ARCHIVE: '/drive/archive',
-        RESTORE: (id: string) => `/drive/restore/${id}`,
-        PERMANENT_DELETE: (id: string) => `/drive/permanent/${id}`,
-    },
-
-    // Agent
-    AGENT: {
-        LIST: '/agents',
-        CREATE: '/agents',
-        DETAIL: (id: string) => `/agents/${id}`,
-        UPDATE: (id: string) => `/agents/${id}`,
-        DELETE: (id: string) => `/agents/${id}`,
-        RECOMMEND: '/agents/recommend',
-    },
-
-    // Chat
-    CHAT: {
-        SEND: '/chat',
-        HISTORY: '/chat/history',
-        SAVE: '/chat/save',
-    },
-} as const;
-
-// ==========================================
-// API Client
-// ==========================================
-
-interface RequestOptions extends RequestInit {
-    requireAuth?: boolean;
-}
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 class ApiClient {
-    private baseUrl: string;
+    private static instance: ApiClient;
+    private token: string | null = null;
 
-    constructor(baseUrl: string) {
-        this.baseUrl = baseUrl;
+    private constructor() {
+        if (typeof window !== 'undefined') {
+            this.token = localStorage.getItem('access_token');
+        }
     }
 
-    private getAuthToken(): string | null {
-        if (typeof window === 'undefined') return null;
-        return localStorage.getItem('access_token');
+    public static getInstance(): ApiClient {
+        if (!ApiClient.instance) {
+            ApiClient.instance = new ApiClient();
+        }
+        return ApiClient.instance;
     }
 
-    private async request<T>(
-        endpoint: string,
-        options: RequestOptions = {}
-    ): Promise<T> {
-        const { requireAuth = true, headers = {}, ...restOptions } = options;
+    public setToken(token: string) {
+        this.token = token;
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('access_token', token);
+        }
+    }
 
-        const config: RequestInit = {
-            ...restOptions,
-            headers: {
-                'Content-Type': 'application/json',
-                ...headers,
-            },
+    public clearToken() {
+        this.token = null;
+        if (typeof window !== 'undefined') {
+            localStorage.removeItem('access_token');
+        }
+    }
+
+    private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+        const headers: HeadersInit = {
+            'Content-Type': 'application/json',
+            ...(this.token ? { 'Authorization': `Bearer ${this.token}` } : {}),
+            ...options.headers,
         };
 
-        // Add auth token if required
-        if (requireAuth) {
-            const token = this.getAuthToken();
-            if (token) {
-                config.headers = {
-                    ...config.headers,
-                    Authorization: `Bearer ${token}`,
-                };
-            }
-        }
-
-        try {
-            const response = await fetch(`${this.baseUrl}${endpoint}`, config);
-
-            // Handle non-OK responses
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.detail || errorData.message || `HTTP ${response.status}`);
-            }
-
-            // Handle empty responses
-            const contentType = response.headers.get('content-type');
-            if (!contentType || !contentType.includes('application/json')) {
-                return {} as T;
-            }
-
-            return await response.json();
-        } catch (error) {
-            console.error('API Request Error:', error);
-            throw error;
-        }
-    }
-
-    // GET request
-    async get<T>(endpoint: string, options?: RequestOptions): Promise<T> {
-        return this.request<T>(endpoint, { ...options, method: 'GET' });
-    }
-
-    // POST request
-    async post<T>(endpoint: string, data?: any, options?: RequestOptions): Promise<T> {
-        return this.request<T>(endpoint, {
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
             ...options,
+            headers,
+        });
+
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({ message: 'Unknown error' }));
+            throw new Error(error.message || `API Error: ${response.status}`);
+        }
+
+        return response.json();
+    }
+
+    // Auth
+    public async login(data: LoginRequest): Promise<AuthResponse> {
+        const response = await this.request<AuthResponse>('/auth/login', {
             method: 'POST',
-            body: data ? JSON.stringify(data) : undefined,
+            body: JSON.stringify(data),
+        });
+
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('access_token', response.access_token);
+            // Optional: Store other user info if needed for API client internal use
+            // But main app logic should handle storage for UI 
+        }
+        return response;
+    }
+
+    public async register(data: RegisterRequest): Promise<AuthResponse> {
+        return this.request<AuthResponse>('/auth/register', {
+            method: 'POST',
+            body: JSON.stringify(data),
         });
     }
 
-    // PUT request
-    async put<T>(endpoint: string, data?: any, options?: RequestOptions): Promise<T> {
-        return this.request<T>(endpoint, {
-            ...options,
-            method: 'PUT',
-            body: data ? JSON.stringify(data) : undefined,
+    // Chat
+    public async sendMessage(data: ChatRequest): Promise<ChatResponse> {
+        return this.request<ChatResponse>('/chat', {
+            method: 'POST',
+            body: JSON.stringify(data),
         });
     }
 
-    // DELETE request
-    async delete<T>(endpoint: string, options?: RequestOptions): Promise<T> {
-        return this.request<T>(endpoint, { ...options, method: 'DELETE' });
+    // Drive
+    public async getDocuments(): Promise<Document[]> {
+        return this.request<Document[]>('/drive/documents');
     }
 
-    // Upload file (multipart/form-data)
-    async upload<T>(endpoint: string, formData: FormData, options?: RequestOptions): Promise<T> {
-        const { requireAuth = true, headers = {}, ...restOptions } = options || {};
+    public async getDocument(id: string): Promise<DocumentDetail> {
+        return this.request<DocumentDetail>(`/drive/documents/${id}`);
+    }
 
-        const config: RequestInit = {
-            ...restOptions,
+    public async uploadDocument(file: File, visibility: 'private' | 'team' | 'public'): Promise<Document> {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('visibility', visibility);
+
+        // Content-Type header must be removed to let browser set boundary for FormData
+        const headers: any = { ...(this.token ? { 'Authorization': `Bearer ${this.token}` } : {}) };
+
+        const response = await fetch(`${API_BASE_URL}/drive/documents/upload`, {
             method: 'POST',
+            headers,
             body: formData,
-            headers: {
-                ...headers,
-                // Don't set Content-Type for FormData, browser will set it with boundary
-            },
-        };
+        });
 
-        // Add auth token if required
-        if (requireAuth) {
-            const token = this.getAuthToken();
-            if (token) {
-                config.headers = {
-                    ...config.headers,
-                    Authorization: `Bearer ${token}`,
-                };
-            }
+        if (!response.ok) {
+            throw new Error(`Upload failed: ${response.statusText}`);
         }
 
-        try {
-            const response = await fetch(`${this.baseUrl}${endpoint}`, config);
+        return response.json();
+    }
 
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.detail || errorData.message || `HTTP ${response.status}`);
-            }
+    public async saveChatToDrive(data: ChatSaveRequest): Promise<any> {
+        return this.request('/drive/documents/chat-save', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+    }
 
-            return await response.json();
-        } catch (error) {
-            console.error('API Upload Error:', error);
-            throw error;
-        }
+    // Agent
+    public async getAgents(): Promise<Agent[]> {
+        return this.request<Agent[]>('/agents');
+    }
+
+    public async getAgent(id: string): Promise<AgentDetail> {
+        return this.request<AgentDetail>(`/agents/${id}`);
+    }
+
+    public async createAgentDraft(data: CreateAgentRequest): Promise<Agent> {
+        return this.request<Agent>('/agents/draft', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
     }
 }
 
-// Export singleton instance
-export const apiClient = new ApiClient(API_BASE_URL);
-
-// Export default
-export default apiClient;
+export const api = ApiClient.getInstance();

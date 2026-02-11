@@ -10,7 +10,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Menu, User, Send, MessageSquare, FolderOpen, Bot, Settings, LogOut, Save, Sparkles } from 'lucide-react';
 import { SaveToDriveModal, CreateAgentModal } from '@/components/chat-action-modals';
-import { chatService, driveService } from '@/lib/services';
+import { api } from '@/lib/api';
 
 export default function ChatPage() {
     const router = useRouter();
@@ -34,9 +34,10 @@ export default function ChatPage() {
         setIsLoading(true);
 
         try {
-            const response = await chatService.sendMessage({
+            // API 호출
+            const response = await api.sendMessage({
                 message: userMessage,
-                model_type: selectedModel,
+                model_type: selectedModel === 'auto' ? 'AUTO' : selectedModel.toUpperCase(),
                 use_rag: driveEnabled,
                 agent_id: agentId,
             });
@@ -44,16 +45,15 @@ export default function ChatPage() {
             setMessages(prev => [...prev, { role: 'assistant', content: response.response }]);
         } catch (error) {
             console.error('Error sending message:', error);
-            alert('메시지 전송에 실패했습니다.');
+            const errorMessage = error instanceof Error ? error.message : '메시지 전송에 실패했습니다.';
+            setMessages(prev => [...prev, { role: 'assistant', content: `❌ 오류가 발생했습니다: ${errorMessage}` }]);
         } finally {
             setIsLoading(false);
         }
     };
 
     const handleLogout = () => {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('user_name');
-        localStorage.removeItem('department');
+        api.clearToken();
         router.push('/auth/login');
     };
 
@@ -73,9 +73,20 @@ export default function ChatPage() {
                 ? messages[selectedMessageIndex].content
                 : messages.map(m => `${m.role}: ${m.content}`).join('\n\n');
 
-            // TODO: API 연동
-            console.log('Saving to drive:', { scope, content });
+            // API 연동: 드라이브 저장
+            const creatorId = typeof window !== 'undefined' ? localStorage.getItem('user_name') || 'anonymous' : 'anonymous';
+            const creatorDept = typeof window !== 'undefined' ? localStorage.getItem('department') || 'general' : 'general';
+
+            await api.saveChatToDrive({
+                content,
+                creator_id: creatorId,
+                creator_department: creatorDept,
+                title: `${new Date().toLocaleString()} 채팅 저장`,
+                visibility: 'private'
+            });
+
             alert('드라이브에 저장되었습니다!');
+            setSaveModalOpen(false);
         } catch (error) {
             console.error('Save failed:', error);
             alert('저장에 실패했습니다.');
@@ -88,10 +99,18 @@ export default function ChatPage() {
                 ? messages[selectedMessageIndex].content
                 : messages.map(m => `${m.role}: ${m.content}`).join('\n\n');
 
-            // TODO: API 연동
-            console.log('Creating agent:', { scope, content });
-            alert('에이전트 생성이 시작되었습니다!');
-            router.push('/agents');
+            // API 연동: 에이전트 초안 생성
+            const draft = await api.createAgentDraft({
+                name: 'New Agent',
+                description: 'Generated from chat',
+                category: 'general',
+                visibility: 'private',
+                system_prompt: `Based on this content:\n\n${content}`
+            });
+
+            alert('에이전트 초안이 생성되었습니다!');
+            setAgentModalOpen(false);
+            router.push(`/agents/create?draftId=${draft.id}`); // 생성된 초안 ID와 함께 이동
         } catch (error) {
             console.error('Agent creation failed:', error);
             alert('에이전트 생성에 실패했습니다.');
