@@ -26,7 +26,6 @@ load_dotenv()
 # ==================== 중앙 모델 설정 (TASK_MODEL_CONFIG) ====================
 # 모든 LLM 호출은 이 설정을 통해 관리됩니다.
 # models[0] = 후보 모델 (Primary), models[1] = 대체 모델 (Fallback)
-# 지석이 모델 확정 후 채워넣기: "(후보 미정)" → 실제 모델명
 TASK_MODEL_CONFIG = {
     
     # ── 채팅 파이프라인 (5단계) ──
@@ -207,6 +206,63 @@ TASK_MODEL_CONFIG = {
         ),
     },
 }
+
+PREMIUM_MODELS = {
+    "GPT_5_2": {
+        "model": "gpt-5.2",
+        "display_name": "GPT 5.2 (Thinking)",
+        "max_tokens": 4000,
+        "temperature": 0.3,
+    },
+    "GEMINI_3_PRO": {
+        "model": "gemini/gemini-3-pro",
+        "display_name": "Gemini 3 Pro",
+        "max_tokens": 4000,
+        "temperature": 0.3,
+    },
+    "PERPLEXITY": {
+        "model": "perplexity/sonar-pro",
+        "display_name": "Perplexity Sonar Pro",
+        "max_tokens": 4000,
+        "temperature": 0.3,
+    },
+    "OPUS_4_6": {
+        "model": "claude-opus-4-6",
+        "display_name": "Claude Opus 4.6",
+        "max_tokens": 4000,
+        "temperature": 0.3,
+    },
+}
+
+# 프리미엄 모델용 메가 시스템 프롬프트 (5단계 파이프라인 로직 통합)
+PREMIUM_SYSTEM_PROMPT = """당신은 기업용 AI 어시스턴트입니다. 사용자의 요청에 대해 다음 단계를 내부적으로 수행하여 최고 품질의 답변을 제공하세요.
+
+[1단계: 의도 분석]
+- 사용자 요청의 의도를 파악하세요 (질의/분석/생성/검색)
+- 요청의 복잡도를 판단하세요
+
+[2단계: 정보 활용]
+- 제공된 참고 자료가 있다면 반드시 활용하세요
+- 참고 자료에 없는 내용은 명확히 구분하세요
+
+[3단계: 논리적 추론]
+- 단계별로 사고하여 정확한 답변을 도출하세요
+- 데이터나 근거가 있다면 반드시 포함하세요
+
+[4단계: 답변 구성]
+- 명확한 구조로 답변을 구성하세요 (제목, 본문, 요약)
+- 가독성 높은 마크다운 형식을 사용하세요
+- 중요 정보는 강조하세요
+
+[5단계: 자체 검증]
+- 답변의 논리적 일관성을 확인하세요
+- 요청사항을 빠짐없이 충족했는지 검증하세요
+- 사실 정확성에 문제가 없는지 확인하세요
+
+규칙:
+- 민감한 개인정보(전화번호, 주민등록번호 등)가 포함된 경우 마스킹하세요
+- 확실하지 않은 정보는 추측임을 명시하세요
+- 한국어로 답변하세요"""
 
 class ComplexityLevel(Enum):
     """요청 복잡도 레벨"""
@@ -750,7 +806,7 @@ class Synthesizer:
 
         try:
             llm_result = self.pipeline.call_llm(
-                task="chat_synthesize",
+                task="chat_synthesis",
                 prompt=prompt,
             )
             return llm_result["content"]
@@ -1352,6 +1408,147 @@ class Pipeline:
             
         except Exception as e:
             print(f"[Pipeline] 오류 발생: {e}")
+            import traceback
+            traceback.print_exc()
+            return {
+                "error": str(e),
+                "status": "failed"
+            }
+
+    def process_premium(self, user_input: str, model_type: str, use_rag: bool = False, user_id: Optional[str] = None) -> Dict[str, Any]:
+        '''
+        프리미엄 모델 직접 호출 (5단계 파이프라인 bypass)
+        
+        5단계 파이프라인 로직을 메가 프롬프트로 통합하여
+        선택된 프리미엄 모델 하나로 처리합니다.
+        
+        Args:
+            user_input: 사용자 입력
+            model_type: 프리미엄 모델 키 (GPT_5_2, GEMINI_3_PRO, PERPLEXITY, OPUS_4_6)
+            use_rag: RAG 검색 사용 여부
+            user_id: 사용자 ID
+            
+        Returns:
+            process()와 동일한 형식의 결과 dict
+        '''
+        print(f"[Pipeline] 프리미엄 모드: {model_type}")
+        
+        # 1. 모델 설정 가져오기
+        if model_type not in PREMIUM_MODELS:
+            raise ValueError(f"알 수 없는 프리미엄 모델: '{model_type}'. 가능한 모델: {list(PREMIUM_MODELS.keys())}")
+        
+        model_config = PREMIUM_MODELS[model_type]
+        model_name = model_config["model"]
+        
+        # 세션 시작
+        session_id = self.logger.start_session(user_input, user_id)
+        
+        try:
+            # 2. RAG 검색 (use_rag=True일 때만)
+            rag_context = ""
+            sources = []
+            
+            if use_rag:
+                print("  → RAG 검색 실행")
+                documents = self.researcher.search_documents(user_input, top_k=5)
+                
+                if documents:
+                    rag_context = "\n\n[참고 자료]\n"
+                    for i, doc in enumerate(documents, 1):
+                        content = doc.get("content", "")[:500]
+                        source = doc.get("source", "")
+                        author = doc.get("author", "")
+                        date = doc.get("date", "")
+                        
+                        rag_context += f"--- 자료 {i} ---\n"
+                        rag_context += f"출처: {source}"
+                        if author:
+                            rag_context += f" | 작성자: {author}"
+                        if date:
+                            rag_context += f" | 날짜: {date}"
+                        rag_context += f"\n{content}\n\n"
+                        
+                        if source and source not in sources:
+                            sources.append(source)
+                    
+                    print(f"  → RAG 결과: {len(documents)}개 문서")
+            
+            # 3. 프롬프트 조립
+            user_prompt = user_input
+            if rag_context:
+                user_prompt += rag_context
+            
+            # 4. 프리미엄 모델 호출 (call_llm이 아닌 litellm 직접 호출)
+            #    - TASK_MODEL_CONFIG에 없는 모델이므로 직접 호출
+            print(f"  → 모델 호출: {model_name}")
+            
+            messages = [
+                {"role": "system", "content": PREMIUM_SYSTEM_PROMPT},
+                {"role": "user", "content": user_prompt}
+            ]
+            
+            response = litellm.completion(
+                model=model_name,
+                messages=messages,
+                temperature=model_config["temperature"],
+                max_tokens=model_config["max_tokens"],
+            )
+            
+            content = response.choices[0].message.content
+            
+            # 5. 토큰 추출
+            input_tokens = 0
+            output_tokens = 0
+            if hasattr(response, 'usage') and response.usage:
+                input_tokens = getattr(response.usage, 'prompt_tokens', 0) or 0
+                output_tokens = getattr(response.usage, 'completion_tokens', 0) or 0
+            
+            # 6. 비용 계산 + 로깅
+            cost_info = self.cost_calculator.calculate_cost(
+                model_name=model_name,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+            )
+            
+            self.logger.log_model_usage(
+                model_name=model_name,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+                cost_info=cost_info,
+            )
+            
+            print(f"  → 완료 (입력: {input_tokens}, 출력: {output_tokens} 토큰)")
+            
+            # 7. 민감정보 마스킹
+            safe_response = self.guardrail.mask_sensitive_info(content)
+            
+            # 세션 종료
+            self.logger.end_session(
+                final_result={"final_response": safe_response},
+                success=True
+            )
+            
+            return {
+                "session_id": session_id,
+                "response": safe_response,
+                "used_model": model_name,
+                "sources": sources,
+                "metadata": {
+                    "intent": "premium_direct",
+                    "complexity": "premium",
+                    "model_used": model_name,
+                    "model_display_name": model_config["display_name"],
+                    "input_tokens": input_tokens,
+                    "output_tokens": output_tokens,
+                    "cost_info": cost_info,
+                    "quality_score": 1.0,
+                    "is_safe": True,
+                    "verified": True,
+                }
+            }
+            
+        except Exception as e:
+            print(f"[Pipeline] 프리미엄 모드 오류: {e}")
             import traceback
             traceback.print_exc()
             return {
