@@ -1,0 +1,436 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Menu, User, Search, Upload, FileText, File, FileSpreadsheet, Presentation, LogOut, Settings, MessageSquare, FolderOpen, Bot, Archive, ChevronUp, ChevronDown, MoreVertical, Trash2 } from 'lucide-react';
+import UploadModal from '@/components/upload-modal';
+
+interface Document {
+    id: string;
+    name: string;
+    type: string;
+    creator: string;
+    created_at: string;
+    visibility: 'private' | 'team' | 'public';
+    size: number;
+}
+
+type SortColumn = 'type' | 'name' | 'creator' | 'created_at' | 'visibility';
+type SortDirection = 'asc' | 'desc';
+
+export default function DrivePage() {
+    const router = useRouter();
+    const [documents, setDocuments] = useState<Document[]>([]);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filterTab, setFilterTab] = useState<'all' | 'public' | 'team'>('all');
+    const [sortColumn, setSortColumn] = useState<SortColumn>('created_at');
+    const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+    const [uploadModalOpen, setUploadModalOpen] = useState(false);
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+
+    const userName = typeof window !== 'undefined' ? localStorage.getItem('user_name') || '사용자' : '사용자';
+
+    useEffect(() => {
+        fetchDocuments();
+    }, []);
+
+    const fetchDocuments = async () => {
+        setIsLoading(true);
+        try {
+            const token = localStorage.getItem('access_token');
+            const response = await fetch('http://localhost:8000/drive/documents', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+
+            if (!response.ok) throw new Error('Failed to fetch documents');
+
+            const data = await response.json();
+            setDocuments(data.documents || []);
+        } catch (error) {
+            console.error('Error fetching documents:', error);
+            // Mock data for development
+            setDocuments([
+                {
+                    id: '1',
+                    name: '프로젝트 기획서.pdf',
+                    type: 'pdf',
+                    creator: '홍길동',
+                    created_at: '2026-02-09T10:30:00',
+                    visibility: 'team',
+                    size: 2048576,
+                },
+                {
+                    id: '2',
+                    name: '회의록.docx',
+                    type: 'docx',
+                    creator: '김철수',
+                    created_at: '2026-02-08T14:20:00',
+                    visibility: 'public',
+                    size: 1024000,
+                },
+            ]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleSort = (column: SortColumn) => {
+        if (sortColumn === column) {
+            setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortColumn(column);
+            setSortDirection('asc');
+        }
+    };
+
+    const handleDelete = async (documentId: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+
+        if (!confirm('이 문서를 아카이브로 이동하시겠습니까?')) {
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('access_token');
+            const response = await fetch(`http://localhost:8000/drive/documents/${documentId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+
+            if (!response.ok) throw new Error('Failed to delete document');
+
+            // Refresh the document list
+            fetchDocuments();
+        } catch (error) {
+            console.error('Error deleting document:', error);
+            alert('문서 삭제에 실패했습니다.');
+        }
+    };
+
+    const handleLogout = () => {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('user_name');
+        localStorage.removeItem('department');
+        router.push('/auth/login');
+    };
+
+    const getFileIcon = (type: string) => {
+        switch (type.toLowerCase()) {
+            case 'pdf':
+                return <FileText className="w-5 h-5 text-red-500" />;
+            case 'docx':
+                return <File className="w-5 h-5 text-blue-500" />;
+            case 'xlsx':
+                return <FileSpreadsheet className="w-5 h-5 text-green-500" />;
+            case 'pptx':
+                return <Presentation className="w-5 h-5 text-orange-500" />;
+            default:
+                return <FileText className="w-5 h-5 text-gray-500" />;
+        }
+    };
+
+    const getVisibilityBadge = (visibility: string) => {
+        switch (visibility) {
+            case 'private':
+                return <Badge variant="outline">🔒 나만</Badge>;
+            case 'team':
+                return <Badge variant="outline">👥 팀</Badge>;
+            case 'public':
+                return <Badge variant="outline">🌐 전체</Badge>;
+            default:
+                return <Badge variant="outline">{visibility}</Badge>;
+        }
+    };
+
+    const formatDate = (dateString: string) => {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('ko-KR', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+        });
+    };
+
+    const filteredDocuments = documents
+        .filter((doc) => {
+            // Filter by search query
+            if (searchQuery && !doc.name.toLowerCase().includes(searchQuery.toLowerCase())) {
+                return false;
+            }
+            // Filter by tab
+            if (filterTab === 'public' && doc.visibility !== 'public') return false;
+            if (filterTab === 'team' && doc.visibility !== 'team') return false;
+            return true;
+        })
+        .sort((a, b) => {
+            const aValue = a[sortColumn];
+            const bValue = b[sortColumn];
+            const direction = sortDirection === 'asc' ? 1 : -1;
+
+            if (typeof aValue === 'string' && typeof bValue === 'string') {
+                return aValue.localeCompare(bValue) * direction;
+            }
+            return 0;
+        });
+
+    return (
+        <div className="flex flex-col h-screen bg-gray-50">
+            {/* Header */}
+            <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+                {/* Sidebar Trigger */}
+                <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+                    <SheetTrigger asChild>
+                        <button className="p-2 hover:bg-gray-100 rounded-lg">
+                            <Menu className="w-6 h-6 text-gray-700" />
+                        </button>
+                    </SheetTrigger>
+                    <SheetContent side="left" className="w-[300px] sm:w-[400px]">
+                        <SheetHeader>
+                            <SheetTitle className="flex items-center gap-2">
+                                <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
+                                    <span className="text-white text-lg font-bold">IN7</span>
+                                </div>
+                                <span>AI 플랫폼</span>
+                            </SheetTitle>
+                        </SheetHeader>
+                        <nav className="mt-8 space-y-2">
+                            <button
+                                onClick={() => { router.push('/chat'); setSidebarOpen(false); }}
+                                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                                <MessageSquare className="w-5 h-5 text-blue-600" />
+                                <span className="font-medium">채팅</span>
+                            </button>
+                            <button
+                                onClick={() => { router.push('/drive'); setSidebarOpen(false); }}
+                                className="w-full flex items-center gap-3 px-4 py-3 text-left bg-blue-50 rounded-lg transition-colors"
+                            >
+                                <FolderOpen className="w-5 h-5 text-blue-600" />
+                                <span className="font-medium text-blue-600">AI Drive</span>
+                            </button>
+                            <button
+                                onClick={() => { router.push('/drive/archive'); setSidebarOpen(false); }}
+                                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                                <Archive className="w-5 h-5 text-blue-600" />
+                                <span className="font-medium">아카이브</span>
+                            </button>
+                            <button
+                                onClick={() => { router.push('/agents'); setSidebarOpen(false); }}
+                                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                                <Bot className="w-5 h-5 text-blue-600" />
+                                <span className="font-medium">Agent Hub</span>
+                            </button>
+                            <button
+                                onClick={() => { router.push('/settings'); setSidebarOpen(false); }}
+                                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                                <Settings className="w-5 h-5 text-blue-600" />
+                                <span className="font-medium">설정</span>
+                            </button>
+                        </nav>
+                    </SheetContent>
+                </Sheet>
+
+                {/* User Menu */}
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <button className="p-2 hover:bg-gray-100 rounded-lg">
+                            <User className="w-6 h-6 text-gray-700" />
+                        </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuLabel>
+                            <div className="flex flex-col">
+                                <span className="font-medium">{userName}</span>
+                                <span className="text-sm text-gray-500">{typeof window !== 'undefined' ? localStorage.getItem('department') || '' : ''}</span>
+                            </div>
+                        </DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => router.push('/settings')}>
+                            <Settings className="w-4 h-4 mr-2" />
+                            설정
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+                            <LogOut className="w-4 h-4 mr-2" />
+                            로그아웃
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </header>
+
+            {/* Main Content */}
+            <div className="flex-1 overflow-y-auto p-6">
+                <div className="max-w-7xl mx-auto space-y-6">
+                    {/* Page Header */}
+                    <div className="flex items-center justify-between">
+                        <h1 className="text-3xl font-bold text-gray-900">AI Drive</h1>
+                        <Button
+                            onClick={() => setUploadModalOpen(true)}
+                            className="bg-blue-600 hover:bg-blue-700"
+                        >
+                            <Upload className="w-4 h-4 mr-2" />
+                            업로드
+                        </Button>
+                    </div>
+
+                    {/* Search and Filters */}
+                    <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-4">
+                        {/* Search */}
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                            <Input
+                                type="text"
+                                placeholder="문서 검색..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="pl-10"
+                            />
+                        </div>
+
+                        {/* Filter Tabs */}
+                        <Tabs value={filterTab} onValueChange={(value: any) => setFilterTab(value)}>
+                            <TabsList>
+                                <TabsTrigger value="all">전체</TabsTrigger>
+                                <TabsTrigger value="public">🌐 전체 공개</TabsTrigger>
+                                <TabsTrigger value="team">👥 팀 공유</TabsTrigger>
+                            </TabsList>
+                        </Tabs>
+                    </div>
+
+                    {/* Documents Table */}
+                    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead className="w-[50px]">
+                                        <button
+                                            onClick={() => handleSort('type')}
+                                            className="flex items-center gap-1 hover:text-blue-600"
+                                        >
+                                            유형
+                                            {sortColumn === 'type' && (
+                                                sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                                            )}
+                                        </button>
+                                    </TableHead>
+                                    <TableHead>
+                                        <button
+                                            onClick={() => handleSort('name')}
+                                            className="flex items-center gap-1 hover:text-blue-600"
+                                        >
+                                            파일명
+                                            {sortColumn === 'name' && (
+                                                sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                                            )}
+                                        </button>
+                                    </TableHead>
+                                    <TableHead>
+                                        <button
+                                            onClick={() => handleSort('creator')}
+                                            className="flex items-center gap-1 hover:text-blue-600"
+                                        >
+                                            제작자
+                                            {sortColumn === 'creator' && (
+                                                sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                                            )}
+                                        </button>
+                                    </TableHead>
+                                    <TableHead>
+                                        <button
+                                            onClick={() => handleSort('created_at')}
+                                            className="flex items-center gap-1 hover:text-blue-600"
+                                        >
+                                            날짜
+                                            {sortColumn === 'created_at' && (
+                                                sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                                            )}
+                                        </button>
+                                    </TableHead>
+                                    <TableHead>
+                                        <button
+                                            onClick={() => handleSort('visibility')}
+                                            className="flex items-center gap-1 hover:text-blue-600"
+                                        >
+                                            공개범위
+                                            {sortColumn === 'visibility' && (
+                                                sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                                            )}
+                                        </button>
+                                    </TableHead>
+                                    <TableHead className="w-[50px]"></TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {isLoading ? (
+                                    <TableRow>
+                                        <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                                            로딩 중...
+                                        </TableCell>
+                                    </TableRow>
+                                ) : filteredDocuments.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                                            문서가 없습니다
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    filteredDocuments.map((doc) => (
+                                        <TableRow
+                                            key={doc.id}
+                                            className="hover:bg-gray-50"
+                                        >
+                                            <TableCell onClick={() => router.push(`/drive/documents/${doc.id}`)} className="cursor-pointer">{getFileIcon(doc.type)}</TableCell>
+                                            <TableCell onClick={() => router.push(`/drive/documents/${doc.id}`)} className="font-medium cursor-pointer">{doc.name}</TableCell>
+                                            <TableCell onClick={() => router.push(`/drive/documents/${doc.id}`)} className="cursor-pointer">{doc.creator}</TableCell>
+                                            <TableCell onClick={() => router.push(`/drive/documents/${doc.id}`)} className="cursor-pointer">{formatDate(doc.created_at)}</TableCell>
+                                            <TableCell onClick={() => router.push(`/drive/documents/${doc.id}`)} className="cursor-pointer">{getVisibilityBadge(doc.visibility)}</TableCell>
+                                            <TableCell>
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <button className="p-2 hover:bg-gray-200 rounded-lg transition-colors">
+                                                            <MoreVertical className="w-4 h-4 text-gray-600" />
+                                                        </button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end">
+                                                        <DropdownMenuItem
+                                                            onClick={(e) => handleDelete(doc.id, e)}
+                                                            className="text-red-600 focus:text-red-600"
+                                                        >
+                                                            <Trash2 className="w-4 h-4 mr-2" />
+                                                            삭제
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
+                </div>
+            </div>
+
+            {/* Upload Modal */}
+            <UploadModal
+                isOpen={uploadModalOpen}
+                onClose={() => setUploadModalOpen(false)}
+                onUploadSuccess={fetchDocuments}
+            />
+        </div>
+    );
+}

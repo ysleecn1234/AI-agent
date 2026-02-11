@@ -26,3 +26,7 @@ services/ai_drive/uploads/
 
 # 저장 파일
 services/ai_drive/storage/
+
+# Development Artifacts
+*.db
+test_result.txt
