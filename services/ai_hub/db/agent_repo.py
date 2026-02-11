@@ -18,7 +18,7 @@ class AgentRepository:
             category=agent_data.get("category", "UNCATEGORIZED"),
             model_type=agent_data.get("model_type", "GPT-4"),
             parameters={}, # 기본 파라미터
-            is_public=agent_data.get("visibility") == "PUBLIC",
+            is_public=agent_data.get("visibility", "PRIVATE"),
             use_rag=(agent_data.get("use_rag") == "True")
         )
         
