@@ -60,6 +60,10 @@ npm run dev
 
 ## ✅ 최근 작업 내역 (Changelog)
 
+- **fix: 채팅 페이지 사이드바 네비게이션 개선 (2026-02-11)**
+  - 아카이브 메뉴 추가 (AI Drive와 Agent Hub 사이)
+  - 현재 활성 페이지 강조 표시 (채팅 페이지 bg-blue-50)
+  - Archive 아이콘 import 추가
 - **feat: 프론트엔드 초기 구조 세팅**
   - Next.js + Tailwind CSS + Shadcn/UI 환경 설정
   - 주요 페이지(Chat, Drive, Agents, Auth) 라우팅 및 껍데기(UI) 구현
