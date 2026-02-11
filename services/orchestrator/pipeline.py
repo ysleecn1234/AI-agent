@@ -151,16 +151,6 @@ TASK_MODEL_CONFIG = {
                 "5. 추측이나 외부 지식을 사용하지 마세요"
             ),
         },
-        "summary": {
-            "models": ["(후보 미정)", "(대체 미정)"],
-            "temperature": 0.3,
-            "max_tokens": 1500,
-            "description": "문서 전체 내용 요약",
-            "system_prompt": (
-                "제공된 문서의 내용을 명확하고 간결하게 요약하세요.\n"
-                "핵심 포인트 위주로 구성해주세요."
-            ),
-        },
         
         # ── 에이전트 허브 (Phase 2~3) ──
         "agent_draft": {
