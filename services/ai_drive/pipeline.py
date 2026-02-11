@@ -189,14 +189,16 @@ class DocumentPipeline:
             # 활동 로그 기록
             self.postgres_client.log_activity(
                 user_id=creator_id,
-                action="upload",
+                action="update_file" if version > 1 else "upload",
                 doc_id=doc_id,
                 success=True,
                 duration_ms=duration_ms,
                 details={
                     "filename": filename,
                     "file_type": file_type,
-                    "chunk_count": len(chunks)
+                    "chunk_count": len(chunks),
+                    "version": version,
+                    "parent_doc_id": parent_doc_id
                 }
             )
             

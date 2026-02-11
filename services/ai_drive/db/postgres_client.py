@@ -262,6 +262,75 @@ class PostgresClient:
         finally:
             session.close()
 
+    def update_document_metadata(
+        self,
+        doc_id: str,
+        title: str = None,
+        description: str = None,
+        visibility: str = None,
+        tags: List[str] = None
+    ) -> Dict[str, Any]:
+        """
+        문서 메타데이터 수정 (제목, 설명, 공개범위, 태그)
+        
+        Args:
+            doc_id: 문서 ID
+            title: 변경할 제목 (None이면 변경 안 함)
+            description: 변경할 설명
+            visibility: 변경할 공개범위
+            tags: 변경할 태그
+            
+        Returns:
+            {"success": True, "changed_fields": ["title", "visibility"]}
+        """
+        session = self.Session()
+        
+        try:
+            doc = session.query(Document).filter(
+                Document.doc_id == uuid.UUID(doc_id),
+                Document.is_latest == True
+            ).first()
+            
+            if not doc:
+                return {"success": False, "error": "문서를 찾을 수 없습니다"}
+            
+            changed_fields = []
+            
+            if title is not None and title != doc.title:
+                doc.title = title
+                changed_fields.append("title")
+            
+            if description is not None and description != doc.description:
+                doc.description = description
+                changed_fields.append("description")
+            
+            if visibility is not None and visibility != doc.visibility:
+                doc.visibility = visibility
+                changed_fields.append("visibility")
+            
+            if tags is not None and tags != doc.tags:
+                doc.tags = tags
+                changed_fields.append("tags")
+            
+            if changed_fields:
+                doc.modified_at = datetime.utcnow()
+                session.commit()
+                print(f"✓ 메타데이터 수정: {doc_id} → {changed_fields}")
+            
+            return {
+                "success": True,
+                "changed_fields": changed_fields,
+                "doc_id": str(doc.doc_id),
+                "title": doc.title,
+                "description": doc.description,
+                "visibility": doc.visibility,
+                "tags": doc.tags,
+                "modified_at": doc.modified_at.isoformat()
+            }
+            
+        finally:
+            session.close()
+
     def list_documents(
         self,
         creator_department: str = None,

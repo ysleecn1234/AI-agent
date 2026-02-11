@@ -239,6 +239,40 @@ class AIDriveService:
         
         return True
     
+    async def update_metadata(
+        self,
+        doc_id: str,
+        user_id: str,
+        title: str = None,
+        description: str = None,
+        visibility: str = None,
+        tags: List[str] = None
+    ) -> Dict[str, Any]:
+        """
+        문서 메타데이터 수정 (Facade)
+        
+        수정 가능: 제목, 설명, 공개범위, 태그
+        재임베딩/재처리 불필요 (메타데이터만 변경)
+        """
+        # 문서 존재 확인
+        doc = self.db_client.get_document(doc_id)
+        if not doc:
+            raise ValueError("문서를 찾을 수 없습니다")
+        
+        # 메타데이터 수정
+        result = self.db_client.update_document_metadata(
+            doc_id=doc_id,
+            title=title,
+            description=description,
+            visibility=visibility,
+            tags=tags
+        )
+        
+        if not result["success"]:
+            raise ValueError(result.get("error", "메타데이터 수정 실패"))
+        
+        return result
+    
     async def chat_with_document(self, doc_id: str, request) -> Dict[str, Any]:
         """
         문서 채팅 (Facade)
