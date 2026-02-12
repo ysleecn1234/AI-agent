@@ -146,9 +146,14 @@ export default function ChatPage() {
         setAgentModalOpen(true);
     };
 
-    const handleSaveConfirm = async (scope: 'single' | 'all') => {
+    const handleSaveConfirm = async (data: {
+        scope: 'single' | 'all';
+        title: string;
+        description: string;
+        visibility: 'private' | 'team' | 'public';
+    }) => {
         try {
-            const content = scope === 'single' && selectedMessageIndex !== null
+            const content = data.scope === 'single' && selectedMessageIndex !== null
                 ? messages[selectedMessageIndex].content
                 : messages.map(m => `${m.role}: ${m.content}`).join('\n\n');
 
@@ -160,8 +165,9 @@ export default function ChatPage() {
                 content,
                 creator_id: creatorId,
                 creator_department: creatorDept,
-                title: `${new Date().toLocaleString()} 채팅 저장`,
-                visibility: 'private'
+                title: data.title,
+                description: data.description,
+                visibility: data.visibility
             });
 
             alert('드라이브에 저장되었습니다!');
@@ -172,28 +178,40 @@ export default function ChatPage() {
         }
     };
 
-    const handleAgentConfirm = async (scope: 'single' | 'all') => {
+    const handleAgentConfirm = async (data: {
+        scope: 'single' | 'all';
+        name: string;
+        description: string;
+        category: string;
+        visibility: 'private' | 'team' | 'public';
+    }) => {
         try {
-            const content = scope === 'single' && selectedMessageIndex !== null
+            const content = data.scope === 'single' && selectedMessageIndex !== null
                 ? messages[selectedMessageIndex].content
                 : messages.map(m => `${m.role}: ${m.content}`).join('\n\n');
 
             // API 연동: 에이전트 초안 생성
             const draft = await api.createAgentDraft({
-                name: 'New Agent',
-                description: 'Generated from chat',
-                category: 'general',
-                visibility: 'private',
+                name: data.name,
+                description: data.description,
+                category: data.category,
+                visibility: data.visibility,
                 system_prompt: `Based on this content:\n\n${content}`
             });
 
-            alert('에이전트 초안이 생성되었습니다!');
+            alert('Agent 초안이 생성되었습니다!');
             setAgentModalOpen(false);
-            router.push(`/agents/create?draftId=${draft.id}`); // 생성된 초안 ID와 함께 이동
+            router.push(`/agents/create?draftId=${draft.id}`);
         } catch (error) {
             console.error('Agent creation failed:', error);
-            alert('에이전트 생성에 실패했습니다.');
+            alert('Agent 생성에 실패했습니다.');
         }
+    };
+
+    // Get content for modals
+    const getModalContent = () => {
+        if (selectedMessageIndex === null) return '';
+        return messages[selectedMessageIndex]?.content || '';
     };
 
     const userName = typeof window !== 'undefined' ? localStorage.getItem('user_name') || '사용자' : '사용자';
@@ -540,11 +558,13 @@ export default function ChatPage() {
                 isOpen={saveModalOpen}
                 onClose={() => setSaveModalOpen(false)}
                 onSave={handleSaveConfirm}
+                content={getModalContent()}
             />
             <CreateAgentModal
                 isOpen={agentModalOpen}
                 onClose={() => setAgentModalOpen(false)}
                 onCreate={handleAgentConfirm}
+                content={getModalContent()}
             />
         </div>
     );
