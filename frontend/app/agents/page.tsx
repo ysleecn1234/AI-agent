@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import {
     Search,
     Plus,
@@ -28,33 +29,75 @@ import {
     Settings,
     LogOut
 } from 'lucide-react';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Agent, MOCK_AGENTS } from '@/types/agent';
+import { api } from '@/lib/api';
+import type { Agent } from '@/types/api';
 
 export default function AgentsPage() {
     const router = useRouter();
+    const [agents, setAgents] = useState<Agent[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [activeTab, setActiveTab] = useState('all');
+    const [categoryFilter, setCategoryFilter] = useState('all');
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const userId = 'user_id_placeholder'; // TODO: Replace with actual user ID
+    const [isLoading, setIsLoading] = useState(true);
 
-    // Filter agents based on tab and search query
-    const filteredAgents = MOCK_AGENTS.filter(agent => {
+    const userName = typeof window !== 'undefined' ? localStorage.getItem('user_name') || '사용자' : '사용자';
+    const userDept = typeof window !== 'undefined' ? localStorage.getItem('department') || '' : '';
+
+    useEffect(() => {
+        fetchAgents();
+    }, []);
+
+    const fetchAgents = async () => {
+        setIsLoading(true);
+        try {
+            const data = await api.getAgents();
+            setAgents(data);
+        } catch (error) {
+            console.error('Error fetching agents:', error);
+            // Mock data fallback for development
+            setAgents([]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleDeleteAgent = async (agentId: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+
+        if (!confirm('이 에이전트를 삭제하시겠습니까?')) {
+            return;
+        }
+
+        try {
+            await api.deleteAgent(agentId);
+            alert('에이전트가 삭제되었습니다.');
+            fetchAgents();
+        } catch (error) {
+            console.error('Error deleting agent:', error);
+            alert('에이전트 삭제에 실패했습니다.');
+        }
+    };
+
+    // Filter agents based on tab, search query, and category
+    const filteredAgents = agents.filter(agent => {
         const matchesSearch = agent.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            agent.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            agent.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+            agent.description.toLowerCase().includes(searchQuery.toLowerCase());
 
         if (!matchesSearch) return false;
 
-        if (activeTab === 'my') return agent.creator === '김철수'; // Mock condition
-        if (activeTab === 'team') return agent.department === '마케팅팀'; // Mock condition
-        if (activeTab === 'public') return agent.isPublic;
+        // Tab filter
+        if (activeTab === 'my') return agent.creator === userName;
+        if (activeTab === 'team') return agent.visibility === 'team';
+        if (activeTab === 'public') return agent.visibility === 'public';
+
+        // Category filter
+        if (categoryFilter !== 'all' && agent.category !== categoryFilter) return false;
 
         return true;
     });
 
     const handleRunAgent = (agentId: string) => {
-        // Navigate to chat with this agent selected
         router.push(`/chat?agent=${agentId}`);
     };
 
@@ -62,56 +105,107 @@ export default function AgentsPage() {
         router.push('/agents/create');
     };
 
+    const handleLogout = () => {
+        api.clearToken();
+        router.push('/auth/login');
+    };
+
     return (
         <div className="flex flex-col h-screen bg-gray-50">
             {/* Header */}
             <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                    {/* Sidebar Trigger (Visible on all screens) */}
-                    <div>
-                        <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-                            <SheetTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                    <Menu className="w-6 h-6 text-gray-700" />
-                                </Button>
-                            </SheetTrigger>
-                            <SheetContent side="left" className="w-[300px]">
-                                <SheetHeader>
-                                    <SheetTitle className="flex items-center gap-2">
-                                        <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
-                                            <span className="text-white text-lg font-bold">IN7</span>
-                                        </div>
-                                        <span>AI 플랫폼</span>
-                                    </SheetTitle>
-                                </SheetHeader>
-                                <nav className="mt-8 space-y-2">
-                                    <button onClick={() => router.push('/chat')} className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-100 rounded-lg">
-                                        <MessageSquare className="w-5 h-5 text-blue-600" /> <span>채팅</span>
-                                    </button>
-                                    <button onClick={() => router.push('/drive')} className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-100 rounded-lg">
-                                        <FolderOpen className="w-5 h-5 text-blue-600" /> <span>AI Drive</span>
-                                    </button>
-                                    <button onClick={() => router.push('/drive/archive')} className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-100 rounded-lg">
-                                        <Archive className="w-5 h-5 text-blue-600" /> <span>아카이브</span>
-                                    </button>
-                                    <button className="w-full flex items-center gap-3 px-4 py-3 text-left bg-blue-50 rounded-lg text-blue-600">
-                                        <Bot className="w-5 h-5" /> <span className="font-medium">Agent Hub</span>
-                                    </button>
-                                    <button onClick={() => router.push('/settings')} className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-100 rounded-lg">
-                                        <Settings className="w-5 h-5 text-blue-600" /> <span>설정</span>
-                                    </button>
-                                </nav>
-                            </SheetContent>
-                        </Sheet>
-                    </div>
+                    {/* Sidebar Trigger */}
+                    <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+                        <SheetTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                                <Menu className="w-6 h-6 text-gray-700" />
+                            </Button>
+                        </SheetTrigger>
+                        <SheetContent side="left" className="w-[300px]">
+                            <SheetHeader>
+                                <SheetTitle className="flex items-center gap-2">
+                                    <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
+                                        <span className="text-white text-lg font-bold">IN7</span>
+                                    </div>
+                                    <span>AI 플랫폼</span>
+                                </SheetTitle>
+                            </SheetHeader>
+                            <nav className="mt-8 space-y-2">
+                                <button
+                                    onClick={() => { router.push('/chat'); setSidebarOpen(false); }}
+                                    className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-100 rounded-lg transition-colors"
+                                >
+                                    <MessageSquare className="w-5 h-5 text-blue-600" />
+                                    <span className="font-medium">채팅</span>
+                                </button>
+                                <button
+                                    onClick={() => { router.push('/drive'); setSidebarOpen(false); }}
+                                    className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-100 rounded-lg transition-colors"
+                                >
+                                    <FolderOpen className="w-5 h-5 text-blue-600" />
+                                    <span className="font-medium">AI Drive</span>
+                                </button>
+                                <button
+                                    onClick={() => { router.push('/drive/archive'); setSidebarOpen(false); }}
+                                    className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-100 rounded-lg transition-colors"
+                                >
+                                    <Archive className="w-5 h-5 text-blue-600" />
+                                    <span className="font-medium">아카이브</span>
+                                </button>
+                                <button
+                                    onClick={() => { router.push('/agents'); setSidebarOpen(false); }}
+                                    className="w-full flex items-center gap-3 px-4 py-3 text-left bg-blue-50 rounded-lg transition-colors"
+                                >
+                                    <Bot className="w-5 h-5 text-blue-600" />
+                                    <span className="font-medium text-blue-600">Agent Hub</span>
+                                </button>
+                                <button
+                                    onClick={() => { router.push('/settings'); setSidebarOpen(false); }}
+                                    className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-100 rounded-lg transition-colors"
+                                >
+                                    <Settings className="w-5 h-5 text-blue-600" />
+                                    <span className="font-medium">설정</span>
+                                </button>
+                            </nav>
+                        </SheetContent>
+                    </Sheet>
 
                     <h1 className="text-2xl font-bold text-gray-900">Agent Hub</h1>
                 </div>
 
-                <Button onClick={handleCreateAgent} className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
-                    <Plus className="w-4 h-4" />
-                    새 에이전트 만들기
-                </Button>
+                <div className="flex items-center gap-3">
+                    <Button onClick={handleCreateAgent} className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
+                        <Plus className="w-4 h-4" />
+                        새 에이전트 만들기
+                    </Button>
+
+                    {/* User Menu */}
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                                <User className="w-6 h-6 text-gray-700" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-56">
+                            <DropdownMenuLabel>
+                                <div className="flex flex-col">
+                                    <span className="font-medium">{userName}</span>
+                                    <span className="text-sm text-gray-500">{userDept}</span>
+                                </div>
+                            </DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => router.push('/settings')}>
+                                <Settings className="w-4 h-4 mr-2" />
+                                설정
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+                                <LogOut className="w-4 h-4 mr-2" />
+                                로그아웃
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
             </header>
 
             {/* Main Content */}
@@ -123,7 +217,7 @@ export default function AgentsPage() {
                         <div className="relative w-full sm:w-96">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                             <Input
-                                placeholder="에이전트 검색 (이름, 태그, 설명)"
+                                placeholder="에이전트 검색 (이름, 설명)"
                                 className="pl-10"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -131,19 +225,22 @@ export default function AgentsPage() {
                         </div>
 
                         <div className="flex gap-2 w-full sm:w-auto">
-                            <Select defaultValue="newest">
-                                <SelectTrigger className="w-[140px]">
-                                    <SelectValue placeholder="정렬" />
+                            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                                <SelectTrigger className="w-[160px]">
+                                    <SelectValue placeholder="카테고리" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="newest">최신순</SelectItem>
-                                    <SelectItem value="popular">인기순</SelectItem>
-                                    <SelectItem value="name">이름순</SelectItem>
+                                    <SelectItem value="all">전체 카테고리</SelectItem>
+                                    <SelectItem value="생산성">생산성</SelectItem>
+                                    <SelectItem value="마케팅">마케팅</SelectItem>
+                                    <SelectItem value="개발">개발</SelectItem>
+                                    <SelectItem value="기획">기획</SelectItem>
+                                    <SelectItem value="영업">영업</SelectItem>
+                                    <SelectItem value="인사">인사</SelectItem>
+                                    <SelectItem value="재무">재무</SelectItem>
+                                    <SelectItem value="기타">기타</SelectItem>
                                 </SelectContent>
                             </Select>
-                            <Button variant="outline" size="icon">
-                                <Filter className="w-4 h-4 text-gray-600" />
-                            </Button>
                         </div>
                     </div>
 
@@ -162,7 +259,12 @@ export default function AgentsPage() {
                         </TabsList>
 
                         <TabsContent value={activeTab} className="mt-0">
-                            {filteredAgents.length === 0 ? (
+                            {isLoading ? (
+                                <div className="text-center py-20">
+                                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                                    <p className="text-gray-600">에이전트를 불러오는 중...</p>
+                                </div>
+                            ) : filteredAgents.length === 0 ? (
                                 <div className="text-center py-20 bg-white rounded-lg border border-gray-200 border-dashed">
                                     <Bot className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                                     <h3 className="text-lg font-medium text-gray-900">검색 결과가 없습니다</h3>
@@ -177,8 +279,10 @@ export default function AgentsPage() {
                                         <Card key={agent.id} className="flex flex-col hover:shadow-md transition-shadow">
                                             <CardHeader className="pb-3">
                                                 <div className="flex justify-between items-start">
-                                                    <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center text-2xl">
-                                                        {agent.icon}
+                                                    <div className="flex items-center gap-2">
+                                                        <Badge variant="outline" className="text-xs">
+                                                            {agent.category}
+                                                        </Badge>
                                                     </div>
                                                     <DropdownMenu>
                                                         <DropdownMenuTrigger asChild>
@@ -193,7 +297,10 @@ export default function AgentsPage() {
                                                             <DropdownMenuItem onClick={() => router.push(`/agents/edit/${agent.id}`)}>
                                                                 <Edit className="w-4 h-4 mr-2" /> 수정
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem className="text-red-600">
+                                                            <DropdownMenuItem 
+                                                                onClick={(e) => handleDeleteAgent(agent.id, e)}
+                                                                className="text-red-600 focus:text-red-600"
+                                                            >
                                                                 <Trash2 className="w-4 h-4 mr-2" /> 삭제
                                                             </DropdownMenuItem>
                                                         </DropdownMenuContent>
@@ -205,28 +312,23 @@ export default function AgentsPage() {
                                                 </CardDescription>
                                             </CardHeader>
                                             <CardContent className="flex-1">
-                                                <div className="flex flex-wrap gap-2 mb-3">
-                                                    {agent.tags.slice(0, 3).map(tag => (
-                                                        <Badge key={tag} variant="secondary" className="text-xs">
-                                                            #{tag}
-                                                        </Badge>
-                                                    ))}
-                                                    {agent.tags.length > 3 && (
-                                                        <Badge variant="secondary" className="text-xs">+{agent.tags.length - 3}</Badge>
-                                                    )}
-                                                </div>
-                                                <div className="flex items-center gap-2 text-xs text-gray-500 mt-auto">
+                                                <div className="flex items-center gap-2 text-xs text-gray-500">
                                                     <span className="font-medium text-gray-700">{agent.creator}</span>
                                                     <span>•</span>
-                                                    <span>{agent.model}</span>
+                                                    <Badge variant="secondary" className="text-xs">
+                                                        {agent.visibility === 'public' ? '🌐 전체' : agent.visibility === 'team' ? '👥 팀' : '🔒 나만'}
+                                                    </Badge>
                                                 </div>
                                             </CardContent>
-                                            <CardFooter className="pt-3 border-t bg-gray-50/50 flex justify-between items-center text-xs text-gray-500">
-                                                <div className="flex items-center gap-1">
-                                                    <Play className="w-3 h-3" /> {agent.usageCount}회 실행됨
-                                                </div>
-                                                <Button size="sm" variant="ghost" className="text-blue-600 hover:text-blue-700 p-0 h-auto" onClick={() => handleRunAgent(agent.id)}>
-                                                    실행하기 →
+                                            <CardFooter className="pt-3 border-t bg-gray-50/50">
+                                                <Button 
+                                                    size="sm" 
+                                                    variant="default"
+                                                    className="w-full bg-blue-600 hover:bg-blue-700" 
+                                                    onClick={() => handleRunAgent(agent.id)}
+                                                >
+                                                    <Play className="w-3 h-3 mr-1" />
+                                                    실행하기
                                                 </Button>
                                             </CardFooter>
                                         </Card>

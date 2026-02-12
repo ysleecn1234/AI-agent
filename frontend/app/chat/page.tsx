@@ -34,10 +34,10 @@ export default function ChatPage() {
         setIsLoading(true);
 
         try {
-            // API 호출
+            // API 호출 (프리미엄 모델 지원)
             const response = await api.sendMessage({
                 message: userMessage,
-                model_type: selectedModel === 'auto' ? 'AUTO' : selectedModel.toUpperCase(),
+                model_type: selectedModel,
                 use_rag: driveEnabled,
                 agent_id: agentId,
             });
@@ -308,17 +308,18 @@ export default function ChatPage() {
                 <div className="flex items-center gap-4 text-sm">
                     {/* Model Selector */}
                     <Select value={selectedModel} onValueChange={setSelectedModel}>
-                        <SelectTrigger className="w-[180px]">
+                        <SelectTrigger className="w-[220px]">
                             <SelectValue placeholder="모델 선택" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="auto">Auto (자동 선택)</SelectItem>
-                            <SelectItem value="gpt-5">GPT-5</SelectItem>
-                            <SelectItem value="gpt-5-mini">GPT-5-mini</SelectItem>
-                            <SelectItem value="claude-sonnet">Claude Sonnet 4.5</SelectItem>
-                            <SelectItem value="gemini-pro">Gemini 2.0 Pro</SelectItem>
-                            <SelectItem value="gemini-flash">Gemini 2.0 Flash</SelectItem>
-                            <SelectItem value="deepseek">DeepSeek-R1</SelectItem>
+                            <SelectItem value="AUTO">⚡ Auto (자동 선택)</SelectItem>
+                            <SelectItem value="GPT_5_2">💎 GPT 5.2 (Thinking)</SelectItem>
+                            <SelectItem value="GEMINI_3_PRO">💎 Gemini 3 Pro</SelectItem>
+                            <SelectItem value="PERPLEXITY">💎 Perplexity Sonar Pro</SelectItem>
+                            <SelectItem value="OPUS_4_6">💎 Claude Opus 4.6</SelectItem>
+                            <SelectItem value="gpt-4o-mini">GPT-4o-mini</SelectItem>
+                            <SelectItem value="claude-sonnet">Claude Sonnet 3.5</SelectItem>
+                            <SelectItem value="gemini-flash">Gemini 1.5 Flash</SelectItem>
                         </SelectContent>
                     </Select>
 

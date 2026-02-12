@@ -62,6 +62,16 @@ npm run dev
 
 ## ✅ 최근 작업 내역 (Changelog)
 
+- **feat: Agent Hub 개선 및 프리미엄 모델 지원 추가 (2026-02-12)**
+  - Agent 목록 실제 API 연동 (GET /agents)
+  - Agent 삭제 기능 구현 (DELETE /agents/{id})
+  - 카테고리 필터 추가 (생산성, 마케팅, 개발, 기획, 영업, 인사, 재무, 기타)
+  - Agent 카드 UI 개선 (카테고리 배지, 공개범위 표시)
+  - 채팅 페이지에 프리미엄 모델 선택 추가
+    - GPT 5.2 (Thinking), Gemini 3 Pro, Perplexity Sonar Pro, Claude Opus 4.6
+  - User 메뉴 추가 (헤더 우측 상단)
+- **merge: develop 브랜치 병합 (2026-02-12)**
+  - 백엔드 최신 업데이트 반영 (프리미엄 모델, 문서 메타데이터 수정 등)
 - **feat: 설정 페이지 구현 (2026-02-12)**
   - 개인정보 보호 설정 (자동 차단/마스킹 선택)
   - 감지 항목 체크박스 (주민번호, 전화번호, 이메일, 신용카드, 계좌번호, 주소)

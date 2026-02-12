@@ -154,6 +154,12 @@ class ApiClient {
             body: JSON.stringify(data),
         });
     }
+
+    public async deleteAgent(id: string): Promise<void> {
+        return this.request<void>(`/agents/${id}`, {
+            method: 'DELETE',
+        });
+    }
 }
 
 export const api = ApiClient.getInstance();
