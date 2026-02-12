@@ -1,5 +1,7 @@
+import time
 from services.ai_hub.core.agent.manager import AgentManager
 from application.usecases.orchestrator.service import orchestrator
+from services.common.activity_logger import get_activity_logger
 
 # Singleton Instance from Root Service
 agent_manager = AgentManager()
@@ -10,7 +12,7 @@ class AgentService:
     실제 로직은 'root/services/ai_agent/core.py'에 위임합니다.
     """
     def __init__(self):
-        pass
+        self.activity_logger = get_activity_logger()
 
     async def generate_draft_from_chat(self, user_id: str, messages: list):
         print(f"[App] Requesting draft creation to AgentManager for user: {user_id}")
@@ -27,6 +29,16 @@ class AgentService:
         
         # 4. 분석 결과로 Draft 업데이트
         agent_manager.update_draft_step(draft_id, 1, filled_template)
+        
+        # 활동 로그
+        self.activity_logger.log(
+            user_id=user_id,
+            action="create_draft",
+            details={
+                "agent_name": filled_template.get("name", ""),
+                "category": filled_template.get("category", ""),
+            },
+        )
         
         return draft_id
 
@@ -48,8 +60,25 @@ class AgentService:
         """
         print(f"[App] Publishing agent draft: {draft_id}")
         
+        start = time.time()
+        
         # Manager에게 위임 (Vectorize + DB Save)
-        return await agent_manager.publish_agent(draft_id, db)
+        result = await agent_manager.publish_agent(draft_id, db)
+        
+        # 활동 로그
+        duration_ms = int((time.time() - start) * 1000)
+        self.activity_logger.log(
+            user_id=result.get("creator_id", "") if isinstance(result, dict) else "",
+            action="publish_agent",
+            details={
+                "draft_id": draft_id,
+                "agent_name": result.get("name", "") if isinstance(result, dict) else "",
+            },
+            success=True,
+            duration_ms=duration_ms,
+        )
+        
+        return result
 
     async def recommend_agents_for_chat(self, user_msg: str, conversation_history: list = None) -> list:
         """

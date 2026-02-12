@@ -20,7 +20,7 @@ async def lifespan(app: FastAPI):
     print("시스템 종료: 연결 닫는 중...")
 
 app = FastAPI(
-    title="IN7 AI 플랫폼",
+    title="ISOR AI Platform",
     description="오케스트레이터 및 RAG 기반 엔터프라이즈 AI 에이전트 시스템",
     version="1.0.0",
     lifespan=lifespan
@@ -43,7 +43,7 @@ app.add_middleware(
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to IN7 AI Platform API", "status": "running"}
+    return {"message": "Welcome to ISOR AI Platform API", "status": "running"}
 
 @app.get("/health")
 async def health_check():

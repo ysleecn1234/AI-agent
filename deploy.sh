@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# IN7 AI Platform Deployment Script
+# ISOR AI Platform Deployment Script
 # Usage: ./deploy.sh
 
-echo "====== [IN7 AI Platform] Starting Deployment ======"
+echo "====== [ISOR AI Platform] Starting Deployment ======"
 
 # 1. Pull Latest Code
 echo "1. Pulling latest changes from git..."

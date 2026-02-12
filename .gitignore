@@ -28,3 +28,6 @@ services/ai_drive/uploads/
 services/ai_drive/storage/
 .env.keys
 *.pem
+
+# Node.js (프론트엔드)
+node_modules/

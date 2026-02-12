@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     gcc \
     curl \
+    libmagic1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python Dependencies
@@ -24,4 +25,4 @@ COPY . .
 EXPOSE 8000
 
 # Run Application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
