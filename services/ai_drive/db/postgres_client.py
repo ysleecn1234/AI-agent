@@ -81,10 +81,19 @@ class PostgresClient:
         Args:
             database_url: PostgreSQL 연결 URL
         """
-        self.database_url = database_url or os.getenv(
-            "POSTGRES_URL",
-            "postgresql://in7user:in7password@localhost:5432/in7platform"
-        )
+        if database_url:
+            self.database_url = database_url
+        else:
+            user = os.getenv("POSTGRES_USER", "aiagent")
+            password = os.getenv("POSTGRES_PASSWORD", "aiagent123")
+            host = os.getenv("POSTGRES_HOST", "localhost")
+            port = os.getenv("POSTGRES_PORT", "5433")
+            db_name = os.getenv("POSTGRES_DB", "ai_hub")
+            
+            self.database_url = os.getenv(
+                "POSTGRES_URL",
+                f"postgresql://{user}:{password}@{host}:{port}/{db_name}"
+            )
         
         self.engine = create_engine(self.database_url)
         self.Session = sessionmaker(bind=self.engine)

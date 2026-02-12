@@ -2,8 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
-from .database import engine
-from application import models
+from application.database import engine, Base
 from . import auth, chat, agents, drive
 
 # TODO: Import Routers (etc.
@@ -14,7 +13,7 @@ from . import auth, chat, agents, drive
 async def lifespan(app: FastAPI):
     # 시작 시: 테이블 생성 및 DB 연결
     print("시스템 시작: 데이터베이스 테이블 생성 중...")
-    models.Base.metadata.create_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
     print("시스템 시작: PostgreSQL, Redis, Milvus 연결 중...")
     yield
     # 종료 시: 연결 닫기
