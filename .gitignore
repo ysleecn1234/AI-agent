@@ -10,6 +10,9 @@ env/
 **/*key*.txt
 **/*keys*.txt
 **/*secret*.txt
+*.pem
+**/*key*.pem
+**/*keys*.pem
 
 # 파이썬 실행 찌꺼기 및 캐시
 __pycache__/
