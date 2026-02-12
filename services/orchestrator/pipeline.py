@@ -19,6 +19,7 @@ sys.path.insert(0, str(project_root))
 # Relative Imports (Modified from core.logger)
 from .logger import get_logger
 from .cost_calculator import get_cost_calculator
+from services.common.cost_logger import get_cost_logger
 
 # 환경 변수 로드
 load_dotenv()
@@ -1069,6 +1070,7 @@ class Pipeline:
         self.guardrail = Guardrail(pipeline=self)
         self.logger = get_logger()
         self.cost_calculator = get_cost_calculator()
+        self.cost_logger = get_cost_logger()
 
     def call_llm(self, task: str, prompt: str, options: dict = None) -> dict:
         """
@@ -1147,12 +1149,22 @@ class Pipeline:
                     output_tokens=output_tokens,
                 )
                 
-                # 7. 비용 로깅
+                # 7. 비용 로깅 (콘솔)
                 self.logger.log_model_usage(
                     model_name=model,
                     input_tokens=input_tokens,
                     output_tokens=output_tokens,
                     cost_info=cost_info,
+                )
+                
+                # 8. 비용 DB 기록
+                self.cost_logger.log_llm_cost(
+                    task=task,
+                    model_name=model,
+                    input_tokens=input_tokens,
+                    output_tokens=output_tokens,
+                    cost_usd=cost_info.get("cost_usd", {}).get("total", 0),
+                    cost_krw=cost_info.get("cost_krw", {}).get("total", 0),
                 )
                 
                 print(f"  [call_llm] ✓ {model} 성공 (입력: {input_tokens}, 출력: {output_tokens} 토큰)")
@@ -1515,6 +1527,16 @@ class Pipeline:
                 input_tokens=input_tokens,
                 output_tokens=output_tokens,
                 cost_info=cost_info,
+            )
+            
+            # 비용 DB 기록
+            self.cost_logger.log_llm_cost(
+                task=f"premium:{model_type}",
+                model_name=model_name,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+                cost_usd=cost_info.get("cost_usd", {}).get("total", 0),
+                cost_krw=cost_info.get("cost_krw", {}).get("total", 0),
             )
             
             print(f"  → 완료 (입력: {input_tokens}, 출력: {output_tokens} 토큰)")
