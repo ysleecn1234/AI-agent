@@ -27,3 +27,4 @@ services/ai_drive/uploads/
 # 저장 파일
 services/ai_drive/storage/
 .env.keys
+*.pem
