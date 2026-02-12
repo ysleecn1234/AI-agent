@@ -160,6 +160,29 @@ class ApiClient {
             method: 'DELETE',
         });
     }
+
+    public async recommendAgents(query: string): Promise<Agent[]> {
+        return this.request<Agent[]>(`/agents/recommend?query=${encodeURIComponent(query)}`);
+    }
+
+    // Generate metadata
+    public async generateDocumentMetadata(content: string): Promise<{ title: string; description: string }> {
+        return this.request<{ title: string; description: string }>('/generate/document-metadata', {
+            method: 'POST',
+            body: JSON.stringify({ content }),
+        });
+    }
+
+    public async generateAgentMetadata(content: string): Promise<{ 
+        name: string; 
+        description: string; 
+        category: string 
+    }> {
+        return this.request<{ name: string; description: string; category: string }>('/generate/agent-metadata', {
+            method: 'POST',
+            body: JSON.stringify({ content }),
+        });
+    }
 }
 
 export const api = ApiClient.getInstance();

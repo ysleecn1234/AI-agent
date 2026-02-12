@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FileText, MessageSquare, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
+import { api } from '@/lib/api';
 
 interface SaveToDriveModalProps {
     isOpen: boolean;
@@ -40,10 +41,13 @@ export function SaveToDriveModal({ isOpen, onClose, onSave, content }: SaveToDri
     const generateTitleAndDescription = async () => {
         setIsGenerating(true);
         try {
-            // Simulate LLM generation (replace with actual API call)
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            // Simple title generation based on content
+            // Call backend API for LLM-based generation
+            const metadata = await api.generateDocumentMetadata(content);
+            setTitle(metadata.title);
+            setDescription(metadata.description);
+        } catch (error) {
+            console.error('Failed to generate metadata:', error);
+            // Fallback to simple generation
             const lines = content.split('\n').filter(l => l.trim());
             const firstLine = lines[0] || '대화 내용';
             const generatedTitle = firstLine.length > 50 
@@ -52,10 +56,6 @@ export function SaveToDriveModal({ isOpen, onClose, onSave, content }: SaveToDri
             
             setTitle(generatedTitle || `채팅 문서 - ${new Date().toLocaleDateString()}`);
             setDescription(`${lines.length}개의 메시지를 포함한 대화 내용입니다.`);
-        } catch (error) {
-            console.error('Failed to generate:', error);
-            setTitle(`채팅 문서 - ${new Date().toLocaleDateString()}`);
-            setDescription('');
         } finally {
             setIsGenerating(false);
         }
@@ -222,13 +222,16 @@ export function CreateAgentModal({ isOpen, onClose, onCreate, content }: CreateA
     const generateAgentInfo = async () => {
         setIsGenerating(true);
         try {
-            // Simulate LLM generation (replace with actual API call)
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            // Simple generation based on content
+            // Call backend API for LLM-based generation
+            const metadata = await api.generateAgentMetadata(content);
+            setName(metadata.name);
+            setDescription(metadata.description);
+            setCategory(metadata.category);
+        } catch (error) {
+            console.error('Failed to generate agent metadata:', error);
+            // Fallback to simple generation
             const contentLower = content.toLowerCase();
             
-            // Category detection
             let detectedCategory = '기타';
             if (contentLower.includes('마케팅') || contentLower.includes('광고')) {
                 detectedCategory = '마케팅';
@@ -241,10 +244,6 @@ export function CreateAgentModal({ isOpen, onClose, onCreate, content }: CreateA
             setName(`AI 어시스턴트 - ${new Date().toLocaleDateString()}`);
             setDescription('대화 내용을 기반으로 생성된 맞춤형 Agent입니다.');
             setCategory(detectedCategory);
-        } catch (error) {
-            console.error('Failed to generate:', error);
-            setName(`AI Agent - ${new Date().toLocaleDateString()}`);
-            setDescription('');
         } finally {
             setIsGenerating(false);
         }

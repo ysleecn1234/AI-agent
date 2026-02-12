@@ -97,20 +97,26 @@ export default function ChatPage() {
         const timeoutId = setTimeout(async () => {
             setIsLoadingAgents(true);
             try {
-                const agents = await api.getAgents();
-                
-                // If no message, show top 5 agents
                 if (!message.trim()) {
+                    // Show top 5 agents when no input
+                    const agents = await api.getAgents();
                     setRecommendedAgents(agents.slice(0, 5));
                 } else {
-                    // Filter agents based on message content (simple keyword matching)
-                    const filtered = agents.filter(agent => 
-                        agent.name.toLowerCase().includes(message.toLowerCase()) ||
-                        agent.description.toLowerCase().includes(message.toLowerCase()) ||
-                        agent.category?.toLowerCase().includes(message.toLowerCase())
-                    ).slice(0, 5);
-                    
-                    setRecommendedAgents(filtered.length > 0 ? filtered : agents.slice(0, 5));
+                    // Use backend recommendation API
+                    try {
+                        const recommended = await api.recommendAgents(message);
+                        setRecommendedAgents(recommended.slice(0, 5));
+                    } catch (error) {
+                        // Fallback to client-side filtering if API not available
+                        console.warn('Agent recommendation API not available, using fallback');
+                        const agents = await api.getAgents();
+                        const filtered = agents.filter(agent => 
+                            agent.name.toLowerCase().includes(message.toLowerCase()) ||
+                            agent.description.toLowerCase().includes(message.toLowerCase()) ||
+                            agent.category?.toLowerCase().includes(message.toLowerCase())
+                        ).slice(0, 5);
+                        setRecommendedAgents(filtered.length > 0 ? filtered : agents.slice(0, 5));
+                    }
                 }
             } catch (error) {
                 console.error('Failed to fetch agents:', error);
