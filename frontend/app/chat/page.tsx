@@ -12,12 +12,12 @@ import { Badge } from '@/components/ui/badge';
 import { Menu, User, Send, MessageSquare, FolderOpen, Bot, Settings, LogOut, Save, Sparkles, Archive, Copy, ThumbsUp, FileText, X } from 'lucide-react';
 import { SaveToDriveModal, CreateAgentModal } from '@/components/chat-action-modals';
 import { api } from '@/lib/api';
-import type { Agent } from '@/types/api';
+import type { Agent, ChatSource } from '@/types/api';
 
 interface ChatMessage {
     role: 'user' | 'assistant';
     content: string;
-    sources?: Array<{ id: string; title: string; score: number }>;
+    sources?: ChatSource[];
     liked?: boolean;
 }
 

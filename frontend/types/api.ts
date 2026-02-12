@@ -133,10 +133,16 @@ export interface ChatRequest {
     context_id?: string;      // 대화 컨텍스트 ID
 }
 
+export interface ChatSource {
+    id: string;
+    title: string;
+    score: number;
+}
+
 export interface ChatResponse {
     response: string;
     used_model: string;
-    sources: string[];
+    sources?: ChatSource[];
 }
 
 // API Response Wrapper
