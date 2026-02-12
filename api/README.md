@@ -57,6 +57,7 @@ FastAPI 애플리케이션 생성 및 모든 라우터를 등록합니다.
 - `POST /agents/draft/step1` - 1단계 업데이트
 - `POST /agents/draft/step2` - 2단계 업데이트
 - `POST /agents/publish` - 에이전트 배포
+- `DELETE /agents/{agent_id}` - 에이전트 삭제 (공식 에이전트 불가)
 
 ### `drive.py` - AI Drive API
 문서 관리 및 RAG 검색 엔드포인트:

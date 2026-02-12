@@ -6,7 +6,7 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile
-    container_name: in7-backend
+    container_name: agent-backend
     ports:
       - "8000:8000"
     environment:
@@ -23,12 +23,12 @@ services:
   # 2. PostgreSQL (Main DB)
   postgres:
     image: postgres:15-alpine
-    container_name: in7-postgres
+    container_name: agent-postgres
     ports:
-      - "5432:5432"
+      - "5433:5432"
     environment:
-      - POSTGRES_USER=in7user
-      - POSTGRES_PASSWORD=in7password
+      - POSTGRES_USER=aiagent
+      - POSTGRES_PASSWORD=aiagent123
       - POSTGRES_DB=ai_hub
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -41,7 +41,7 @@ services:
   # 3. Redis
   redis:
     image: redis:7-alpine
-    container_name: in7-redis
+    container_name: agent-redis
     ports:
       - "6379:6379"
     volumes:

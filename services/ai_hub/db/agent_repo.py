@@ -26,3 +26,23 @@ class AgentRepository:
         db.commit()
         db.refresh(new_agent)
         return new_agent
+
+    def delete_agent(self, db: Session, agent_id: str) -> bool:
+        """
+        에이전트를 삭제합니다.
+        
+        Args:
+            agent_id: 삭제할 에이전트 UUID
+            
+        Returns:
+            성공 시 True, 실패(없음) 시 False
+        """
+        from services.ai_hub.db.tables import Agent
+        
+        agent = db.query(Agent).filter(Agent.id == agent_id).first()
+        if not agent:
+            return False
+            
+        db.delete(agent)
+        db.commit()
+        return True

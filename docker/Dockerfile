@@ -15,7 +15,8 @@ RUN apt-get update && apt-get install -y \
 # Install Python Dependencies
 # Copy requirements first to leverage Docker Cache
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Upgrade toolchain and Install Dependencies
+RUN pip install --upgrade pip setuptools wheel && pip install --no-cache-dir -r requirements.txt
 
 # Copy Application Code
 COPY . .
