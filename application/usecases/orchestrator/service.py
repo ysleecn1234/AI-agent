@@ -16,13 +16,31 @@ class Orchestrator:
         self.pipeline = Pipeline()
 
     async def process(self, user_input: str, user_id: str, context_id: str = None, model_type: str = "AUTO", use_rag: bool = False) -> Dict:
-        """
+        '''
         서비스 계층으로 처리를 위임합니다.
-        필요한 경우 웹 계층에서의 유효성 검사를 여기에 추가할 수 있습니다.
-        """
+        
+        Args:
+            user_input: 사용자 입력
+            user_id: 사용자 ID
+            context_id: 대화 컨텍스트 ID
+            model_type: "AUTO" 또는 프리미엄 모델 키 (GPT_5_2, GEMINI_3_PRO, PERPLEXITY, OPUS_4_6)
+            use_rag: RAG 검색 사용 여부
+        '''
         # RAG 사용 여부 업데이트
         self.pipeline.researcher.use_rag = use_rag
-        return self.pipeline.process(user_input, user_id=user_id)
+        
+        # 모델 타입에 따라 분기
+        if model_type == "AUTO":
+            # 기존 5단계 파이프라인
+            return self.pipeline.process(user_input, user_id=user_id)
+        else:
+            # 프리미엄 모델 직접 호출
+            return self.pipeline.process_premium(
+                user_input=user_input,
+                model_type=model_type,
+                use_rag=use_rag,
+                user_id=user_id
+            )
 
     async def analyze_for_draft(self, messages: List[Dict], template_schema: Dict) -> Dict:
         """

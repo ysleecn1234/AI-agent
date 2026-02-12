@@ -26,182 +26,243 @@ load_dotenv()
 # ==================== 중앙 모델 설정 (TASK_MODEL_CONFIG) ====================
 # 모든 LLM 호출은 이 설정을 통해 관리됩니다.
 # models[0] = 후보 모델 (Primary), models[1] = 대체 모델 (Fallback)
-# 지석이 모델 확정 후 채워넣기: "(후보 미정)" → 실제 모델명
 TASK_MODEL_CONFIG = {
     
     # ── 채팅 파이프라인 (5단계) ──
     "chat_routing": {
-            "models": ["(후보 미정)", "(대체 미정)"],
-            "temperature": 0.1,
-            "max_tokens": 10,
-            "description": "의도 분류 및 복잡도 판단 (Router)",
-            "system_prompt": None,
-        },
-        "chat_simple": {
-            "models": ["(후보 미정)", "(대체 미정)"],
-            "temperature": 0.7,
-            "max_tokens": 1000,
-            "description": "단순 질의 답변 생성 (Reasoner - SIMPLE)",
-            "system_prompt": None,
-        },
-        "chat_complex": {
-            "models": ["(후보 미정)", "(대체 미정)"],
-            "temperature": 0.7,
-            "max_tokens": 1000,
-            "description": "정밀 분석 답변 생성 (Reasoner - COMPLEX)",
-            "system_prompt": None,
-        },
-        "chat_bulk": {
-            "models": ["(후보 미정)", "(대체 미정)"],
-            "temperature": 0.7,
-            "max_tokens": 1000,
-            "description": "대량 문서 분석 답변 생성 (Reasoner - BULK)",
-            "system_prompt": None,
-        },
-        "chat_synthesize": {
-            "models": ["(후보 미정)", "(대체 미정)"],
-            "temperature": 0.3,
-            "max_tokens": 2000,
-            "description": "응답 Markdown 포맷팅 (Synthesizer)",
-            "system_prompt": (
-                "당신은 AI 응답 포맷팅 전문가입니다.\n"
-                "원본 AI 답변을 사용자 친화적인 마크다운 형식으로 재구조화하세요.\n"
-                "규칙:\n"
-                "1. 명확한 구조 (제목, 본문, 요약)\n"
-                "2. 가독성 높은 마크다운 포맷\n"
-                "3. 중요 정보 강조 (볼드, 이탤릭)\n"
-                "4. 필요시 리스트나 표 사용\n"
-                "5. 원본 내용을 누락하지 마세요\n"
-                "6. 마크다운 형식으로만 답변하세요"
-            ),
-        },
-        "chat_guardrail": {
-            "models": ["(후보 미정)", "(대체 미정)"],
-            "temperature": 0.1,
-            "max_tokens": 1500,
-            "description": "품질 검수 및 팩트체크 (Guardrail)",
-            "system_prompt": (
-                "당신은 AI 답변 품질 검수 전문가입니다.\n"
-                "사용자 질문과 AI 답변을 비교하여 품질을 검증하세요.\n"
-                "다음 항목을 반드시 검증하고 JSON으로만 응답하세요:\n"
-                "{\n"
-                '    "completeness": true/false,      // 요청사항 충족 여부\n'
-                '    "logical_consistency": true/false, // 논리적 일관성\n'
-                '    "factual_accuracy": true/false,   // 사실 정확성\n'
-                '    "issues": ["이슈1", ...],          // 발견된 문제\n'
-                '    "quality_score": 0.0~1.0          // 종합 품질 점수\n'
-                "}\n"
-                "단계별로 사고하여 정확히 검증하세요."
-            ),
-        },
-        
-        # ── 드라이브 (Phase 3) ──
-        "tagging": {
-            "models": ["(후보 미정)", "(대체 미정)"],
-            "temperature": 0.2,
-            "max_tokens": 300,
-            "description": "문서 자동 태깅 - 태그/키워드/문서유형 추출",
-            "system_prompt": (
-                "당신은 기업 문서 분류 전문가입니다.\n"
-                "제공된 문서 텍스트를 분석하여 다음 정보를 JSON으로만 추출하세요:\n"
-                "{\n"
-                '    "tags": ["태그1", "태그2", "태그3"],  // 3~5개 주제 태그\n'
-                '    "keywords": ["키워드1", "키워드2"],    // 핵심 키워드 3~5개\n'
-                '    "doc_type": "보고서"                  // 보고서/제안서/회의록/매뉴얼/기획서/기타 중 하나\n'
-                "}\n"
-                "규칙:\n"
-                "1. 태그는 한국어, 명사형, 구체적으로 (예: 'Q4 매출', '마케팅 전략')\n"
-                "2. 키워드는 검색에 유용한 핵심 단어\n"
-                "3. 문서 유형은 내용의 목적 기반으로 판단\n"
-                "4. JSON 외 다른 텍스트를 출력하지 마세요"
-            ),
-        },
-        "title_gen": {
-            "models": ["(후보 미정)", "(대체 미정)"],
-            "temperature": 0.3,
-            "max_tokens": 200,
-            "description": "채팅/에이전트 결과 저장 시 제목·설명 자동 생성",
-            "system_prompt": (
-                "당신은 문서 제목 생성 전문가입니다.\n"
-                "제공된 대화 내용 또는 문서 텍스트를 분석하여 제목과 설명을 생성하세요.\n"
-                "JSON으로만 응답하세요:\n"
-                "{\n"
-                '    "title": "문서 제목 (20자 이내, 핵심 내용 반영)",\n'
-                '    "description": "문서 설명 (50자 이내, 내용 요약)"\n'
-                "}\n"
-                "규칙:\n"
-                "1. 제목은 간결하고 구체적으로\n"
-                "2. 설명은 문서의 핵심 내용을 한 문장으로\n"
-                "3. JSON 외 다른 텍스트를 출력하지 마세요"
-            ),
-        },
-        "doc_chat": {
-            "models": ["(후보 미정)", "(대체 미정)"],
-            "temperature": 0.3,
-            "max_tokens": 1500,
-            "description": "문서별 채팅 - 특정 문서 기반 질의응답",
-            "system_prompt": (
-                "당신은 기업 내부 문서 전문 AI 어시스턴트입니다.\n"
-                "제공된 문서 청크만을 기반으로 사용자 질문에 답변하세요.\n"
-                "규칙:\n"
-                "1. 반드시 제공된 문서 내용만 기반으로 답변\n"
-                "2. 문서에 없는 내용은 '제공된 문서에서 해당 정보를 찾을 수 없습니다'라고 답변\n"
-                "3. 답변 시 출처를 명시 (문서명, 페이지, 작성자)\n"
-                "4. 숫자/데이터는 문서 원문 그대로 인용\n"
-                "5. 추측이나 외부 지식을 사용하지 마세요"
-            ),
-        },
-        
-        # ── 에이전트 허브 (Phase 2~3) ──
-        "agent_draft": {
-            "models": ["(후보 미정)", "(대체 미정)"],
-            "temperature": 0.3,
-            "max_tokens": 500,
-            "description": "대화 분석 → 에이전트 생성 템플릿 채우기 (Pull-Fill)",
-            "system_prompt": (
-                "당신은 AI 에이전트 설계 전문가입니다.\n"
-                "제공된 대화 내용을 분석하여 에이전트 정보를 추출하세요.\n"
-                "JSON으로만 응답하세요:\n"
-                "{\n"
-                '    "name": "에이전트 이름 (20자 이내)",\n'
-                '    "description": "에이전트 설명 (50자 이내)",\n'
-                '    "category": "카테고리",\n'
-                '    "input_example": "사용자 질문 예시",\n'
-                '    "output_example": "답변 예시 (간략하게)",\n'
-                '    "system_prompt": "이 에이전트의 역할과 성격을 정의하는 시스템 프롬프트",\n'
-                '    "use_rag": true/false,\n'
-                '    "model_type": "AUTO",\n'
-                '    "visibility": "PUBLIC"\n'
-                "}\n"
-                "규칙:\n"
-                "1. 카테고리: 마케팅/개발/기획/영업/인사/재무/문서작성/데이터분석/기타 중 하나\n"
-                "2. system_prompt는 에이전트가 수행할 역할을 구체적으로 정의\n"
-                "3. 대화 내용에서 추출 불가능한 필드는 합리적 기본값 사용\n"
-                "4. JSON 외 다른 텍스트를 출력하지 마세요"
-            ),
-        },
-        "agent_recommend": {
-            "models": ["(후보 미정)", "(대체 미정)"],
-            "temperature": 0.2,
-            "max_tokens": 200,
-            "description": "실시간 에이전트 추천을 위한 의도/주제/키워드 분석",
-            "system_prompt": (
-                "당신은 사용자 의도 분석 전문가입니다.\n"
-                "사용자 메시지를 분석하여 적합한 에이전트 추천을 위한 정보를 추출하세요.\n"
-                "JSON으로만 응답하세요:\n"
-                "{\n"
-                '    "topic": "핵심 주제 (한국어, 20자 이내)",\n'
-                '    "category": "MARKETING/CODING/PLANNING/SALES/HR/FINANCE/GENERAL 중 하나",\n'
-                '    "keywords": ["키워드1", "키워드2", "키워드3"]\n'
-                "}\n"
-                "규칙:\n"
-                "1. topic은 대화의 핵심 주제를 간결하고\n"
-                "2. category는 반드시 7개 선택지 중 하나\n"
-                "3. keywords는 에이전트 매칭에 유용한 핵심 단어 3개\n"
-                "4. JSON 외 다른 텍스트를 출력하지 마세요"
-            ),
-        },
+        "models": ["gemini-1.5-flash", "gpt-4o-mini"],
+        "temperature": 0.1,
+        "max_tokens": 10,
+        "description": "의도 분류 및 복잡도 판단 (Router)",
+        "system_prompt": None,
+    },
+
+    "chat_research": {
+        "models": ["gpt-4o-mini", "claude-3-haiku-20240307"],
+        "temperature": 0.2,
+        "max_tokens": 200,
+        "description": "검색 쿼리 생성 및 검증 (Researcher)",
+        "system_prompt": None,
+    },
+    "chat_simple": {
+        "models": ["gemini-1.5-flash", "gpt-4o-mini"],
+        "temperature": 0.7,
+        "max_tokens": 1000,
+        "description": "단순 질의 답변 생성 (Reasoner - SIMPLE)",
+        "system_prompt": None,
+    },
+    "chat_complex": {
+        "models": ["claude-3-5-sonnet-20240620", "gpt-4o"],
+        "temperature": 0.1,
+        "max_tokens": 1000,
+        "description": "정밀 분석 답변 생성 (Reasoner - COMPLEX)",
+        "system_prompt": None,
+    },
+    "chat_bulk": {
+        "models": ["claude-3-5-sonnet-20240620", "gpt-4o"],
+        "temperature": 0.1,
+        "max_tokens": 2000,
+        "description": "대량 문서 분석 답변 생성 (Reasoner - BULK)",
+        "system_prompt": None,
+    },
+    "chat_reasoning": {
+        "models": ["claude-3-5-sonnet-20240620", "gpt-4o"],
+        "temperature": 0.1,
+        "max_tokens": 1000,
+        "description": "문맥 기반 답변 생성 (Reasoner)",
+        "system_prompt": None,
+    },
+    "chat_synthesis": {
+        "models": ["gpt-4o-mini", "gemini-1.5-flash"],
+        "temperature": 0.3,
+        "max_tokens": 500,
+        "description": "답변 종합 및 포맷팅 (Synthesizer)",
+        "system_prompt": None,
+    },
+    "chat_guardrail": {
+        "models": ["llama-guard-3-8b", "claude-3-5-sonnet-20240620"],
+        "temperature": 0.1,
+        "max_tokens": 1500,
+        "description": "품질 검수 및 팩트체크 (Guardrail)",
+        "system_prompt": (
+            "당신은 AI 답변 품질 검수 전문가입니다.\n"
+            "사용자 질문과 AI 답변을 비교하여 품질을 검증하세요.\n"
+            "다음 항목을 반드시 검증하고 JSON으로만 응답하세요:\n"
+            "{\n"
+            '    "completeness": true/false,      // 요청사항 충족 여부\n'
+            '    "logical_consistency": true/false, // 논리적 일관성\n'
+            '    "factual_accuracy": true/false,   // 사실 정확성\n'
+            '    "issues": ["이슈1", ...],          // 발견된 문제\n'
+            '    "quality_score": 0.0~1.0          // 종합 품질 점수\n'
+            "}\n"
+            "단계별로 사고하여 정확히 검증하세요."
+        ),
+    },
+
+    # ── 에이전트 허브 (Phase 2~3) ──
+    "agent_draft": {
+        "models": ["gpt-4o", "claude-3-5-sonnet-20240620"],
+        "temperature": 0.3,
+        "max_tokens": 1000,
+        "description": "대화 분석 → 에이전트 생성 템플릿 채우기 (Pull-Fill)",
+        "system_prompt": (
+            "당신은 AI 에이전트 설계 전문가입니다.\n"
+            "제공된 대화 내용을 분석하여 에이전트 정보를 추출하세요.\n"
+            "JSON으로만 응답하세요:\n"
+            "{\n"
+            '    "name": "에이전트 이름 (20자 이내)",\n'
+            '    "description": "에이전트 설명 (50자 이내)",\n'
+            '    "category": "카테고리",\n'
+            '    "input_example": "사용자 질문 예시",\n'
+            '    "output_example": "답변 예시 (간략하게)",\n'
+            '    "system_prompt": "이 에이전트의 역할과 성격을 정의하는 시스템 프롬프트",\n'
+            '    "use_rag": true/false,\n'
+            '    "model_type": "AUTO",\n'
+            '    "visibility": "PUBLIC"\n'
+            "}\n"
+            "규칙:\n"
+            "1. 카테고리: 마케팅/개발/기획/영업/인사/재무/문서작성/데이터분석/기타 중 하나\n"
+            "2. system_prompt는 에이전트가 수행할 역할을 구체적으로 정의\n"
+            "3. 대화 내용에서 추출 불가능한 필드는 합리적 기본값 사용\n"
+            "4. JSON 외 다른 텍스트를 출력하지 마세요"
+        ),
+    },
+    "agent_recommend": {
+        "models": ["gemini-1.5-pro", "gpt-4o-mini"],
+        "temperature": 0.2,
+        "max_tokens": 200,
+        "description": "실시간 에이전트 추천을 위한 의도/주제/키워드 분석",
+        "system_prompt": (
+            "당신은 사용자 의도 분석 전문가입니다.\n"
+            "사용자 메시지를 분석하여 적합한 에이전트 추천을 위한 정보를 추출하세요.\n"
+            "JSON으로만 응답하세요:\n"
+            "{\n"
+            '    "topic": "핵심 주제 (한국어, 20자 이내)",\n'
+            '    "category": "MARKETING/CODING/PLANNING/SALES/HR/FINANCE/GENERAL 중 하나",\n'
+            '    "keywords": ["키워드1", "키워드2", "키워드3"]\n'
+            "}\n"
+            "규칙:\n"
+            "1. topic은 대화의 핵심 주제를 간결하고\n"
+            "2. category는 반드시 7개 선택지 중 하나\n"
+            "3. keywords는 에이전트 매칭에 유용한 핵심 단어 3개\n"
+            "4. JSON 외 다른 텍스트를 출력하지 마세요"
+        ),
+    },
+
+    # ── AI Drive (문서 관리) ──
+    "tagging": {
+        "models": ["gemini-1.5-flash", "gpt-4o-mini"],
+        "temperature": 0.1,
+        "max_tokens": 300,
+        "description": "문서 자동 태깅 - 태그/키워드/문서유형 추출",
+        "system_prompt": (
+            "당신은 기업 문서 분류 전문가입니다.\n"
+            "제공된 문서 텍스트를 분석하여 다음 정보를 JSON으로만 추출하세요:\n"
+            "{\n"
+            '    "tags": ["태그1", "태그2", "태그3"],  // 3~5개 주제 태그\n'
+            '    "keywords": ["키워드1", "키워드2"],    // 핵심 키워드 3~5개\n'
+            '    "doc_type": "보고서"                  // 보고서/제안서/회의록/매뉴얼/기획서/기타 중 하나\n'
+            "}\n"
+            "규칙:\n"
+            "1. 태그는 한국어, 명사형, 구체적으로 (예: 'Q4 매출', '마케팅 전략')\n"
+            "2. 키워드는 검색에 유용한 핵심 단어\n"
+            "3. 문서 유형은 내용의 목적 기반으로 판단\n"
+            "4. JSON 외 다른 텍스트를 출력하지 마세요"
+        ),
+    },
+    "title_gen": {
+        "models": ["gpt-4o-mini", "claude-3-haiku-20240307"],
+        "temperature": 0.3,
+        "max_tokens": 200,
+        "description": "채팅/에이전트 결과 저장 시 제목·설명 자동 생성",
+        "system_prompt": (
+            "당신은 문서 제목 생성 전문가입니다.\n"
+            "제공된 대화 내용 또는 문서 텍스트를 분석하여 제목과 설명을 생성하세요.\n"
+            "JSON으로만 응답하세요:\n"
+            "{\n"
+            '    "title": "문서 제목 (20자 이내, 핵심 내용 반영)",\n'
+            '    "description": "문서 설명 (50자 이내, 내용 요약)"\n'
+            "}\n"
+            "규칙:\n"
+            "1. 제목은 간결하고 구체적으로\n"
+            "2. 설명은 문서의 핵심 내용을 한 문장으로\n"
+            "3. JSON 외 다른 텍스트를 출력하지 마세요"
+        ),
+    },
+    "doc_chat": {
+        "models": ["claude-3-5-sonnet-20240620", "gemini-1.5-pro"],
+        "temperature": 0.3,
+        "max_tokens": 1500,
+        "description": "문서별 채팅 - 특정 문서 기반 질의응답",
+        "system_prompt": (
+            "당신은 기업 내부 문서 전문 AI 어시스턴트입니다.\n"
+            "제공된 문서 청크만을 기반으로 사용자 질문에 답변하세요.\n"
+            "규칙:\n"
+            "1. 반드시 제공된 문서 내용만 기반으로 답변\n"
+            "2. 문서에 없는 내용은 '제공된 문서에서 해당 정보를 찾을 수 없습니다'라고 답변\n"
+            "3. 답변 시 출처를 명시 (문서명, 페이지, 작성자)\n"
+            "4. 숫자/데이터는 문서 원문 그대로 인용\n"
+            "5. 추측이나 외부 지식을 사용하지 마세요"
+        ),
+    },
 }
+
+PREMIUM_MODELS = {
+    "GPT_5_2": {
+        "model": "gpt-5.2",
+        "display_name": "GPT 5.2 (Thinking)",
+        "max_tokens": 4000,
+        "temperature": 0.3,
+    },
+    "GEMINI_3_PRO": {
+        "model": "gemini/gemini-3-pro",
+        "display_name": "Gemini 3 Pro",
+        "max_tokens": 4000,
+        "temperature": 0.3,
+    },
+    "PERPLEXITY": {
+        "model": "perplexity/sonar-pro",
+        "display_name": "Perplexity Sonar Pro",
+        "max_tokens": 4000,
+        "temperature": 0.3,
+    },
+    "OPUS_4_6": {
+        "model": "claude-opus-4-6",
+        "display_name": "Claude Opus 4.6",
+        "max_tokens": 4000,
+        "temperature": 0.3,
+    },
+}
+
+# 프리미엄 모델용 메가 시스템 프롬프트 (5단계 파이프라인 로직 통합)
+PREMIUM_SYSTEM_PROMPT = """당신은 기업용 AI 어시스턴트입니다. 사용자의 요청에 대해 다음 단계를 내부적으로 수행하여 최고 품질의 답변을 제공하세요.
+
+[1단계: 의도 분석]
+- 사용자 요청의 의도를 파악하세요 (질의/분석/생성/검색)
+- 요청의 복잡도를 판단하세요
+
+[2단계: 정보 활용]
+- 제공된 참고 자료가 있다면 반드시 활용하세요
+- 참고 자료에 없는 내용은 명확히 구분하세요
+
+[3단계: 논리적 추론]
+- 단계별로 사고하여 정확한 답변을 도출하세요
+- 데이터나 근거가 있다면 반드시 포함하세요
+
+[4단계: 답변 구성]
+- 명확한 구조로 답변을 구성하세요 (제목, 본문, 요약)
+- 가독성 높은 마크다운 형식을 사용하세요
+- 중요 정보는 강조하세요
+
+[5단계: 자체 검증]
+- 답변의 논리적 일관성을 확인하세요
+- 요청사항을 빠짐없이 충족했는지 검증하세요
+- 사실 정확성에 문제가 없는지 확인하세요
+
+규칙:
+- 민감한 개인정보(전화번호, 주민등록번호 등)가 포함된 경우 마스킹하세요
+- 확실하지 않은 정보는 추측임을 명시하세요
+- 한국어로 답변하세요"""
 
 class ComplexityLevel(Enum):
     """요청 복잡도 레벨"""
@@ -658,7 +719,7 @@ class Reasoner:
         documents = context.get("retrieved_documents", [])
         
         # 복잡도 → task명
-        task = self.complexity_task_map.get(complexity, "chat_simple")
+        task = self.complexity_task_map.get(complexity, "chat_reasoning")
         
         # RAG 컨텍스트 구성 (기존 프롬프트 로직 유지)
         rag_context = ""
@@ -745,7 +806,7 @@ class Synthesizer:
 
         try:
             llm_result = self.pipeline.call_llm(
-                task="chat_synthesize",
+                task="chat_synthesis",
                 prompt=prompt,
             )
             return llm_result["content"]
@@ -1347,6 +1408,147 @@ class Pipeline:
             
         except Exception as e:
             print(f"[Pipeline] 오류 발생: {e}")
+            import traceback
+            traceback.print_exc()
+            return {
+                "error": str(e),
+                "status": "failed"
+            }
+
+    def process_premium(self, user_input: str, model_type: str, use_rag: bool = False, user_id: Optional[str] = None) -> Dict[str, Any]:
+        '''
+        프리미엄 모델 직접 호출 (5단계 파이프라인 bypass)
+        
+        5단계 파이프라인 로직을 메가 프롬프트로 통합하여
+        선택된 프리미엄 모델 하나로 처리합니다.
+        
+        Args:
+            user_input: 사용자 입력
+            model_type: 프리미엄 모델 키 (GPT_5_2, GEMINI_3_PRO, PERPLEXITY, OPUS_4_6)
+            use_rag: RAG 검색 사용 여부
+            user_id: 사용자 ID
+            
+        Returns:
+            process()와 동일한 형식의 결과 dict
+        '''
+        print(f"[Pipeline] 프리미엄 모드: {model_type}")
+        
+        # 1. 모델 설정 가져오기
+        if model_type not in PREMIUM_MODELS:
+            raise ValueError(f"알 수 없는 프리미엄 모델: '{model_type}'. 가능한 모델: {list(PREMIUM_MODELS.keys())}")
+        
+        model_config = PREMIUM_MODELS[model_type]
+        model_name = model_config["model"]
+        
+        # 세션 시작
+        session_id = self.logger.start_session(user_input, user_id)
+        
+        try:
+            # 2. RAG 검색 (use_rag=True일 때만)
+            rag_context = ""
+            sources = []
+            
+            if use_rag:
+                print("  → RAG 검색 실행")
+                documents = self.researcher.search_documents(user_input, top_k=5)
+                
+                if documents:
+                    rag_context = "\n\n[참고 자료]\n"
+                    for i, doc in enumerate(documents, 1):
+                        content = doc.get("content", "")[:500]
+                        source = doc.get("source", "")
+                        author = doc.get("author", "")
+                        date = doc.get("date", "")
+                        
+                        rag_context += f"--- 자료 {i} ---\n"
+                        rag_context += f"출처: {source}"
+                        if author:
+                            rag_context += f" | 작성자: {author}"
+                        if date:
+                            rag_context += f" | 날짜: {date}"
+                        rag_context += f"\n{content}\n\n"
+                        
+                        if source and source not in sources:
+                            sources.append(source)
+                    
+                    print(f"  → RAG 결과: {len(documents)}개 문서")
+            
+            # 3. 프롬프트 조립
+            user_prompt = user_input
+            if rag_context:
+                user_prompt += rag_context
+            
+            # 4. 프리미엄 모델 호출 (call_llm이 아닌 litellm 직접 호출)
+            #    - TASK_MODEL_CONFIG에 없는 모델이므로 직접 호출
+            print(f"  → 모델 호출: {model_name}")
+            
+            messages = [
+                {"role": "system", "content": PREMIUM_SYSTEM_PROMPT},
+                {"role": "user", "content": user_prompt}
+            ]
+            
+            response = litellm.completion(
+                model=model_name,
+                messages=messages,
+                temperature=model_config["temperature"],
+                max_tokens=model_config["max_tokens"],
+            )
+            
+            content = response.choices[0].message.content
+            
+            # 5. 토큰 추출
+            input_tokens = 0
+            output_tokens = 0
+            if hasattr(response, 'usage') and response.usage:
+                input_tokens = getattr(response.usage, 'prompt_tokens', 0) or 0
+                output_tokens = getattr(response.usage, 'completion_tokens', 0) or 0
+            
+            # 6. 비용 계산 + 로깅
+            cost_info = self.cost_calculator.calculate_cost(
+                model_name=model_name,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+            )
+            
+            self.logger.log_model_usage(
+                model_name=model_name,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+                cost_info=cost_info,
+            )
+            
+            print(f"  → 완료 (입력: {input_tokens}, 출력: {output_tokens} 토큰)")
+            
+            # 7. 민감정보 마스킹
+            safe_response = self.guardrail.mask_sensitive_info(content)
+            
+            # 세션 종료
+            self.logger.end_session(
+                final_result={"final_response": safe_response},
+                success=True
+            )
+            
+            return {
+                "session_id": session_id,
+                "response": safe_response,
+                "used_model": model_name,
+                "sources": sources,
+                "metadata": {
+                    "intent": "premium_direct",
+                    "complexity": "premium",
+                    "model_used": model_name,
+                    "model_display_name": model_config["display_name"],
+                    "input_tokens": input_tokens,
+                    "output_tokens": output_tokens,
+                    "cost_info": cost_info,
+                    "quality_score": 1.0,
+                    "is_safe": True,
+                    "verified": True,
+                }
+            }
+            
+        except Exception as e:
+            print(f"[Pipeline] 프리미엄 모드 오류: {e}")
             import traceback
             traceback.print_exc()
             return {

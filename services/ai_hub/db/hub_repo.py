@@ -10,13 +10,13 @@ class HubRepository:
     
     def get_all_public_agents(self, db: Session) -> List[object]:
         from services.ai_hub.db.tables import Agent
-        return db.query(Agent).filter(Agent.is_public == True).all()
+        return db.query(Agent).filter(Agent.is_public != "PRIVATE").all()
         
     def get_agents_by_keyword(self, db: Session, keyword: str) -> List[object]:
         from services.ai_hub.db.tables import Agent
         search_fmt = f"%{keyword}%"
         return db.query(Agent).filter(
-            (Agent.dname.ilike(search_fmt)) | 
+            (Agent.name.ilike(search_fmt)) |  
             (Agent.description.ilike(search_fmt))
         ).limit(10).all()
 
