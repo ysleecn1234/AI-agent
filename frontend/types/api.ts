@@ -58,6 +58,14 @@ export interface UploadDocumentRequest {
     visibility: 'private' | 'team' | 'public';
 }
 
+export interface UpdateDocumentMetadataRequest {
+    user_id: string;
+    title?: string;
+    description?: string;
+    visibility?: 'private' | 'team' | 'public';
+    tags?: string[];
+}
+
 export interface ChatMessage {
     role: 'user' | 'assistant';
     content: string;

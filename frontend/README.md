@@ -62,6 +62,14 @@ npm run dev
 
 ## ✅ 최근 작업 내역 (Changelog)
 
+- **feat: 문서 메타데이터 수정 기능 추가 (2026-02-12)**
+  - API 클라이언트에 updateDocumentMetadata() 메서드 추가
+    - `PATCH /drive/documents/{id}` 연동
+  - 문서 상세 페이지에 수정 버튼 추가
+  - 수정 모달 구현
+    - 제목, 설명, 공개범위, 태그 수정 가능
+    - 실시간 수정 반영
+  - UpdateDocumentMetadataRequest 타입 정의 추가
 - **refactor: 프론트엔드 로직을 백엔드 API 호출로 교체 (2026-02-12)**
   - API 클라이언트에 새로운 엔드포인트 추가
     - `POST /generate/document-metadata` - 문서 제목/설명 생성

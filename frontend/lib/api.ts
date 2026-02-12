@@ -139,6 +139,22 @@ class ApiClient {
         });
     }
 
+    public async updateDocumentMetadata(
+        id: string, 
+        data: {
+            user_id: string;
+            title?: string;
+            description?: string;
+            visibility?: 'private' | 'team' | 'public';
+            tags?: string[];
+        }
+    ): Promise<any> {
+        return this.request(`/drive/documents/${id}`, {
+            method: 'PATCH',
+            body: JSON.stringify(data),
+        });
+    }
+
     // Agent
     public async getAgents(): Promise<Agent[]> {
         return this.request<Agent[]>('/agents');

@@ -6,7 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Menu, User, Send, ArrowLeft, MessageSquare, FolderOpen, Bot, Settings, LogOut, Archive } from 'lucide-react';
+import { Menu, User, Send, ArrowLeft, MessageSquare, FolderOpen, Bot, Settings, LogOut, Archive, Edit } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { api } from '@/lib/api';
 
 interface Message {
     role: 'user' | 'assistant';
@@ -19,6 +24,9 @@ interface DocumentData {
     type: string;
     content: string;
     url?: string;
+    description?: string;
+    visibility?: 'private' | 'team' | 'public';
+    tags?: string[];
 }
 
 export default function DocumentDetailPage() {
@@ -31,8 +39,14 @@ export default function DocumentDetailPage() {
     const [message, setMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [editModalOpen, setEditModalOpen] = useState(false);
+    const [editTitle, setEditTitle] = useState('');
+    const [editDescription, setEditDescription] = useState('');
+    const [editVisibility, setEditVisibility] = useState<'private' | 'team' | 'public'>('team');
+    const [editTags, setEditTags] = useState('');
 
     const userName = typeof window !== 'undefined' ? localStorage.getItem('user_name') || '사용자' : '사용자';
+    const userId = typeof window !== 'undefined' ? localStorage.getItem('user_name') || '' : '';
 
     useEffect(() => {
         fetchDocument();
@@ -103,6 +117,42 @@ export default function DocumentDetailPage() {
         localStorage.removeItem('user_name');
         localStorage.removeItem('department');
         router.push('/auth/login');
+    };
+
+    const handleOpenEditModal = () => {
+        if (document) {
+            setEditTitle(document.name);
+            setEditDescription(document.description || '');
+            setEditVisibility(document.visibility || 'team');
+            setEditTags(document.tags?.join(', ') || '');
+            setEditModalOpen(true);
+        }
+    };
+
+    const handleSaveMetadata = async () => {
+        if (!document) return;
+
+        try {
+            const tagArray = editTags
+                .split(',')
+                .map(t => t.trim())
+                .filter(t => t.length > 0);
+
+            await api.updateDocumentMetadata(document.id, {
+                user_id: userId,
+                title: editTitle,
+                description: editDescription,
+                visibility: editVisibility,
+                tags: tagArray,
+            });
+
+            alert('문서 정보가 수정되었습니다!');
+            setEditModalOpen(false);
+            fetchDocument(); // 새로고침
+        } catch (error) {
+            console.error('Error updating metadata:', error);
+            alert('문서 정보 수정에 실패했습니다.');
+        }
     };
 
     if (!document) {
@@ -189,31 +239,44 @@ export default function DocumentDetailPage() {
                     <h1 className="text-lg font-semibold text-gray-900">{document.name}</h1>
                 </div>
 
-                {/* User Menu */}
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <button className="p-2 hover:bg-gray-100 rounded-lg">
-                            <User className="w-6 h-6 text-gray-700" />
-                        </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56">
-                        <DropdownMenuLabel>
-                            <div className="flex flex-col">
-                                <span className="font-medium">{userName}</span>
-                                <span className="text-sm text-gray-500">{typeof window !== 'undefined' ? localStorage.getItem('department') || '' : ''}</span>
-                            </div>
-                        </DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => router.push('/settings')}>
-                            <Settings className="w-4 h-4 mr-2" />
-                            설정
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={handleLogout} className="text-red-600">
-                            <LogOut className="w-4 h-4 mr-2" />
-                            로그아웃
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
+                <div className="flex items-center gap-2">
+                    {/* Edit Button */}
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleOpenEditModal}
+                        className="gap-2"
+                    >
+                        <Edit className="w-4 h-4" />
+                        수정
+                    </Button>
+
+                        {/* User Menu */}
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <button className="p-2 hover:bg-gray-100 rounded-lg">
+                                <User className="w-6 h-6 text-gray-700" />
+                            </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-56">
+                            <DropdownMenuLabel>
+                                <div className="flex flex-col">
+                                    <span className="font-medium">{userName}</span>
+                                    <span className="text-sm text-gray-500">{typeof window !== 'undefined' ? localStorage.getItem('department') || '' : ''}</span>
+                                </div>
+                            </DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => router.push('/settings')}>
+                                <Settings className="w-4 h-4 mr-2" />
+                                설정
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+                                <LogOut className="w-4 h-4 mr-2" />
+                                로그아웃
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
             </header>
 
             {/* Split View */}
@@ -311,6 +374,84 @@ export default function DocumentDetailPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Edit Metadata Modal */}
+            <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
+                <DialogContent className="sm:max-w-[500px]">
+                    <DialogHeader>
+                        <DialogTitle>문서 정보 수정</DialogTitle>
+                        <DialogDescription>
+                            문서의 제목, 설명, 공개범위, 태그를 수정합니다
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-4 py-4">
+                        {/* Title */}
+                        <div>
+                            <Label htmlFor="edit-title">제목</Label>
+                            <Input
+                                id="edit-title"
+                                value={editTitle}
+                                onChange={(e) => setEditTitle(e.target.value)}
+                                placeholder="문서 제목"
+                            />
+                        </div>
+
+                        {/* Description */}
+                        <div>
+                            <Label htmlFor="edit-description">설명</Label>
+                            <Textarea
+                                id="edit-description"
+                                value={editDescription}
+                                onChange={(e) => setEditDescription(e.target.value)}
+                                placeholder="문서 설명 (선택)"
+                                className="min-h-[80px]"
+                            />
+                        </div>
+
+                        {/* Visibility */}
+                        <div>
+                            <Label htmlFor="edit-visibility">공개 범위</Label>
+                            <Select value={editVisibility} onValueChange={(value: any) => setEditVisibility(value)}>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="private">🔒 나만 보기</SelectItem>
+                                    <SelectItem value="team">👥 팀 공유</SelectItem>
+                                    <SelectItem value="public">🌐 전체 공개</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        {/* Tags */}
+                        <div>
+                            <Label htmlFor="edit-tags">태그</Label>
+                            <Input
+                                id="edit-tags"
+                                value={editTags}
+                                onChange={(e) => setEditTags(e.target.value)}
+                                placeholder="쉼표(,)로 구분하여 입력"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                                예: 기획서, 마케팅, 2026
+                            </p>
+                        </div>
+                    </div>
+
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setEditModalOpen(false)}>
+                            취소
+                        </Button>
+                        <Button 
+                            onClick={handleSaveMetadata}
+                            className="bg-blue-600 hover:bg-blue-700"
+                        >
+                            저장
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
