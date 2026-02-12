@@ -90,10 +90,14 @@ class PostgresClient:
             port = os.getenv("POSTGRES_PORT", "5433")
             db_name = os.getenv("POSTGRES_DB", "ai_hub")
             
+            print(f"[DEBUG] POSTGRES_HOST={host}, PORT={port}, USER={user}, DB={db_name}")
+            
             self.database_url = os.getenv(
                 "POSTGRES_URL",
                 f"postgresql://{user}:{password}@{host}:{port}/{db_name}"
             )
+            
+            print(f"[DEBUG] Database URL: {self.database_url}")
         
         self.engine = create_engine(self.database_url)
         self.Session = sessionmaker(bind=self.engine)
