@@ -4,6 +4,12 @@ env/
 
 # 보안 (유료 API 키 및 DB 접속 정보)
 .env
+.env.*
+*.env
+**/credentials.json
+**/*key*.txt
+**/*keys*.txt
+**/*secret*.txt
 
 # 파이썬 실행 찌꺼기 및 캐시
 __pycache__/
