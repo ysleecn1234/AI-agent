@@ -10,7 +10,11 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - POSTGRES_SERVER=postgres
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=ai_hub
+      - POSTGRES_USER=aiagent
+      - POSTGRES_PASSWORD=aiagent123
       - REDIS_HOST=redis
       - MILVUS_HOST=milvus-standalone
     depends_on:
