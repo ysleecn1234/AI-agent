@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -8,9 +8,11 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Menu, User, Send, MessageSquare, FolderOpen, Bot, Settings, LogOut, Save, Sparkles, Archive, Copy, ThumbsUp, FileText } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Menu, User, Send, MessageSquare, FolderOpen, Bot, Settings, LogOut, Save, Sparkles, Archive, Copy, ThumbsUp, FileText, X } from 'lucide-react';
 import { SaveToDriveModal, CreateAgentModal } from '@/components/chat-action-modals';
 import { api } from '@/lib/api';
+import type { Agent } from '@/types/api';
 
 interface ChatMessage {
     role: 'user' | 'assistant';
@@ -26,12 +28,15 @@ export default function ChatPage() {
     const [selectedModel, setSelectedModel] = useState('AUTO');
     const [agentId, setAgentId] = useState<string | undefined>(undefined);
     const [driveEnabled, setDriveEnabled] = useState(false);
+    const [agentEnabled, setAgentEnabled] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [saveModalOpen, setSaveModalOpen] = useState(false);
     const [agentModalOpen, setAgentModalOpen] = useState(false);
     const [selectedMessageIndex, setSelectedMessageIndex] = useState<number | null>(null);
     const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+    const [recommendedAgents, setRecommendedAgents] = useState<Agent[]>([]);
+    const [isLoadingAgents, setIsLoadingAgents] = useState(false);
 
     const handleSend = async () => {
         if (!message.trim() || isLoading) return;
@@ -80,6 +85,50 @@ export default function ChatPage() {
         setMessages(prev => prev.map((msg, idx) => 
             idx === index ? { ...msg, liked: !msg.liked } : msg
         ));
+    };
+
+    // Agent recommendation with debounce
+    useEffect(() => {
+        if (!agentEnabled) {
+            setRecommendedAgents([]);
+            return;
+        }
+
+        const timeoutId = setTimeout(async () => {
+            setIsLoadingAgents(true);
+            try {
+                const agents = await api.getAgents();
+                
+                // If no message, show top 5 agents
+                if (!message.trim()) {
+                    setRecommendedAgents(agents.slice(0, 5));
+                } else {
+                    // Filter agents based on message content (simple keyword matching)
+                    const filtered = agents.filter(agent => 
+                        agent.name.toLowerCase().includes(message.toLowerCase()) ||
+                        agent.description.toLowerCase().includes(message.toLowerCase()) ||
+                        agent.category?.toLowerCase().includes(message.toLowerCase())
+                    ).slice(0, 5);
+                    
+                    setRecommendedAgents(filtered.length > 0 ? filtered : agents.slice(0, 5));
+                }
+            } catch (error) {
+                console.error('Failed to fetch agents:', error);
+                setRecommendedAgents([]);
+            } finally {
+                setIsLoadingAgents(false);
+            }
+        }, 500); // 500ms debounce
+
+        return () => clearTimeout(timeoutId);
+    }, [agentEnabled, message]);
+
+    const handleSelectAgent = (agent: Agent) => {
+        setAgentId(agent.id);
+    };
+
+    const handleDeselectAgent = () => {
+        setAgentId(undefined);
     };
 
     const handleLogout = () => {
@@ -362,6 +411,53 @@ export default function ChatPage() {
 
             {/* Input Area */}
             <div className="bg-white border-t border-gray-200 p-4 space-y-3">
+                {/* Selected Agent Badge */}
+                {agentId && (
+                    <div className="flex items-center gap-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                        <Bot className="w-4 h-4 text-blue-600" />
+                        <span className="text-sm text-blue-900 flex-1">
+                            {recommendedAgents.find(a => a.id === agentId)?.name || 'Agent 선택됨'}
+                        </span>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleDeselectAgent}
+                            className="h-6 w-6 p-0"
+                        >
+                            <X className="w-3 h-3" />
+                        </Button>
+                    </div>
+                )}
+
+                {/* Agent Recommendations */}
+                {agentEnabled && recommendedAgents.length > 0 && (
+                    <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg space-y-2">
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs font-medium text-gray-700">
+                                {message.trim() ? '추천 Agent' : 'TOP Agent'}
+                            </span>
+                            {isLoadingAgents && (
+                                <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                            )}
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            {recommendedAgents.map((agent) => (
+                                <button
+                                    key={agent.id}
+                                    onClick={() => handleSelectAgent(agent)}
+                                    className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                                        agentId === agent.id
+                                            ? 'bg-blue-600 text-white border-blue-600'
+                                            : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                                    }`}
+                                >
+                                    {agent.name}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {/* Message Input */}
                 <div className="relative">
                     <Textarea
@@ -387,7 +483,7 @@ export default function ChatPage() {
                 </div>
 
                 {/* Bottom Controls */}
-                <div className="flex items-center gap-4 text-sm">
+                <div className="flex items-center gap-4 text-sm flex-wrap">
                     {/* Model Selector */}
                     <Select value={selectedModel} onValueChange={setSelectedModel}>
                         <SelectTrigger className="w-[220px]">
@@ -405,6 +501,21 @@ export default function ChatPage() {
                         </SelectContent>
                     </Select>
 
+                    {/* Agent Activation Checkbox */}
+                    <div className="flex items-center gap-2">
+                        <Checkbox
+                            id="agent-enabled"
+                            checked={agentEnabled}
+                            onCheckedChange={(checked) => setAgentEnabled(checked as boolean)}
+                        />
+                        <label 
+                            htmlFor="agent-enabled" 
+                            className="text-gray-700 cursor-pointer select-none"
+                        >
+                            Agent 활성화
+                        </label>
+                    </div>
+
                     {/* Drive Reference Switch */}
                     <div className="flex items-center gap-2">
                         <div
@@ -417,7 +528,7 @@ export default function ChatPage() {
                                     }`}
                             />
                         </div>
-                        <label className="text-gray-700 cursor-pointer" onClick={() => setDriveEnabled(!driveEnabled)}>
+                        <label className="text-gray-700 cursor-pointer select-none" onClick={() => setDriveEnabled(!driveEnabled)}>
                             Drive 참조
                         </label>
                     </div>
