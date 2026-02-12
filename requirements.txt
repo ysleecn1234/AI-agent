@@ -28,4 +28,4 @@ apscheduler==3.10.4
 openpyxl==3.1.5
 
 # 멀티모달 처리 (Whisper 등)
-openai-whisper==20231117
+# openai-whisper==20231117
