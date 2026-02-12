@@ -226,8 +226,9 @@ def seed_essential_agents():
         admin = User(
             id=admin_id,
             email=admin_email,
-            username="System Admin",
-            tier="ENTERPRISE"
+            name="System Admin",
+            department="IT Team",
+            password_hash="system_managed"
         )
         db.add(admin)
         db.commit()

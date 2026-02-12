@@ -82,3 +82,17 @@ async def publish_agent(req: PublishRequest, db: Session = Depends(get_db), user
         return {"status": "published", "agent_id": str(agent.id)}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+from application.usecases.ai_hub.service import hub_service
+
+@router.delete("/{agent_id}")
+def delete_agent(agent_id: str, db: Session = Depends(get_db), user_id: str = Depends(get_current_user_id)):
+    """
+    에이전트 삭제 (본인 소유만 가능, 공식 에이전트 불가)
+    """
+    result = hub_service.delete_agent(db, agent_id, user_id)
+    
+    if not result["success"]:
+        raise HTTPException(status_code=result["code"], detail=result["message"])
+        
+    return {"status": "deleted", "agent_id": agent_id}
