@@ -13,7 +13,7 @@ import {
     AgentSaveRequest
 } from '@/types/api';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://223.130.142.76:8000';
 
 class ApiClient {
     private static instance: ApiClient;
