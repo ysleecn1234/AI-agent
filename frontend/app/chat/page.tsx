@@ -8,14 +8,21 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Menu, User, Send, MessageSquare, FolderOpen, Bot, Settings, LogOut, Save, Sparkles, Archive } from 'lucide-react';
+import { Menu, User, Send, MessageSquare, FolderOpen, Bot, Settings, LogOut, Save, Sparkles, Archive, Copy, ThumbsUp, FileText } from 'lucide-react';
 import { SaveToDriveModal, CreateAgentModal } from '@/components/chat-action-modals';
 import { api } from '@/lib/api';
+
+interface ChatMessage {
+    role: 'user' | 'assistant';
+    content: string;
+    sources?: Array<{ id: string; title: string; score: number }>;
+    liked?: boolean;
+}
 
 export default function ChatPage() {
     const router = useRouter();
     const [message, setMessage] = useState('');
-    const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
+    const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [selectedModel, setSelectedModel] = useState('AUTO');
     const [agentId, setAgentId] = useState<string | undefined>(undefined);
     const [driveEnabled, setDriveEnabled] = useState(false);
@@ -24,6 +31,7 @@ export default function ChatPage() {
     const [saveModalOpen, setSaveModalOpen] = useState(false);
     const [agentModalOpen, setAgentModalOpen] = useState(false);
     const [selectedMessageIndex, setSelectedMessageIndex] = useState<number | null>(null);
+    const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
     const handleSend = async () => {
         if (!message.trim() || isLoading) return;
@@ -42,7 +50,12 @@ export default function ChatPage() {
                 agent_id: agentId,
             });
 
-            setMessages(prev => [...prev, { role: 'assistant', content: response.response }]);
+            setMessages(prev => [...prev, { 
+                role: 'assistant', 
+                content: response.response,
+                sources: response.sources || [],
+                liked: false
+            }]);
         } catch (error) {
             console.error('Error sending message:', error);
             const errorMessage = error instanceof Error ? error.message : '메시지 전송에 실패했습니다.';
@@ -50,6 +63,23 @@ export default function ChatPage() {
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const handleCopyMessage = async (content: string, index: number) => {
+        try {
+            await navigator.clipboard.writeText(content);
+            setCopiedIndex(index);
+            setTimeout(() => setCopiedIndex(null), 2000);
+        } catch (error) {
+            console.error('Failed to copy:', error);
+            alert('복사에 실패했습니다.');
+        }
+    };
+
+    const handleLikeMessage = (index: number) => {
+        setMessages(prev => prev.map((msg, idx) => 
+            idx === index ? { ...msg, liked: !msg.liked } : msg
+        ));
     };
 
     const handleLogout = () => {
@@ -238,26 +268,78 @@ export default function ChatPage() {
                                     <p className="whitespace-pre-wrap">{msg.content}</p>
                                 </div>
 
+                                {/* RAG Sources (AI messages only) */}
+                                {msg.role === 'assistant' && msg.sources && msg.sources.length > 0 && (
+                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-2">
+                                        <div className="flex items-center gap-2 text-xs font-medium text-blue-900">
+                                            <FileText className="w-3 h-3" />
+                                            <span>참조 문서 ({msg.sources.length})</span>
+                                        </div>
+                                        <div className="space-y-1">
+                                            {msg.sources.map((source, sIdx) => (
+                                                <div key={sIdx} className="flex items-center justify-between text-xs">
+                                                    <button
+                                                        onClick={() => router.push(`/drive/documents/${source.id}`)}
+                                                        className="text-blue-600 hover:underline truncate flex-1 text-left"
+                                                    >
+                                                        {source.title}
+                                                    </button>
+                                                    <span className="text-gray-500 ml-2">
+                                                        {Math.round(source.score * 100)}%
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Action Buttons (AI messages only) */}
                                 {msg.role === 'assistant' && (
-                                    <div className="flex gap-2">
+                                    <div className="flex gap-2 flex-wrap">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => handleCopyMessage(msg.content, idx)}
+                                            className="text-xs h-7 px-2"
+                                        >
+                                            {copiedIndex === idx ? (
+                                                <>
+                                                    <Copy className="w-3 h-3 mr-1" />
+                                                    복사됨!
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Copy className="w-3 h-3 mr-1" />
+                                                    복사
+                                                </>
+                                            )}
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => handleLikeMessage(idx)}
+                                            className={`text-xs h-7 px-2 ${msg.liked ? 'text-blue-600' : ''}`}
+                                        >
+                                            <ThumbsUp className={`w-3 h-3 mr-1 ${msg.liked ? 'fill-blue-600' : ''}`} />
+                                            {msg.liked ? '좋아요' : '좋아요'}
+                                        </Button>
                                         <Button
                                             variant="outline"
                                             size="sm"
                                             onClick={() => handleSaveToDrive(idx)}
-                                            className="text-xs"
+                                            className="text-xs h-7"
                                         >
                                             <Save className="w-3 h-3 mr-1" />
-                                            드라이브에 저장
+                                            저장
                                         </Button>
                                         <Button
                                             variant="outline"
                                             size="sm"
                                             onClick={() => handleCreateAgent(idx)}
-                                            className="text-xs"
+                                            className="text-xs h-7"
                                         >
                                             <Sparkles className="w-3 h-3 mr-1" />
-                                            에이전트 생성
+                                            Agent 생성
                                         </Button>
                                     </div>
                                 )}
