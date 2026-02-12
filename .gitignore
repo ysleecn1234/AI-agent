@@ -36,3 +36,11 @@ services/ai_drive/storage/
 # Development Artifacts
 *.db
 test_result.txt
+
+# Node.js (프론트엔드)
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+.npm
+.eslintcache
