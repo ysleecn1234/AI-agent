@@ -103,7 +103,7 @@ class AIDriveService:
                 tags=tags or []
             )
             
-            # 활동 로그
+            # 활동 로그 (성공)
             duration_ms = int((time.time() - start) * 1000)
             self.activity_logger.log(
                 user_id=creator_id,
@@ -118,6 +118,18 @@ class AIDriveService:
             )
             
             return result
+        except Exception as e:
+            # 활동 로그 (실패)
+            self.activity_logger.log(
+                user_id=creator_id,
+                action="upload",
+                details={
+                    "title": title or file.filename,
+                    "error": str(e),
+                },
+                success=False,
+            )
+            raise
         finally:
             if os.path.exists(temp_path):
                 os.remove(temp_path)
@@ -161,7 +173,8 @@ class AIDriveService:
                 print(f"[App] 제목 생성 실패: {e}")
                 title = "채팅 대화"
         
-        return self.pipeline.process_chat_save(
+        start = time.time()
+        result = self.pipeline.process_chat_save(
             chat_content=request.content,
             creator_id=request.creator_id,
             creator_department=request.creator_department,
@@ -169,6 +182,17 @@ class AIDriveService:
             description=description,
             visibility=request.visibility
         )
+
+        duration_ms = int((time.time() - start) * 1000)
+        self.activity_logger.log(
+            user_id=request.creator_id,
+            action="chat_save",
+            details={"title": title},
+            success=True,
+            duration_ms=duration_ms,
+        )
+
+        return result
     
     async def save_agent_result(self, request) -> Dict[str, Any]:
         """
@@ -177,8 +201,9 @@ class AIDriveService:
         현재: Pipeline으로 단순 위임
         향후: 에이전트 메타데이터 추가 등 가능
         """
-        return self.pipeline.process_agent_save(
-            agent_content=request.content,
+        start = time.time()
+        result = self.pipeline.process_agent_save(
+            agent_output=request.content,
             creator_id=request.creator_id,
             creator_department=request.creator_department,
             agent_name=request.agent_name,
@@ -186,16 +211,22 @@ class AIDriveService:
             description=request.description or "",
             visibility=request.visibility
         )
+
+        duration_ms = int((time.time() - start) * 1000)
+        self.activity_logger.log(
+            user_id=request.creator_id,
+            action="agent_save",
+            details={"agent_name": request.agent_name},
+            success=True,
+            duration_ms=duration_ms,
+        )
+
+        return result
     
     async def search_documents(self, request) -> list:
         """
         RAG 검색 (Facade)
-        
-        현재: RAGSearcher로 단순 위임
-        향후: 검색 결과 후처리, 권한 필터링 강화 등 가능
         """
-        start = time.time()
-        
         # Lazy initialization
         if not self._rag_searcher:
             from services.ai_drive.core.rag_search import RAGSearcher
@@ -205,19 +236,6 @@ class AIDriveService:
             query=request.query,
             user_department=request.user_department,
             top_k=request.top_k
-        )
-        
-        # 활동 로그
-        duration_ms = int((time.time() - start) * 1000)
-        self.activity_logger.log(
-            user_id=request.user_id if hasattr(request, 'user_id') else "",
-            action="search",
-            details={
-                "query": request.query[:100],
-                "results_count": len(results),
-            },
-            success=True,
-            duration_ms=duration_ms,
         )
         
         return results

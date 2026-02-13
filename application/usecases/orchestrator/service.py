@@ -88,5 +88,23 @@ class Orchestrator:
         """
         return self.pipeline.call_llm(task=task, prompt=prompt, options=options)
 
+    def save_chat_log(self, user_id: str, session_id: str, user_input: str, ai_response: str):
+        """채팅 로그 DB 저장"""
+        from services.orchestrator.db.tables import ChatLog
+        from application.database import get_db
+        
+        db = next(get_db())
+        try:
+            new_log = ChatLog(
+                user_id=user_id,
+                session_id=session_id,
+                user_input=user_input,
+                ai_response=ai_response
+            )
+            db.add(new_log)
+            db.commit()
+        finally:
+            db.close()
+
 # Singleton Instance
 orchestrator = Orchestrator()

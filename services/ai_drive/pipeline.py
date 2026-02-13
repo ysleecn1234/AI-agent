@@ -20,6 +20,8 @@ from core.embedding import EmbeddingGenerator
 from db.milvus_client import MilvusClient
 from db.postgres_client import PostgresClient
 from core.cost_manager import CostManager
+from services.common.cost_logger import get_cost_logger
+from services.orchestrator.cost_calculator import get_cost_calculator
 import json
 
 class DocumentPipeline:
@@ -41,6 +43,8 @@ class DocumentPipeline:
         self.milvus_client = MilvusClient()
         self.postgres_client = PostgresClient()
         self.orchestrator = orchestrator
+        self.cost_logger = get_cost_logger()
+        self.cost_calculator = get_cost_calculator()
 
     def process_file_upload(
         self,
@@ -186,51 +190,29 @@ class DocumentPipeline:
             # 처리 시간 계산
             duration_ms = int((time.time() - start_time) * 1000)
             
-            # 활동 로그 기록
-            self.postgres_client.log_activity(
+            # 비용 로그 기록 (임베딩 비용 - API 실제 토큰)
+            actual_tokens = self.embedding_generator.last_usage.total_tokens if self.embedding_generator.last_usage else 0
+            embed_cost = self.cost_calculator.calculate_cost("text-embedding-3-small", actual_tokens, 0)
+
+            self.cost_logger.log_embedding_cost(
                 user_id=creator_id,
-                action="update_file" if version > 1 else "upload",
                 doc_id=doc_id,
-                success=True,
-                duration_ms=duration_ms,
-                details={
-                    "filename": filename,
-                    "file_type": file_type,
-                    "chunk_count": len(chunks),
-                    "version": version,
-                    "parent_doc_id": parent_doc_id
-                }
+                tokens=actual_tokens,
+                cost_usd=embed_cost["cost_usd"]["total"],
+                cost_krw=embed_cost["cost_krw"]["total"],
             )
-            
-            # 비용 로그 기록 (임베딩 비용)
-            total_tokens = sum(self.chunker.get_token_count(c) for c in chunks)
-            cost_usd = total_tokens * 0.00000002  # $0.02 per 1M tokens
-            cost_krw = cost_usd * 1400
-            
+
             # 크기별 저장 비용
             cost_manager = CostManager()
             storage_cost = cost_manager.calculate_daily_cost(file_size)
 
-            self.postgres_client.log_cost(
+            self.cost_logger.log_embedding_cost(
                 user_id=creator_id,
-                operation="storage",
-                tokens_used=0,
+                doc_id=doc_id,
+                tokens=0,
                 cost_usd=storage_cost["daily_cost_krw"] / 1400,
                 cost_krw=storage_cost["daily_cost_krw"],
-                doc_id=doc_id,
-                model_name=f"storage_{storage_cost['size_category']}"
-            )
-
-            print(f"  → 저장 비용: {storage_cost['daily_cost_krw']}원/일 ({storage_cost['size_category']})")
-
-            self.postgres_client.log_cost(
-                user_id=creator_id,
-                operation="embedding",
-                tokens_used=total_tokens,
-                cost_usd=cost_usd,
-                cost_krw=cost_krw,
-                doc_id=doc_id,
-                model_name="text-embedding-3-small"
+                operation="storage",
             )
             
             print(f"[Pipeline] 처리 완료: {duration_ms}ms")
@@ -242,8 +224,8 @@ class DocumentPipeline:
                 "filename": filename,
                 "file_type": file_type,
                 "chunk_count": len(chunks),
-                "total_tokens": total_tokens,
-                "cost_krw": round(cost_krw, 4),
+                "total_tokens": actual_tokens,
+                "cost_krw": round(embed_cost["cost_krw"]["total"], 4),
                 "duration_ms": duration_ms
             }
             
@@ -251,13 +233,6 @@ class DocumentPipeline:
             # 에러 발생 시 상태 업데이트
             if 'doc_id' in locals():
                 self.postgres_client.update_document_status(doc_id, "error")
-                self.postgres_client.log_activity(
-                    user_id=creator_id,
-                    action="upload",
-                    doc_id=doc_id,
-                    success=False,
-                    details={"error": str(e)}
-                )
             
             print(f"[Pipeline] 처리 실패: {str(e)}")
             raise
@@ -345,19 +320,16 @@ class DocumentPipeline:
             # chunk_count 업데이트
             self.postgres_client.update_chunk_count(doc_id, len(chunks))
 
-            # 비용 로그 기록 (임베딩 비용)
-            total_tokens = sum(self.chunker.get_token_count(c) for c in chunks)
-            cost_usd = total_tokens * 0.00000002
-            cost_krw = cost_usd * 1400
+            # 비용 로그 기록 (임베딩 비용 - API 실제 토큰)
+            actual_tokens = self.embedding_generator.last_usage.total_tokens if self.embedding_generator.last_usage else 0
+            embed_cost = self.cost_calculator.calculate_cost("text-embedding-3-small", actual_tokens, 0)
 
-            self.postgres_client.log_cost(
+            self.cost_logger.log_embedding_cost(
                 user_id=creator_id,
-                operation="embedding",
-                tokens_used=total_tokens,
-                cost_usd=cost_usd,
-                cost_krw=cost_krw,
                 doc_id=doc_id,
-                model_name="text-embedding-3-small"
+                tokens=actual_tokens,
+                cost_usd=embed_cost["cost_usd"]["total"],
+                cost_krw=embed_cost["cost_krw"]["total"],
             )
 
             # 크기별 저장 비용
@@ -365,28 +337,18 @@ class DocumentPipeline:
             cost_manager = CostManager()
             storage_cost = cost_manager.calculate_daily_cost(file_size)
 
-            self.postgres_client.log_cost(
+            self.cost_logger.log_embedding_cost(
                 user_id=creator_id,
-                operation="storage",
-                tokens_used=0,
+                doc_id=doc_id,
+                tokens=0,
                 cost_usd=storage_cost["daily_cost_krw"] / 1400,
                 cost_krw=storage_cost["daily_cost_krw"],
-                doc_id=doc_id,
-                model_name=f"storage_{storage_cost['size_category']}"
+                operation="storage",
             )
             
             self.postgres_client.update_document_status(doc_id, "active")
             
             duration_ms = int((time.time() - start_time) * 1000)
-            
-            # 로그 기록
-            self.postgres_client.log_activity(
-                user_id=creator_id,
-                action="chat_save",
-                doc_id=doc_id,
-                success=True,
-                duration_ms=duration_ms
-            )
             
             print(f"[Pipeline] 채팅 저장 완료: {duration_ms}ms")
             
@@ -494,19 +456,16 @@ class DocumentPipeline:
             # chunk_count 업데이트
             self.postgres_client.update_chunk_count(doc_id, len(chunks))
 
-            # 비용 로그 기록 (임베딩 비용)
-            total_tokens = sum(self.chunker.get_token_count(c) for c in chunks)
-            cost_usd = total_tokens * 0.00000002
-            cost_krw = cost_usd * 1400
+            # 비용 로그 기록 (임베딩 비용 - API 실제 토큰)
+            actual_tokens = self.embedding_generator.last_usage.total_tokens if self.embedding_generator.last_usage else 0
+            embed_cost = self.cost_calculator.calculate_cost("text-embedding-3-small", actual_tokens, 0)
 
-            self.postgres_client.log_cost(
+            self.cost_logger.log_embedding_cost(
                 user_id=creator_id,
-                operation="embedding",
-                tokens_used=total_tokens,
-                cost_usd=cost_usd,
-                cost_krw=cost_krw,
                 doc_id=doc_id,
-                model_name="text-embedding-3-small"
+                tokens=actual_tokens,
+                cost_usd=embed_cost["cost_usd"]["total"],
+                cost_krw=embed_cost["cost_krw"]["total"],
             )
 
             # 크기별 저장 비용
@@ -514,29 +473,18 @@ class DocumentPipeline:
             cost_manager = CostManager()
             storage_cost = cost_manager.calculate_daily_cost(file_size)
 
-            self.postgres_client.log_cost(
+            self.cost_logger.log_embedding_cost(
                 user_id=creator_id,
-                operation="storage",
-                tokens_used=0,
+                doc_id=doc_id,
+                tokens=0,
                 cost_usd=storage_cost["daily_cost_krw"] / 1400,
                 cost_krw=storage_cost["daily_cost_krw"],
-                doc_id=doc_id,
-                model_name=f"storage_{storage_cost['size_category']}"
+                operation="storage",
             )
 
             self.postgres_client.update_document_status(doc_id, "active")
             
             duration_ms = int((time.time() - start_time) * 1000)
-            
-            # 로그 기록
-            self.postgres_client.log_activity(
-                user_id=creator_id,
-                action="agent_save",
-                doc_id=doc_id,
-                success=True,
-                duration_ms=duration_ms,
-                details={"agent_name": agent_name}
-            )
             
             print(f"[Pipeline] 에이전트 결과 저장 완료: {duration_ms}ms")
             

@@ -94,12 +94,13 @@ class CostLogger:
     
     def log_embedding_cost(
         self,
-        model_name: str,
-        tokens_used: int,
+        user_id: str,
+        tokens: int,
         cost_usd: float,
         cost_krw: float,
-        user_id: Optional[str] = None,
-        doc_id: Optional[str] = None
+        model_name: str = "text-embedding-3-small",
+        doc_id: Optional[str] = None,
+        operation: str = "embedding"
     ):
         """
         임베딩 비용을 DB에 기록
@@ -114,9 +115,9 @@ class CostLogger:
             log = CostLog(
                 user_id=uuid.UUID(user_id) if user_id else uuid.UUID('00000000-0000-0000-0000-000000000000'),
                 doc_id=uuid.UUID(doc_id) if doc_id else None,
-                operation="embedding",
+                operation=operation,
                 model_name=model_name,
-                tokens_used=tokens_used,
+                tokens_used=tokens,
                 cost_usd=cost_usd,
                 cost_krw=cost_krw,
             )

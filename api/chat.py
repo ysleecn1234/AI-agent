@@ -1,11 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional, List
 
-from application.database import get_db
-from services.orchestrator.db.tables import ChatLog
-from application.database import User
 from application.auth import decode_access_token
 from fastapi.security import OAuth2PasswordBearer
 from application.usecases.orchestrator.service import orchestrator
@@ -37,7 +33,6 @@ def get_current_user_id(token: str = Depends(oauth2_scheme)):
 @router.post("/", response_model=ChatResponse)
 async def chat_endpoint(
     req: ChatRequest, 
-    db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user_id)
 ):
     # A. Save User Input to DB (Log)
@@ -59,14 +54,12 @@ async def chat_endpoint(
     # C. Save AI Response to DB (Log)
     session_id = result.get("session_id", req.context_id or "new-session")
 
-    new_log = ChatLog(
+    orchestrator.save_chat_log(
         user_id=user_id,
         session_id=session_id,
         user_input=req.message,
         ai_response=result["response"]
     )
-    db.add(new_log)
-    db.commit()
 
     return {
         "response": result["response"],

@@ -22,12 +22,9 @@ class EmbeddingGenerator:
     """
     
     def __init__(self, model: str = "text-embedding-3-small"):
-        """
-        Args:
-            model: 임베딩 모델명
-        """
         self.model = model
         self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        self.last_usage = None  # 마지막 호출의 토큰 사용량
     
     def create(self, text: str) -> List[float]:
         """
@@ -47,6 +44,7 @@ class EmbeddingGenerator:
             input=text
         )
         
+        self.last_usage = response.usage
         return response.data[0].embedding
     
     def create_batch(self, texts: List[str], batch_size: int = 100) -> List[List[float]]:
@@ -93,6 +91,12 @@ class EmbeddingGenerator:
             
             batch_embeddings = [item.embedding for item in response.data]
             all_embeddings.extend(batch_embeddings)
+            
+            # 토큰 사용량 누적
+            if self.last_usage is None:
+                self.last_usage = response.usage
+            else:
+                self.last_usage.total_tokens += response.usage.total_tokens
             
             if len(valid_texts) > batch_size:
                 print(f"  → 임베딩 배치 {i//batch_size + 1}/{(len(valid_texts)-1)//batch_size + 1} 완료")

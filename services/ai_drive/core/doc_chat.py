@@ -15,6 +15,8 @@ import re
 import time
 from typing import Dict, List, Any
 from dotenv import load_dotenv
+from services.common.cost_logger import get_cost_logger
+from services.orchestrator.cost_calculator import get_cost_calculator
 
 load_dotenv()
 
@@ -45,11 +47,13 @@ class DocumentChat:
                 self._init_clients()
         
         # DB 클라이언트
-        from db.postgres_client import PostgresClient
-        from db.milvus_client import MilvusClient
+        from services.ai_drive.db.postgres_client import PostgresClient
+        from services.ai_drive.db.milvus_client import MilvusClient
         
         self.postgres_client = PostgresClient()
         self.milvus_client = MilvusClient()
+        self.cost_logger = get_cost_logger()
+        self.cost_calculator = get_cost_calculator()
     
     def _init_clients(self):
         """LLM 클라이언트 초기화"""
@@ -141,25 +145,23 @@ class DocumentChat:
     def _search_chunks(self, doc_id: str, question: str) -> List[str]:
         """해당 문서에서 관련 청크 검색"""
         try:
-            from core.embedding import EmbeddingGenerator
+            from services.ai_drive.core.embedding import EmbeddingGenerator
             
             embedding_gen = EmbeddingGenerator()
             question_embedding = embedding_gen.create(question)
             
-            # 비용 로깅
+            # 비용 로깅 (API 실제 토큰)
             try:
-                tokens = len(question) * 2  # 추정치
-                cost_usd = tokens * 0.00000002  # $0.02/1M tokens
-                cost_krw = cost_usd * 1400
-                
-                self.postgres_client.log_cost(
-                    user_id="system",  # 문서 채팅 임베딩
-                    operation="chat_embedding",
-                    tokens_used=tokens,
-                    cost_usd=cost_usd,
-                    cost_krw=cost_krw,
+                actual_tokens = embedding_gen.last_usage.total_tokens if embedding_gen.last_usage else 0
+                embed_cost = self.cost_calculator.calculate_cost("text-embedding-3-small", actual_tokens, 0)
+
+                self.cost_logger.log_embedding_cost(
+                    user_id="system",
+                    tokens=actual_tokens,
+                    cost_usd=embed_cost["cost_usd"]["total"],
+                    cost_krw=embed_cost["cost_krw"]["total"],
                     doc_id=doc_id,
-                    model_name="text-embedding-3-small"
+                    operation="chat_embedding",
                 )
             except Exception as log_error:
                 print(f"  ⚠️ 비용 로그 실패: {log_error}")
