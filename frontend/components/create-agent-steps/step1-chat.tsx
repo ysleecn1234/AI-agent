@@ -7,6 +7,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { AgentDraft } from '@/types/agent';
 import { Send, Bot, User, Sparkles } from 'lucide-react';
 
+export type { AgentDraft };
+
 interface Step1ChatProps {
     draft: AgentDraft;
     setDraft: (draft: AgentDraft) => void;
@@ -55,7 +57,9 @@ export function Step1Chat({ draft, setDraft, onNext }: Step1ChatProps) {
                     name: 'AI Assistant',
                     description: userMsg,
                     goal: userMsg,
-                    systemPrompt: `You are a helpful assistant specialized in ${userMsg}.`
+                    systemPrompt: `You are a helpful assistant specialized in ${userMsg}.`,
+                    category: draft.category || '업무보조',
+                    visibility: draft.visibility || 'private'
                 });
             } else if (messages.length === 3) {
                 aiResponse = `알겠습니다. 지식 기반도 고려하여 설정을 업데이트했습니다.\n\n이제 기본적인 기획이 완료되었습니다. [다음] 버튼을 눌러 세부 설정을 확인하고 모델을 선택해 주세요.`;

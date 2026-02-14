@@ -237,7 +237,7 @@ export default function ChatPage() {
                         <SheetHeader>
                             <SheetTitle className="flex items-center gap-2">
                                 <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
-                                    <span className="text-white text-lg font-bold">IN7</span>
+                                    <span className="text-white text-lg font-bold">ISOR</span>
                                 </div>
                                 <span>AI 플랫폼</span>
                             </SheetTitle>
@@ -315,7 +315,7 @@ export default function ChatPage() {
                     <div className="flex items-center justify-center h-full">
                         <div className="text-center">
                             <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <span className="text-white text-3xl font-bold">IN7</span>
+                                <span className="text-white text-3xl font-bold">ISOR</span>
                             </div>
                             <h2 className="text-2xl font-bold text-gray-800 mb-2">
                                 무엇을 도와드릴까요?

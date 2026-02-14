@@ -94,4 +94,6 @@ export interface AgentDraft {
     systemPrompt: string;
     ragEnabled: boolean;
     knowledgeBaseId?: string;
+    category: string;
+    visibility: 'private' | 'team' | 'public';
 }

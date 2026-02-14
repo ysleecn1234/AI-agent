@@ -162,7 +162,7 @@ export default function ArchivePage() {
                         <SheetHeader>
                             <SheetTitle className="flex items-center gap-2">
                                 <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
-                                    <span className="text-white text-lg font-bold">IN7</span>
+                                    <span className="text-white text-lg font-bold">ISOR</span>
                                 </div>
                                 <span>AI 플랫폼</span>
                             </SheetTitle>

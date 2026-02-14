@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { api } from '@/lib/api';
 
 export default function RegisterPage() {
     const router = useRouter();
@@ -39,26 +40,14 @@ export default function RegisterPage() {
         }
 
         try {
-            const response = await fetch('http://localhost:8000/auth/register', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    email: formData.email,
-                    password: formData.password,
-                    name: formData.name,
-                    department: formData.department,
-                }),
+            const data = await api.register({
+                email: formData.email,
+                password: formData.password,
+                name: formData.name,
+                department: formData.department,
             });
 
-            if (!response.ok) {
-                throw new Error('회원가입에 실패했습니다.');
-            }
-
-            const data = await response.json();
-
-            // 토큰 저장
+            // 토큰 저장 (api.register에서 이미 access_token 저장됨)
             localStorage.setItem('access_token', data.access_token);
             localStorage.setItem('user_name', data.user_name);
             localStorage.setItem('department', data.department);
@@ -78,7 +67,7 @@ export default function RegisterPage() {
                 <CardHeader className="space-y-1 text-center">
                     <div className="flex justify-center mb-4">
                         <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center">
-                            <span className="text-white text-2xl font-bold">IN7</span>
+                            <span className="text-white text-2xl font-bold">ISOR</span>
                         </div>
                     </div>
                     <CardTitle className="text-2xl font-bold">회원가입</CardTitle>

@@ -55,6 +55,43 @@ export function Step2Config({ draft, setDraft, onBack, onComplete }: Step2Config
                                 className="min-h-[80px]"
                             />
                         </div>
+
+                        <div className="space-y-2">
+                            <Label>카테고리</Label>
+                            <Select
+                                value={draft.category}
+                                onValueChange={(value) => handleChange('category', value)}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="카테고리 선택" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="업무보조">업무보조</SelectItem>
+                                    <SelectItem value="마케팅">마케팅</SelectItem>
+                                    <SelectItem value="개발">개발</SelectItem>
+                                    <SelectItem value="데이터분석">데이터분석</SelectItem>
+                                    <SelectItem value="고객응대">고객응대</SelectItem>
+                                    <SelectItem value="기타">기타</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>공개 범위</Label>
+                            <Select
+                                value={draft.visibility}
+                                onValueChange={(value) => handleChange('visibility', value as 'private' | 'team' | 'public')}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="공개 범위 선택" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="private">🔒 나만 사용</SelectItem>
+                                    <SelectItem value="team">👥 팀 공유</SelectItem>
+                                    <SelectItem value="public">🌐 전체 공개</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
 
                     <div className="bg-white p-6 rounded-xl border border-gray-200 space-y-4">

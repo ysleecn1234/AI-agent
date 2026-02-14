@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Check, Sparkles, Settings2 } from 'lucide-react';
 import { AgentDraft, Step1Chat } from '@/components/create-agent-steps/step1-chat';
 import { Step2Config } from '@/components/create-agent-steps/step2-config';
+import { api } from '@/lib/api';
 
 export default function CreateAgentPage() {
     const router = useRouter();
@@ -17,7 +18,9 @@ export default function CreateAgentPage() {
         model: 'Gemini-1.5-Flash', // Default
         systemPrompt: '',
         ragEnabled: false,
-        knowledgeBaseId: undefined
+        knowledgeBaseId: undefined,
+        category: '업무보조', // Default
+        visibility: 'private' // Default
     });
 
     const handleNext = () => {
@@ -29,11 +32,21 @@ export default function CreateAgentPage() {
         else router.back();
     };
 
-    const handleComplete = () => {
-        // Mock API call to create agent
-        console.log('Creating agent:', draft);
-        alert('에이전트가 생성되었습니다! (Mock)');
-        router.push('/agents');
+    const handleComplete = async () => {
+        try {
+            await api.createAgentDraft({
+                name: draft.name,
+                description: draft.description,
+                category: draft.category,
+                visibility: draft.visibility,
+                system_prompt: draft.systemPrompt
+            });
+            alert('에이전트가 생성되었습니다!');
+            router.push('/agents');
+        } catch (error) {
+            console.error('에이전트 생성 실패:', error);
+            alert('에이전트 생성에 실패했습니다. 다시 시도해주세요.');
+        }
     };
 
     return (

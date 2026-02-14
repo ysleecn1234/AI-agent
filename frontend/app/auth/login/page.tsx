@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { api } from '@/lib/api';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -20,22 +21,9 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:8000/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (!response.ok) {
-        throw new Error('로그인에 실패했습니다.');
-      }
-
-      const data = await response.json();
+      const data = await api.login({ email, password });
       
-      // 토큰 저장
-      localStorage.setItem('access_token', data.access_token);
+      // 토큰 저장 (api.login에서 이미 access_token 저장)
       localStorage.setItem('user_name', data.user_name);
       localStorage.setItem('department', data.department);
 
@@ -54,7 +42,7 @@ export default function LoginPage() {
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-4">
             <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center">
-              <span className="text-white text-2xl font-bold">IN7</span>
+              <span className="text-white text-2xl font-bold">ISOR</span>
             </div>
           </div>
           <CardTitle className="text-2xl font-bold">로그인</CardTitle>
