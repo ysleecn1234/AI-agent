@@ -162,17 +162,32 @@ export function Step1Chat({ draft, setDraft, onNext }: Step1ChatProps) {
                     </h3>
 
                     <div className="space-y-4 text-sm">
-                        <div>
+                        <div className="space-y-1">
                             <label className="text-xs text-blue-600 font-medium">이름</label>
-                            <p className="font-medium text-gray-900">{draft.name || '(미정)'}</p>
+                            <Input
+                                value={draft.name}
+                                onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+                                placeholder="에이전트 이름"
+                                className="text-sm"
+                            />
                         </div>
-                        <div>
+                        <div className="space-y-1">
                             <label className="text-xs text-blue-600 font-medium">설명</label>
-                            <p className="text-gray-600 line-clamp-2">{draft.description || '(미정)'}</p>
+                            <Input
+                                value={draft.description}
+                                onChange={(e) => setDraft({ ...draft, description: e.target.value })}
+                                placeholder="에이전트 설명"
+                                className="text-sm"
+                            />
                         </div>
-                        <div>
+                        <div className="space-y-1">
                             <label className="text-xs text-blue-600 font-medium">목표</label>
-                            <p className="text-gray-600 line-clamp-2">{draft.goal || '(미정)'}</p>
+                            <Input
+                                value={draft.goal}
+                                onChange={(e) => setDraft({ ...draft, goal: e.target.value })}
+                                placeholder="에이전트 목표"
+                                className="text-sm"
+                            />
                         </div>
                     </div>
                 </div>
