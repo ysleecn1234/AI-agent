@@ -130,6 +130,7 @@ export interface CreateAgentRequest {
     category: string;
     visibility: 'private' | 'team' | 'public';
     system_prompt?: string;
+    selected_messages?: Array<{ role: string; content: string }>;
 }
 
 // Chat

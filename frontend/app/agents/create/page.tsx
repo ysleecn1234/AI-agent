@@ -20,7 +20,8 @@ export default function CreateAgentPage() {
         ragEnabled: false,
         knowledgeBaseId: undefined,
         category: '업무보조', // Default
-        visibility: 'private' // Default
+        visibility: 'private', // Default
+        messages: []
     });
 
     const handleNext = () => {
@@ -39,7 +40,8 @@ export default function CreateAgentPage() {
                 description: draft.description,
                 category: draft.category,
                 visibility: draft.visibility,
-                system_prompt: draft.systemPrompt
+                system_prompt: draft.systemPrompt,
+                selected_messages: draft.messages || []
             });
             alert('에이전트가 생성되었습니다!');
             router.push('/agents');
