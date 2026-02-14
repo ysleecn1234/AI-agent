@@ -71,7 +71,7 @@ export function Step1Chat({ draft, setDraft, onNext }: Step1ChatProps) {
                 aiResponse = `추가적인 요청사항이 반영되었습니다. 더 수정할 내용이 없다면 [다음] 단계로 진행해 주세요.`;
             }
 
-            const updatedMessages = [...messages, { role: 'user', content: userMsg }, { role: 'assistant', content: aiResponse }];
+            const updatedMessages = [...messages, { role: 'user' as const, content: userMsg }, { role: 'assistant' as const, content: aiResponse }];
             setMessages(prev => [...prev, { role: 'assistant', content: aiResponse }]);
             // 대화 내용을 draft에 저장
             setDraft({ ...draft, messages: updatedMessages });
