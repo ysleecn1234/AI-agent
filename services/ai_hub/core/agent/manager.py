@@ -60,8 +60,11 @@ class AgentManager:
         analysis = await orchestrator.recommend_agents(user_msg, conversation_history)
         
         # 2. 검색 수행 (DB 세션은 상위에서 주입받아야 함 - 현재는 None으로 호출될 수 있음)
-        # TODO: Service Layer에서 DB 세션을 넘겨주도록 개선 필요
-        return self.search_agents_by_analysis(analysis)
+        db = SessionLocal()
+        try:
+            return self.search_agents_by_analysis(analysis, db=db)
+        finally:
+            db.close()
 
     def search_agents_by_analysis(self, analysis: Dict, db: Session = None) -> List[Dict]:
         """

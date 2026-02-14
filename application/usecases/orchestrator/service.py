@@ -42,18 +42,20 @@ class Orchestrator:
             try:
                 db_gen = get_db()
                 db = next(db_gen)
-                agent_repo = AgentRepository()
-                agent = agent_repo.get_agent(db, agent_id)
-                
-                if agent:
-                    system_prompt = agent.system_prompt
-                    # [Override] 에이전트가 설정한 모델이 있고, 요청이 AUTO라면 에이전트 모델 사용
-                    if model_type == "AUTO" and agent.model_type != "AUTO":
-                        model_type = agent.model_type
-                        
-                    print(f"[Orchestrator] Agent Active: {agent.name} (Model: {model_type})")
-                else:
-                    print(f"[Orchestrator] Warning: Agent {agent_id} not found.")
+                try:
+                    agent_repo = AgentRepository()
+                    agent = agent_repo.get_agent(db, agent_id)
+                    
+                    if agent:
+                        system_prompt = agent.system_prompt
+                        if model_type == "AUTO" and agent.model_type != "AUTO":
+                            model_type = agent.model_type
+                            
+                        print(f"[Orchestrator] Agent Active: {agent.name} (Model: {model_type})")
+                    else:
+                        print(f"[Orchestrator] Warning: Agent {agent_id} not found.")
+                finally:
+                    db.close()
             except Exception as e:
                 print(f"[Orchestrator] Failed to load agent context: {e}")
 

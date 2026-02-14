@@ -173,9 +173,21 @@ class AIDriveService:
                 print(f"[App] 제목 생성 실패: {e}")
                 title = "채팅 대화"
         
+        # 채팅 내용 문서화 (구조화)
+        try:
+            format_result = self._orchestrator.call_llm(
+                task="doc_format",
+                prompt=f"다음 대화 내용을 구조화된 문서로 변환하세요:\n\n{request.content}"
+            )
+            formatted_content = format_result["content"]
+            print(f"[App] 문서화 완료: {len(formatted_content)}자")
+        except Exception as e:
+            print(f"[App] 문서화 실패, 원문 사용: {e}")
+            formatted_content = request.content
+
         start = time.time()
         result = self.pipeline.process_chat_save(
-            chat_content=request.content,
+            chat_content=formatted_content,
             creator_id=request.creator_id,
             creator_department=request.creator_department,
             title=title,
@@ -201,9 +213,21 @@ class AIDriveService:
         현재: Pipeline으로 단순 위임
         향후: 에이전트 메타데이터 추가 등 가능
         """
+        # 에이전트 결과 문서화 (구조화)
+        try:
+            format_result = self._orchestrator.call_llm(
+                task="doc_format",
+                prompt=f"다음 에이전트 실행 결과를 구조화된 문서(보고서)로 변환하세요:\n\n{request.content}"
+            )
+            formatted_content = format_result["content"]
+            print(f"[App] 에이전트 결과 문서화 완료: {len(formatted_content)}자")
+        except Exception as e:
+            print(f"[App] 문서화 실패, 원문 사용: {e}")
+            formatted_content = request.content
+
         start = time.time()
         result = self.pipeline.process_agent_save(
-            agent_output=request.content,
+            agent_output=formatted_content,
             creator_id=request.creator_id,
             creator_department=request.creator_department,
             agent_name=request.agent_name,
@@ -364,6 +388,11 @@ class AIDriveService:
             question=request.question,
             user_id=request.user_id
         )
+        
+        # API 응답 형식에 맞게 필드 추가
+        result["success"] = "error" not in result
+        result["doc_id"] = doc_id
+        result["question"] = request.question
         
         # 활동 로그
         duration_ms = int((time.time() - start) * 1000)

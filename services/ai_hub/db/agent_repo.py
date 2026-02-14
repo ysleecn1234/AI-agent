@@ -28,7 +28,6 @@ class AgentRepository:
         db.add(new_agent)
         db.commit()
         db.refresh(new_agent)
-        db.refresh(new_agent)
         return new_agent
 
     def get_agent(self, db: Session, agent_id: str) -> Optional[object]:

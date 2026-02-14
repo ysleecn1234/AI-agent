@@ -1,3 +1,5 @@
+from datetime import timedelta
+from application.auth import ACCESS_TOKEN_EXPIRE_MINUTES
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
@@ -48,7 +50,10 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
     db.refresh(new_user)
     
     # Generate Token
-    access_token = create_access_token(data={"sub": new_user.email, "user_id": str(new_user.id)})
+    access_token = create_access_token(
+        data={"sub": new_user.email, "user_id": str(new_user.id)},
+        expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    )
     return {
         "access_token": access_token, 
         "token_type": "bearer",
@@ -68,7 +73,10 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
         raise HTTPException(status_code=401, detail="Invalid email or password")
     
     # Generate Token
-    access_token = create_access_token(data={"sub": db_user.email, "user_id": str(db_user.id)})
+    access_token = create_access_token(
+        data={"sub": db_user.email, "user_id": str(db_user.id)},
+        expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    )
     return {
         "access_token": access_token, 
         "token_type": "bearer",
