@@ -282,7 +282,7 @@ class AIDriveService:
         # Milvus에서 벡터 삭제
         from services.ai_drive.db.milvus_client import MilvusClient
         milvus_client = MilvusClient()
-        milvus_client.delete_by_document(doc_id)
+        milvus_client.delete_by_doc_id(doc_id)
         
         # 활동 로그 (activity_logger로 통일)
         self.activity_logger.log(
@@ -325,6 +325,15 @@ class AIDriveService:
         
         if not result["success"]:
             raise ValueError(result.get("error", "메타데이터 수정 실패"))
+
+        # [Critical Fix] Milvus 메타데이터 동기화 (visibility)
+        if visibility:
+            try:
+                from services.ai_drive.db.milvus_client import MilvusClient
+                milvus_client = MilvusClient()
+                milvus_client.update_metadata(doc_id, visibility=visibility)
+            except Exception as e:
+                print(f"[App] Milvus Update Failed: {e}")
         
         # 활동 로그
         self.activity_logger.log(

@@ -140,25 +140,6 @@ class MilvusClient:
         print(f"✓ {len(chunks)}개 청크 저장 완료 (doc_id: {doc_id})")
         
         return result.primary_keys
-
-    def insert_agent(self, agent_data: Dict[str, Any], embedding: List[float]) -> str:
-        """
-        Agent 정보 및 벡터 저장
-        Collection: ai_agent_store (Todo: _create_collection에 추가 필요)
-        """
-        # Note: 현재는 데모/테스트를 위해 로그만 출력하고 실제 저장은 Skip하거나
-        # 별도 컬렉션 생성 로직이 필요함. 여기서는 구조만 잡음.
-        print(f"[Milvus] Agent Inserted: {agent_data.get('name')} (Dim: {len(embedding)})")
-        return agent_data.get("id")
-
-    def search_agents(self, query_vector: List[float], top_k: int = 5) -> List[Dict[str, Any]]:
-        """
-        Agent 유사도 검색
-        """
-        # Note: 실제 Agent Collection 검색 로직 구현 필요
-        # 현재는 Mock 동작으로 구조 유지
-        print(f"[Milvus] Searching Agents... (Query Dim: {len(query_vector)})")
-        return [] # Hub에서 Mock Fallback으로 처리됨
     
     def search(
         self,
@@ -230,6 +211,57 @@ class MilvusClient:
         print(f"✓ doc_id={doc_id} 삭제 완료")
         
         return result.delete_count
+
+    def update_metadata(self, doc_id: str, visibility: str = None, creator_department: str = None):
+        """
+        메타데이터 업데이트 (Visibility, Department 등)
+        Milvus는 Update를 직접 지원하지 않으므로, 기존 데이터를 조회 -> 삭제 -> 재삽입 과정을 거쳐야 함.
+        """
+        print(f"[Milvus] Updating metadata for doc_id={doc_id}...")
+        
+        # 1. 기존 데이터 조회
+        expr = f'doc_id == "{doc_id}"'
+        res = self.collection.query(
+            expr=expr,
+            output_fields=["doc_id", "chunk_text", "embedding", "visibility", "creator_department", "version", "is_latest", "status"]
+        )
+        
+        if not res:
+            print(f"[Milvus] 문서 없음 (Skip Update): {doc_id}")
+            return
+            
+        print(f"  → Found {len(res)} chunks to update.")
+        
+        # 2. 데이터 수정
+        new_data_list = []
+        for hit in res:
+            # 변경할 필드만 업데이트
+            if visibility:
+                hit["visibility"] = visibility
+            if creator_department:
+                hit["creator_department"] = creator_department
+            new_data_list.append(hit)
+            
+        # 3. 기존 데이터 삭제
+        self.collection.delete(expr)
+        
+        # 4. 수정된 데이터 재삽입
+        # 컬럼 순서: doc_id, chunk_text, embedding, visibility, creator_department, version, is_latest, status
+        insert_data = [
+            [x["doc_id"] for x in new_data_list],
+            [x["chunk_text"] for x in new_data_list],
+            [x["embedding"] for x in new_data_list],
+            [x["visibility"] for x in new_data_list],
+            [x["creator_department"] for x in new_data_list],
+            [x["version"] for x in new_data_list],
+            [x["is_latest"] for x in new_data_list],
+            [x["status"] for x in new_data_list],
+        ]
+        
+        self.collection.insert(insert_data)
+        self.collection.flush()
+        print(f"✓ Milvus Metadata Updated: {doc_id} (Visibility: {visibility})")
+
     
     def update_version_status(self, doc_id: str, old_version: int):
         """
