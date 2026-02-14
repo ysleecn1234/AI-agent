@@ -14,8 +14,10 @@ from fastapi import UploadFile
 import json
 
 # Service Layer
+import time
 from services.ai_drive.pipeline import DocumentPipeline
 from services.ai_drive.db.postgres_client import PostgresClient
+from services.common.activity_logger import get_activity_logger
 
 class AIDriveService:
     """
@@ -39,6 +41,7 @@ class AIDriveService:
         
         self.pipeline = DocumentPipeline(orchestrator=self._orchestrator)
         self.db_client = PostgresClient()
+        self.activity_logger = get_activity_logger()
         self._rag_searcher = None
         self._doc_chat = None
 
@@ -88,6 +91,7 @@ class AIDriveService:
         temp_path = await self._save_temp_file(file)
         
         try:
+            start = time.time()
             # Service Layer 호출
             result = self.pipeline.process_file_upload(
                 file_path=temp_path,
@@ -98,7 +102,34 @@ class AIDriveService:
                 visibility=visibility,
                 tags=tags or []
             )
+            
+            # 활동 로그 (성공)
+            duration_ms = int((time.time() - start) * 1000)
+            self.activity_logger.log(
+                user_id=creator_id,
+                action="upload",
+                details={
+                    "file_type": file.content_type,
+                    "file_size": file.size,
+                    "title": title or file.filename,
+                },
+                success=True,
+                duration_ms=duration_ms,
+            )
+            
             return result
+        except Exception as e:
+            # 활동 로그 (실패)
+            self.activity_logger.log(
+                user_id=creator_id,
+                action="upload",
+                details={
+                    "title": title or file.filename,
+                    "error": str(e),
+                },
+                success=False,
+            )
+            raise
         finally:
             if os.path.exists(temp_path):
                 os.remove(temp_path)
@@ -142,7 +173,8 @@ class AIDriveService:
                 print(f"[App] 제목 생성 실패: {e}")
                 title = "채팅 대화"
         
-        return self.pipeline.process_chat_save(
+        start = time.time()
+        result = self.pipeline.process_chat_save(
             chat_content=request.content,
             creator_id=request.creator_id,
             creator_department=request.creator_department,
@@ -150,6 +182,17 @@ class AIDriveService:
             description=description,
             visibility=request.visibility
         )
+
+        duration_ms = int((time.time() - start) * 1000)
+        self.activity_logger.log(
+            user_id=request.creator_id,
+            action="chat_save",
+            details={"title": title},
+            success=True,
+            duration_ms=duration_ms,
+        )
+
+        return result
     
     async def save_agent_result(self, request) -> Dict[str, Any]:
         """
@@ -158,8 +201,9 @@ class AIDriveService:
         현재: Pipeline으로 단순 위임
         향후: 에이전트 메타데이터 추가 등 가능
         """
-        return self.pipeline.process_agent_save(
-            agent_content=request.content,
+        start = time.time()
+        result = self.pipeline.process_agent_save(
+            agent_output=request.content,
             creator_id=request.creator_id,
             creator_department=request.creator_department,
             agent_name=request.agent_name,
@@ -167,24 +211,34 @@ class AIDriveService:
             description=request.description or "",
             visibility=request.visibility
         )
+
+        duration_ms = int((time.time() - start) * 1000)
+        self.activity_logger.log(
+            user_id=request.creator_id,
+            action="agent_save",
+            details={"agent_name": request.agent_name},
+            success=True,
+            duration_ms=duration_ms,
+        )
+
+        return result
     
     async def search_documents(self, request) -> list:
         """
         RAG 검색 (Facade)
-        
-        현재: RAGSearcher로 단순 위임
-        향후: 검색 결과 후처리, 권한 필터링 강화 등 가능
         """
         # Lazy initialization
         if not self._rag_searcher:
             from services.ai_drive.core.rag_search import RAGSearcher
             self._rag_searcher = RAGSearcher()
         
-        return self._rag_searcher.search(
+        results = self._rag_searcher.search(
             query=request.query,
             user_department=request.user_department,
             top_k=request.top_k
         )
+        
+        return results
     
     async def list_documents(
         self,
@@ -230,11 +284,12 @@ class AIDriveService:
         milvus_client = MilvusClient()
         milvus_client.delete_by_document(doc_id)
         
-        # 활동 로그
-        self.db_client.log_activity(
+        # 활동 로그 (activity_logger로 통일)
+        self.activity_logger.log(
             user_id=user_id,
-            action="delete_document",
-            details={"doc_id": doc_id}
+            action="delete",
+            details={"doc_id": doc_id},
+            doc_id=doc_id,
         )
         
         return True
@@ -271,6 +326,14 @@ class AIDriveService:
         if not result["success"]:
             raise ValueError(result.get("error", "메타데이터 수정 실패"))
         
+        # 활동 로그
+        self.activity_logger.log(
+            user_id=user_id,
+            action="update_metadata",
+            details={"changed_fields": result.get("changed_fields", [])},
+            doc_id=doc_id,
+        )
+        
         return result
     
     async def chat_with_document(self, doc_id: str, request) -> Dict[str, Any]:
@@ -280,16 +343,34 @@ class AIDriveService:
         현재: DocumentChat으로 단순 위임
         향후: 문서 권한 체크, 사용량 제한 등 추가 가능
         """
+        start = time.time()
+        
         # Lazy initialization
         if not self._doc_chat:
             from services.ai_drive.core.doc_chat import DocumentChat
             self._doc_chat = DocumentChat(orchestrator=self._orchestrator)
         
-        return self._doc_chat.chat(
+        result = self._doc_chat.chat(
             doc_id=doc_id,
             question=request.question,
             user_id=request.user_id
         )
+        
+        # 활동 로그
+        duration_ms = int((time.time() - start) * 1000)
+        self.activity_logger.log(
+            user_id=request.user_id,
+            action="doc_chat",
+            details={
+                "doc_id": doc_id,
+                "question": request.question[:100],
+            },
+            success=True,
+            duration_ms=duration_ms,
+            doc_id=doc_id,
+        )
+        
+        return result
     
     # ==================== 헬퍼 메서드 ====================
     

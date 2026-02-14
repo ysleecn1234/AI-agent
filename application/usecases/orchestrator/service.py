@@ -8,12 +8,14 @@
 
 from typing import Dict, List, Optional
 # Import the Real Brain (Directly Pipeline)
+import time
 from services.orchestrator.pipeline import Pipeline
-
+from services.common.activity_logger import get_activity_logger
 class Orchestrator:
     def __init__(self):
         # Initialize the Service Layer instance (Pipeline)
         self.pipeline = Pipeline()
+        self.activity_logger = get_activity_logger()
 
     async def process(self, user_input: str, user_id: str, context_id: str = None, model_type: str = "AUTO", use_rag: bool = False) -> Dict:
         '''
@@ -26,21 +28,38 @@ class Orchestrator:
             model_type: "AUTO" 또는 프리미엄 모델 키 (GPT_5_2, GEMINI_3_PRO, PERPLEXITY, OPUS_4_6)
             use_rag: RAG 검색 사용 여부
         '''
+        start = time.time()
+        
         # RAG 사용 여부 업데이트
         self.pipeline.researcher.use_rag = use_rag
         
         # 모델 타입에 따라 분기
         if model_type == "AUTO":
-            # 기존 5단계 파이프라인
-            return self.pipeline.process(user_input, user_id=user_id)
+            result = self.pipeline.process(user_input, user_id=user_id)
         else:
-            # 프리미엄 모델 직접 호출
-            return self.pipeline.process_premium(
+            result = self.pipeline.process_premium(
                 user_input=user_input,
                 model_type=model_type,
                 use_rag=use_rag,
                 user_id=user_id
             )
+        
+        # 활동 로그
+        duration_ms = int((time.time() - start) * 1000)
+        self.activity_logger.log(
+            user_id=user_id,
+            action="chat",
+            details={
+                "model_type": model_type,
+                "use_rag": use_rag,
+                "intent": result.get("metadata", {}).get("intent", ""),
+                "complexity": result.get("metadata", {}).get("complexity", ""),
+            },
+            success="error" not in result,
+            duration_ms=duration_ms,
+        )
+        
+        return result
 
     async def analyze_for_draft(self, messages: List[Dict], template_schema: Dict) -> Dict:
         """
@@ -68,6 +87,24 @@ class Orchestrator:
             Pipeline.call_llm()의 반환값 dict
         """
         return self.pipeline.call_llm(task=task, prompt=prompt, options=options)
+
+    def save_chat_log(self, user_id: str, session_id: str, user_input: str, ai_response: str):
+        """채팅 로그 DB 저장"""
+        from services.orchestrator.db.tables import ChatLog
+        from application.database import get_db
+        
+        db = next(get_db())
+        try:
+            new_log = ChatLog(
+                user_id=user_id,
+                session_id=session_id,
+                user_input=user_input,
+                ai_response=ai_response
+            )
+            db.add(new_log)
+            db.commit()
+        finally:
+            db.close()
 
 # Singleton Instance
 orchestrator = Orchestrator()

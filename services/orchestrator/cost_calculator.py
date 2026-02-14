@@ -20,8 +20,7 @@ class CostCalculator:
     """
     비용 계산 및 추적 시스템
     - 모델별 토큰 단가 관리
-    - 실시간 비용 계산
-    - IN7 요금표 대비 절감률 계산
+    - 실시간 비용 계산 (USD / KRW)
     """
     
     def __init__(self):
@@ -89,11 +88,14 @@ class CostCalculator:
                 output_price_per_1m=0.80,
                 provider="Meta"
             ),
+            
+            # OpenAI Embedding 모델
+            "text-embedding-3-small": ModelPricing(
+                input_price_per_1m=0.02,
+                output_price_per_1m=0.0,
+                provider="OpenAI"
+            ),
         }
-        
-        # IN7 요금표 (기획서 기준 - 원가 대비 약 2배)
-        # 예시: GPT-4o-mini 입력 0.4원, 출력 1.6원
-        self.in7_markup_rate = 2.0  # IN7은 원가 대비 2배 청구
         
         # 환율 (USD to KRW)
         # TODO: 나중에 실시간 환율 API 연동 고려
@@ -137,13 +139,6 @@ class CostCalculator:
         output_cost_krw = output_cost_usd * self.usd_to_krw
         total_cost_krw = total_cost_usd * self.usd_to_krw
         
-        # IN7 예상 청구 금액 (원가 대비 2배)
-        in7_cost_krw = total_cost_krw * self.in7_markup_rate
-        
-        # 절감액 및 절감률
-        savings_krw = in7_cost_krw - total_cost_krw
-        savings_rate = (savings_krw / in7_cost_krw * 100) if in7_cost_krw > 0 else 0
-        
         return {
             "model": model_name,
             "provider": pricing.provider,
@@ -161,12 +156,6 @@ class CostCalculator:
                 "input": round(input_cost_krw, 2),
                 "output": round(output_cost_krw, 2),
                 "total": round(total_cost_krw, 2)
-            },
-            "in7_comparison": {
-                "in7_cost_krw": round(in7_cost_krw, 2),
-                "our_cost_krw": round(total_cost_krw, 2),
-                "savings_krw": round(savings_krw, 2),
-                "savings_rate": round(savings_rate, 1)
             }
         }
     
@@ -217,7 +206,6 @@ class CostCalculator:
         """
         total_cost_usd = 0.0
         total_cost_krw = 0.0
-        total_in7_cost_krw = 0.0
         total_tokens = 0
         
         model_breakdown = {}
@@ -225,13 +213,11 @@ class CostCalculator:
         for log in session_logs:
             cost_usd = log.get("cost_usd", {}).get("total", 0)
             cost_krw = log.get("cost_krw", {}).get("total", 0)
-            in7_cost = log.get("in7_comparison", {}).get("in7_cost_krw", 0)
             tokens = log.get("tokens", {}).get("total", 0)
             model = log.get("model", "unknown")
             
             total_cost_usd += cost_usd
             total_cost_krw += cost_krw
-            total_in7_cost_krw += in7_cost
             total_tokens += tokens
             
             # 모델별 집계
@@ -246,19 +232,12 @@ class CostCalculator:
             model_breakdown[model]["tokens"] += tokens
             model_breakdown[model]["cost_krw"] += cost_krw
         
-        # 총 절감액 및 절감률
-        total_savings_krw = total_in7_cost_krw - total_cost_krw
-        total_savings_rate = (total_savings_krw / total_in7_cost_krw * 100) if total_in7_cost_krw > 0 else 0
-        
         return {
             "summary": {
                 "total_sessions": len(session_logs),
                 "total_tokens": total_tokens,
                 "total_cost_usd": round(total_cost_usd, 4),
                 "total_cost_krw": round(total_cost_krw, 2),
-                "in7_cost_krw": round(total_in7_cost_krw, 2),
-                "savings_krw": round(total_savings_krw, 2),
-                "savings_rate": round(total_savings_rate, 1)
             },
             "model_breakdown": model_breakdown,
             "generated_at": datetime.now().isoformat()
@@ -316,9 +295,6 @@ if __name__ == "__main__":
     print(f"총 토큰: {cost['tokens']['total']}")
     print(f"비용 (USD): ${cost['cost_usd']['total']}")
     print(f"비용 (KRW): {cost['cost_krw']['total']:,}원")
-    print(f"IN7 예상 청구액: {cost['in7_comparison']['in7_cost_krw']:,}원")
-    print(f"절감액: {cost['in7_comparison']['savings_krw']:,}원")
-    print(f"절감률: {cost['in7_comparison']['savings_rate']}%")
     
     # 2. 복잡도별 비용 비교
     print("\n[테스트 2] 복잡도별 비용 비교")
@@ -326,7 +302,6 @@ if __name__ == "__main__":
         cost = calculator.estimate_cost_by_complexity(complexity, 1000, 500)
         print(f"\n{complexity.upper()}: {cost['model']}")
         print(f"  비용: {cost['cost_krw']['total']:,}원")
-        print(f"  절감률: {cost['in7_comparison']['savings_rate']}%")
     
     # 3. 모델 가격 정보 조회
     print("\n[테스트 3] 모델 가격 정보")

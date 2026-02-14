@@ -9,6 +9,8 @@ from typing import List, Optional, Dict
 from services.ai_hub.db.agent_repo import AgentRepository
 from services.ai_hub.db.hub_repo import HubRepository
 from application.database import SessionLocal  # Hub DB 세션
+from services.common.cost_logger import get_cost_logger
+from services.orchestrator.cost_calculator import get_cost_calculator
 
 # Redis Connection
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
@@ -39,6 +41,8 @@ class AgentManager:
 
         # [Logging] Hub Repository 초기화
         self.hub_repo = HubRepository()
+        self.cost_logger = get_cost_logger()
+        self.cost_calculator = get_cost_calculator()
 
     # --- 1. Recommendation (Hub-Centric Pattern) ---
 
@@ -98,23 +102,18 @@ class AgentManager:
                 
                 print(f"[Hub] Vector Search executed for: '{search_query}' -> IDs: {list(candidate_map.keys())}")
                 
-                # [Log] Cost (Embedding)
+                # [Log] Cost (Embedding - API 실제 토큰)
                 try:
-                    db = SessionLocal()
-                    tokens = len(search_query) * 2
-                    cost_usd = tokens * 0.00000002
-                    cost_krw = cost_usd * 1400
-                    
-                    self.hub_repo.log_cost(
-                        db=db,
+                    actual_tokens = self.embedding_generator.last_usage.total_tokens if self.embedding_generator.last_usage else 0
+                    embed_cost = self.cost_calculator.calculate_cost("text-embedding-3-small", actual_tokens, 0)
+
+                    self.cost_logger.log_embedding_cost(
                         user_id="00000000-0000-0000-0000-000000000000",
+                        tokens=actual_tokens,
+                        cost_usd=embed_cost["cost_usd"]["total"],
+                        cost_krw=embed_cost["cost_krw"]["total"],
                         operation="hub_search",
-                        tokens_used=tokens,
-                        cost_usd=cost_usd,
-                        cost_krw=cost_krw,
-                        model_name="text-embedding-3-small"
                     )
-                    db.close()
                 except Exception as e:
                     print(f"[Hub] Failed to log searching cost: {e}")
                 
@@ -189,20 +188,6 @@ class AgentManager:
         
         user_list_key = f"user_drafts:{user_id}"
         redis_client.sadd(user_list_key, draft_id)
-        
-        # [Log] Activity
-        try:
-            db = SessionLocal()
-            self.hub_repo.log_activity(
-                db=db,
-                user_id=user_id,
-                action="create_draft",
-                details={"intent": intent, "draft_id": draft_id},
-                success=True
-            )
-            db.close()
-        except Exception as e:
-            print(f"[Hub] Failed to log activity: {e}")
         
         return draft_id
 
@@ -283,36 +268,20 @@ class AgentManager:
                 
                 # [Log] Cost & Activity (Publishing)
                 try:
-                    db = SessionLocal()
-                    
-                    # 1. Cost (Embedding)
-                    tokens = len(text_to_embed) * 2
-                    cost_usd = tokens * 0.00000002
-                    cost_krw = cost_usd * 1400
-                    
-                    self.hub_repo.log_cost(
-                        db=db,
+                    # 1. Cost (Embedding - API 실제 토큰)
+                    actual_tokens = self.embedding_generator.last_usage.total_tokens if self.embedding_generator.last_usage else 0
+                    embed_cost = self.cost_calculator.calculate_cost("text-embedding-3-small", actual_tokens, 0)
+
+                    self.cost_logger.log_embedding_cost(
                         user_id=draft['user_id'],
+                        tokens=actual_tokens,
+                        cost_usd=embed_cost["cost_usd"]["total"],
+                        cost_krw=embed_cost["cost_krw"]["total"],
                         operation="agent_publish_embedding",
-                        tokens_used=tokens,
-                        cost_usd=cost_usd,
-                        cost_krw=cost_krw,
-                        model_name="text-embedding-3-small"
                     )
-                    
-                    # 2. Activity
-                    self.hub_repo.log_activity(
-                        db=db,
-                        user_id=draft['user_id'],
-                        action="publish_agent",
-                        details={"agent_name": draft.get('name'), "draft_id": draft_id},
-                        success=True
-                    )
-                    
-                    db.close()
+                
                 except Exception as e:
                     print(f"[Hub] Failed to log publishing: {e}")
-                        
                         
             except Exception as e:
                 print(f"[Hub] Vectorization Failed: {e}")

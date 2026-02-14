@@ -47,3 +47,6 @@ out/
 *.tsbuildinfo
 .npm
 .eslintcache
+
+# API Keys (Feature-X에서 추가)
+.env.keys

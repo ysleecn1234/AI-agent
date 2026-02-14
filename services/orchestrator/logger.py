@@ -4,12 +4,9 @@ AI-agent 로깅 및 추적 시스템
 """
 
 import logging
-import json
 import uuid
 from datetime import datetime
 from typing import Dict, Any, Optional
-from pathlib import Path
-import os
 
 
 class PipelineLogger:
@@ -20,43 +17,28 @@ class PipelineLogger:
     - 비용 추적 및 성능 분석 데이터 수집
     """
     
-    def __init__(self, log_dir: str = "logs"):
-        """
-        Args:
-            log_dir: 로그 파일 저장 디렉토리
-        """
-        self.log_dir = Path(log_dir)
-        self.log_dir.mkdir(exist_ok=True)
-        
-        # 기본 로거 설정
+    def __init__(self):
+        # 콘솔 로거 설정
         self.logger = self._setup_logger()
         
-        # 현재 세션 정보
+        # 현재 세션 정보 (메모리)
         self.current_session: Optional[Dict[str, Any]] = None
     
     def _setup_logger(self) -> logging.Logger:
-        """로거 초기 설정"""
+        """콘솔 로거 설정"""
         logger = logging.getLogger("AIAgent")
         logger.setLevel(logging.INFO)
         
-        # 파일 핸들러 (JSON 형식)
-        json_handler = logging.FileHandler(
-            self.log_dir / f"pipeline_{datetime.now().strftime('%Y%m%d')}.jsonl",
-            encoding='utf-8'
-        )
-        json_handler.setLevel(logging.INFO)
-        
-        # 콘솔 핸들러 (사람이 읽기 쉬운 형식)
-        console_handler = logging.StreamHandler()
-        console_handler.setLevel(logging.INFO)
-        console_formatter = logging.Formatter(
-            '[%(asctime)s] %(levelname)s - %(message)s',
-            datefmt='%Y-%m-%d %H:%M:%S'
-        )
-        console_handler.setFormatter(console_formatter)
-        
-        logger.addHandler(json_handler)
-        logger.addHandler(console_handler)
+        # 핸들러 중복 방지
+        if not logger.handlers:
+            console_handler = logging.StreamHandler()
+            console_handler.setLevel(logging.INFO)
+            console_formatter = logging.Formatter(
+                '[%(asctime)s] %(levelname)s - %(message)s',
+                datefmt='%Y-%m-%d %H:%M:%S'
+            )
+            console_handler.setFormatter(console_formatter)
+            logger.addHandler(console_handler)
         
         return logger
     
@@ -83,14 +65,6 @@ class PipelineLogger:
         }
         
         self.logger.info(f"Session started: {session_id}")
-        self._log_json({
-            "event": "session_start",
-            "session_id": session_id,
-            "user_id": user_id,
-            "user_input": user_input,
-            "timestamp": self.current_session["start_time"]
-        })
-        
         return session_id
     
     def log_step(
@@ -119,15 +93,6 @@ class PipelineLogger:
         }
         
         self.current_session["steps"].append(step_log)
-        
-        self._log_json({
-            "event": "step_completed",
-            "session_id": self.current_session["session_id"],
-            "step_name": step_name,
-            "duration_ms": duration_ms,
-            "timestamp": step_log["timestamp"]
-        })
-        
         self.logger.info(f"Step completed: {step_name} ({duration_ms}ms)")
     
     def log_model_usage(
@@ -161,20 +126,11 @@ class PipelineLogger:
         if cost_info:
             usage_log["cost_usd"] = cost_info.get("cost_usd", {}).get("total", 0)
             usage_log["cost_krw"] = cost_info.get("cost_krw", {}).get("total", 0)
-            usage_log["in7_cost_krw"] = cost_info.get("in7_comparison", {}).get("in7_cost_krw", 0)
-            usage_log["savings_krw"] = cost_info.get("in7_comparison", {}).get("savings_krw", 0)
-            usage_log["savings_rate"] = cost_info.get("in7_comparison", {}).get("savings_rate", 0)
         
         if "model_usage" not in self.current_session["metadata"]:
             self.current_session["metadata"]["model_usage"] = []
         
         self.current_session["metadata"]["model_usage"].append(usage_log)
-        
-        self._log_json({
-            "event": "model_usage",
-            "session_id": self.current_session["session_id"],
-            **usage_log
-        })
     
     def log_error(self, error_type: str, error_message: str, step_name: Optional[str] = None):
         """
@@ -199,13 +155,6 @@ class PipelineLogger:
             self.current_session["metadata"]["errors"] = []
         
         self.current_session["metadata"]["errors"].append(error_log)
-        
-        self._log_json({
-            "event": "error",
-            "session_id": self.current_session["session_id"],
-            **error_log
-        })
-        
         self.logger.error(f"Error in {step_name}: {error_type} - {error_message}")
     
     def end_session(self, final_result: Dict[str, Any], success: bool = True):
@@ -227,18 +176,7 @@ class PipelineLogger:
         self.current_session["total_duration_ms"] = total_duration
         self.current_session["success"] = success
         self.current_session["final_result"] = final_result
-        
-        # 전체 세션 로그 저장
-        self._save_session_log()
-        
-        self._log_json({
-            "event": "session_end",
-            "session_id": self.current_session["session_id"],
-            "success": success,
-            "total_duration_ms": total_duration,
-            "timestamp": end_time.isoformat()
-        })
-        
+         
         self.logger.info(
             f"Session ended: {self.current_session['session_id']} "
             f"(Success: {success}, Duration: {total_duration:.0f}ms)"
@@ -246,24 +184,6 @@ class PipelineLogger:
         
         # 세션 초기화
         self.current_session = None
-    
-    def _save_session_log(self):
-        """전체 세션 로그를 파일로 저장"""
-        if not self.current_session:
-            return
-        
-        session_file = self.log_dir / f"session_{self.current_session['session_id']}.json"
-        
-        with open(session_file, 'w', encoding='utf-8') as f:
-            json.dump(self.current_session, f, ensure_ascii=False, indent=2)
-    
-    def _log_json(self, data: Dict[str, Any]):
-        """JSON 형식으로 로그 기록"""
-        # JSONL 형식으로 추가 (한 줄에 하나의 JSON)
-        log_file = self.log_dir / f"pipeline_{datetime.now().strftime('%Y%m%d')}.jsonl"
-        
-        with open(log_file, 'a', encoding='utf-8') as f:
-            f.write(json.dumps(data, ensure_ascii=False) + '\n')
     
     def get_session_summary(self) -> Optional[Dict[str, Any]]:
         """현재 세션 요약 정보 반환"""
