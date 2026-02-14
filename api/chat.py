@@ -40,11 +40,11 @@ async def chat_endpoint(
     
     # B. Call Orchestrator
     result = await orchestrator.process(
-        user_input=req.message,
         user_id=user_id,
         context_id=req.context_id,
         model_type=req.model_type,
-        use_rag=req.use_rag
+        use_rag=req.use_rag,
+        agent_id=req.agent_id # [New] 에이전트 ID 전달
     )
 
     # B-2. 에러 체크
