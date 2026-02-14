@@ -4,22 +4,18 @@ AI 드라이브 - 문서 처리 파이프라인
 """
 
 import os
-import sys
 import uuid
 import time
+import shutil
 from typing import Dict, Any, List, Optional
 from pathlib import Path
 
-# 상위 디렉토리를 Python 경로에 추가
-current_dir = Path(__file__).parent
-sys.path.insert(0, str(current_dir))
-
-from utils.file_parser import FileParser
-from utils.chunker import TextChunker
-from core.embedding import EmbeddingGenerator
-from db.milvus_client import MilvusClient
-from db.postgres_client import PostgresClient
-from core.cost_manager import CostManager
+from services.ai_drive.utils.file_parser import FileParser
+from services.ai_drive.utils.chunker import TextChunker
+from services.ai_drive.core.embedding import EmbeddingGenerator
+from services.ai_drive.db.milvus_client import MilvusClient
+from services.ai_drive.db.postgres_client import PostgresClient
+from services.ai_drive.core.cost_manager import CostManager
 from services.common.cost_logger import get_cost_logger
 from services.orchestrator.cost_calculator import get_cost_calculator
 import json
@@ -83,6 +79,7 @@ class DocumentPipeline:
         path = Path(file_path)
         filename = path.name
         file_type = path.suffix.lower().replace('.', '')
+        file_ext = file_type
         file_size = path.stat().st_size
         
         if not title:
@@ -504,10 +501,7 @@ class DocumentPipeline:
                 }
             
             # AI 태깅
-            tags_result = self.auto_tagger.generate_tags(agent_output, title)
-            tags = tags_result.get("tags", [])
-            keywords = tags_result.get("keywords", [])
-            doc_type = tags_result.get("doc_type", "기타")
+            tags, keywords, doc_type = self._generate_tags_with_llm(agent_output[:3000])
 
             # PostgreSQL에 태그 업데이트
             self.postgres_client.update_document_tags(doc_id, tags, keywords, doc_type)
