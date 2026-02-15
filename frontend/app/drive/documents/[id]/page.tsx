@@ -44,13 +44,35 @@ export default function DocumentDetailPage() {
     const [editDescription, setEditDescription] = useState('');
     const [editVisibility, setEditVisibility] = useState<'private' | 'team' | 'public'>('team');
     const [editTags, setEditTags] = useState('');
+    const [fileUrl, setFileUrl] = useState<string | null>(null);
 
     const userName = typeof window !== 'undefined' ? localStorage.getItem('user_name') || '사용자' : '사용자';
     const userId = typeof window !== 'undefined' ? localStorage.getItem('user_name') || '' : '';
 
     useEffect(() => {
         fetchDocument();
+        fetchFilePreview();
     }, [documentId]);
+
+    const fetchFilePreview = async () => {
+        try {
+            const token = localStorage.getItem('access_token');
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://223.130.142.76:8000'}/drive/documents/${documentId}/file`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+
+            if (!response.ok) throw new Error('Failed to fetch file');
+
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            setFileUrl(url);
+        } catch (error) {
+            console.error('Error fetching file preview:', error);
+            setFileUrl(null);
+        }
+    };
 
     const fetchDocument = async () => {
         try {
@@ -285,16 +307,16 @@ export default function DocumentDetailPage() {
                 <div className="w-1/2 border-r border-gray-200 bg-white overflow-y-auto p-6">
                     <div className="max-w-3xl mx-auto">
                         <div className="prose prose-sm max-w-none">
-                            {['pdf', 'docx', 'xlsx', 'pptx', 'txt', 'md'].includes(document.type) ? (
+                            {fileUrl ? (
                                 <iframe
-                                    src={`${process.env.NEXT_PUBLIC_API_URL || 'http://223.130.142.76:8000'}/drive/documents/${documentId}/file`}
+                                    src={fileUrl}
                                     className="w-full h-[800px] border border-gray-200 rounded-lg"
                                     title={document.name}
                                 />
                             ) : (
-                                <pre className="whitespace-pre-wrap font-sans text-gray-800">
-                                    {document.content}
-                                </pre>
+                                <div className="flex items-center justify-center h-[800px] border border-gray-200 rounded-lg bg-gray-50">
+                                    <p className="text-gray-500">문서를 불러오는 중...</p>
+                                </div>
                             )}
                         </div>
                     </div>
