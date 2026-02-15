@@ -1,14 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional, List
 
-from application.database import get_db
-from services.orchestrator.db.tables import ChatLog
-from application.database import User
 from application.auth import decode_access_token
 from fastapi.security import OAuth2PasswordBearer
 from application.usecases.orchestrator.service import orchestrator
+import uuid
 
 router = APIRouter(prefix="/chat", tags=["Chat"])
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
@@ -25,6 +22,7 @@ class ChatResponse(BaseModel):
     response: str
     used_model: str
     sources: List[str]
+    session_id: str
 
 # 2. Helper to get current user
 def get_current_user_id(token: str = Depends(oauth2_scheme)):
@@ -37,7 +35,6 @@ def get_current_user_id(token: str = Depends(oauth2_scheme)):
 @router.post("/", response_model=ChatResponse)
 async def chat_endpoint(
     req: ChatRequest, 
-    db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user_id)
 ):
     # A. Save User Input to DB (Log)
@@ -45,11 +42,12 @@ async def chat_endpoint(
     
     # B. Call Orchestrator
     result = await orchestrator.process(
-        user_input=req.message,
+        user_input=req.message,  # [Fix] 사용자 메시지 전달 누락 수정
         user_id=user_id,
         context_id=req.context_id,
         model_type=req.model_type,
-        use_rag=req.use_rag
+        use_rag=req.use_rag,
+        agent_id=req.agent_id
     )
 
     # B-2. 에러 체크
@@ -57,19 +55,18 @@ async def chat_endpoint(
         raise HTTPException(status_code=500, detail=result["error"])
 
     # C. Save AI Response to DB (Log)
-    session_id = result.get("session_id", req.context_id or "new-session")
+    session_id = req.context_id or result.get("session_id") or str(uuid.uuid4())
 
-    new_log = ChatLog(
+    orchestrator.save_chat_log(
         user_id=user_id,
         session_id=session_id,
         user_input=req.message,
         ai_response=result["response"]
     )
-    db.add(new_log)
-    db.commit()
 
     return {
         "response": result["response"],
         "used_model": result.get("used_model", "unknown"),
-        "sources": result.get("sources", [])
+        "sources": result.get("sources", []),
+        "session_id": session_id
     }

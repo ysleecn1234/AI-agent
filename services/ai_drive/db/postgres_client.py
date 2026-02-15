@@ -118,6 +118,7 @@ class PostgresClient:
         self,
         title: str,
         creator_id: str,
+        doc_id: str = None,  # [New] 외부에서 생성된 ID 수신
         creator_department: str = "",
         description: str = "",
         visibility: str = "team",
@@ -142,7 +143,12 @@ class PostgresClient:
         session = self.Session()
         
         try:
+            # doc_id가 없으면 새로 생성
+            if not doc_id:
+                doc_id = str(uuid.uuid4())
+                
             doc = Document(
+                doc_id=uuid.UUID(doc_id),
                 title=title,
                 description=description,
                 creator_id=uuid.UUID(creator_id),
@@ -202,7 +208,11 @@ class PostgresClient:
                 "is_latest": doc.is_latest,
                 "tags": doc.tags,
                 "keywords": doc.keywords,
-                "doc_type": doc.doc_type
+                "doc_type": doc.doc_type,
+                "filename": doc.filename,
+                "source_type": doc.source_type,
+                "chunk_count": doc.chunk_count,
+                "file_path": doc.file_path,  # [New] 파일 다운로드/서빙을 위해 필요
             }
             
         finally:
@@ -346,7 +356,7 @@ class PostgresClient:
 
     def list_documents(
         self,
-        creator_department: str = None,
+        department: str = None, # [Fix] 파라미터명 일치 (department -> creator_department)
         visibility: str = None,
         status: str = "active",
         is_latest: bool = True,
@@ -358,8 +368,8 @@ class PostgresClient:
         try:
             query = session.query(Document)
             
-            if creator_department:
-                query = query.filter(Document.creator_department == creator_department)
+            if department:
+                query = query.filter(Document.creator_department == department)
             if visibility:
                 query = query.filter(Document.visibility == visibility)
             if status:

@@ -206,6 +206,22 @@ TASK_MODEL_CONFIG = {
             "5. 추측이나 외부 지식을 사용하지 마세요"
         ),
     },
+    "doc_format": { 
+        "models": ["gemini-1.5-flash", "gpt-4o-mini"],
+        "temperature": 0.3,
+        "max_tokens": 2000,
+        "description": "채팅/에이전트 대화를 구조화된 문서로 변환",
+        "system_prompt": (
+            "당신은 대화 내용을 구조화된 문서로 변환하는 전문가입니다.\n"
+            "규칙:\n"
+            "1. user:, assistant: 같은 역할 표시를 제거하세요\n"
+            "2. 핵심 내용을 마크다운 형식으로 정리하세요\n"
+            "3. 제목, 소제목, 본문 구조를 만드세요\n"
+            "4. 중요 정보는 강조하세요\n"
+            "5. 불필요한 인사말, 중간 질문 등은 제거하세요\n"
+            "6. 원본 내용의 정보를 빠뜨리지 마세요"
+        ),
+    },
 }
 
 PREMIUM_MODELS = {
@@ -736,8 +752,14 @@ class Reasoner:
 
 위 정보를 바탕으로 정확하고 유용한 답변을 제공해주세요."""
         
+        
+        # [Agent] 시스템 프롬프트 적용
+        options = {}
+        if context.get("system_prompt"):
+            options["system_prompt"] = context.get("system_prompt")
+            
         # call_llm이 Fallback + 토큰 추출 + 비용 로깅 전부 처리
-        llm_result = self.pipeline.call_llm(task=task, prompt=prompt)
+        llm_result = self.pipeline.call_llm(task=task, prompt=prompt, options=options)
         
         return (
             llm_result["content"],
@@ -1331,7 +1353,7 @@ class Pipeline:
             "intent": intent.value
         }
 
-    def process(self, user_input: str, user_id: Optional[str] = None) -> Dict[str, Any]:
+    def process(self, user_input: str, user_id: Optional[str] = None, system_prompt: Optional[str] = None) -> Dict[str, Any]:
         """전체 파이프라인 실행"""
         print(f"[Pipeline] 처리 시작: {user_input[:50]}...")
         
@@ -1350,6 +1372,11 @@ class Pipeline:
             print("[Step 2/5] Researcher - RAG 기반 문서 검색")
             step_start = time.time()
             research_result = self.researcher.retrieve(routing_result)
+            
+            # [Injection] 에이전트 시스템 프롬프트 전파 (Router -> Researcher -> Reasoner)
+            if system_prompt:
+                research_result["system_prompt"] = system_prompt
+                
             step_duration = (time.time() - step_start) * 1000
             self.logger.log_step("Researcher", {
                 "documents_found": len(research_result.get("retrieved_documents", []))
@@ -1427,7 +1454,7 @@ class Pipeline:
                 "status": "failed"
             }
 
-    def process_premium(self, user_input: str, model_type: str, use_rag: bool = False, user_id: Optional[str] = None) -> Dict[str, Any]:
+    def process_premium(self, user_input: str, model_type: str, use_rag: bool = False, user_id: Optional[str] = None, system_prompt: Optional[str] = None) -> Dict[str, Any]:
         '''
         프리미엄 모델 직접 호출 (5단계 파이프라인 bypass)
         
@@ -1439,6 +1466,7 @@ class Pipeline:
             model_type: 프리미엄 모델 키 (GPT_5_2, GEMINI_3_PRO, PERPLEXITY, OPUS_4_6)
             use_rag: RAG 검색 사용 여부
             user_id: 사용자 ID
+            system_prompt: [New] 에이전트 전용 시스템 프롬프트 (None이면 기본값 사용)
             
         Returns:
             process()와 동일한 형식의 결과 dict
@@ -1494,8 +1522,14 @@ class Pipeline:
             #    - TASK_MODEL_CONFIG에 없는 모델이므로 직접 호출
             print(f"  → 모델 호출: {model_name}")
             
+            # [Agent] 시스템 프롬프트 병합 (기본 5단계 지침 + 에이전트 페르소나)
+            if system_prompt:
+                final_system_prompt = f"{PREMIUM_SYSTEM_PROMPT}\n\n[추가 에이전트 지침 및 페르소나]\n{system_prompt}"
+            else:
+                final_system_prompt = PREMIUM_SYSTEM_PROMPT
+
             messages = [
-                {"role": "system", "content": PREMIUM_SYSTEM_PROMPT},
+                {"role": "system", "content": final_system_prompt},
                 {"role": "user", "content": user_prompt}
             ]
             

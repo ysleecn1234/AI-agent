@@ -7,19 +7,14 @@ Step 4: Freshness Score 적용 → Top-5 반환
 """
 
 import os
-import sys
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
-from pathlib import Path
 
-# 상위 디렉토리 import 설정
-current_dir = Path(__file__).parent.parent
-sys.path.insert(0, str(current_dir))
-
-from core.embedding import EmbeddingGenerator
-from db.milvus_client import MilvusClient
-from db.postgres_client import PostgresClient
-
+from services.ai_drive.core.embedding import EmbeddingGenerator
+from services.ai_drive.db.milvus_client import MilvusClient
+from services.ai_drive.db.postgres_client import PostgresClient
+from services.common.cost_logger import get_cost_logger
+from services.orchestrator.cost_calculator import get_cost_calculator
 
 class RAGSearcher:
     """
@@ -34,6 +29,8 @@ class RAGSearcher:
         self.embedding_generator = EmbeddingGenerator()
         self.milvus_client = MilvusClient()
         self.postgres_client = PostgresClient()
+        self.cost_logger = get_cost_logger()
+        self.cost_calculator = get_cost_calculator()
     
     def search(
         self,
@@ -113,19 +110,17 @@ class RAGSearcher:
         try:
             embedding = self.embedding_generator.create(query)
             
-            # 비용 로깅
+            # 비용 로깅 (API 실제 토큰)
             try:
-                tokens = len(query) * 2  # 추정치
-                cost_usd = tokens * 0.00000002  # $0.02/1M tokens
-                cost_krw = cost_usd * 1400
-                
-                self.postgres_client.log_cost(
-                    user_id="system",  # RAG 검색은 시스템 레벨
+                actual_tokens = self.embedding_generator.last_usage.total_tokens if self.embedding_generator.last_usage else 0
+                embed_cost = self.cost_calculator.calculate_cost("text-embedding-3-small", actual_tokens, 0)
+
+                self.cost_logger.log_embedding_cost(
+                    user_id="system",
+                    tokens=actual_tokens,
+                    cost_usd=embed_cost["cost_usd"]["total"],
+                    cost_krw=embed_cost["cost_krw"]["total"],
                     operation="search_embedding",
-                    tokens_used=tokens,
-                    cost_usd=cost_usd,
-                    cost_krw=cost_krw,
-                    model_name="text-embedding-3-small"
                 )
             except Exception as log_error:
                 print(f"  ⚠️ 비용 로그 실패: {log_error}")

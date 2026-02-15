@@ -103,7 +103,7 @@ class AIDriveService:
                 tags=tags or []
             )
             
-            # 활동 로그
+            # 활동 로그 (성공)
             duration_ms = int((time.time() - start) * 1000)
             self.activity_logger.log(
                 user_id=creator_id,
@@ -118,6 +118,18 @@ class AIDriveService:
             )
             
             return result
+        except Exception as e:
+            # 활동 로그 (실패)
+            self.activity_logger.log(
+                user_id=creator_id,
+                action="upload",
+                details={
+                    "title": title or file.filename,
+                    "error": str(e),
+                },
+                success=False,
+            )
+            raise
         finally:
             if os.path.exists(temp_path):
                 os.remove(temp_path)
@@ -161,14 +173,38 @@ class AIDriveService:
                 print(f"[App] 제목 생성 실패: {e}")
                 title = "채팅 대화"
         
-        return self.pipeline.process_chat_save(
-            chat_content=request.content,
+        # 채팅 내용 문서화 (구조화)
+        try:
+            format_result = self._orchestrator.call_llm(
+                task="doc_format",
+                prompt=f"다음 대화 내용을 구조화된 문서로 변환하세요:\n\n{request.content}"
+            )
+            formatted_content = format_result["content"]
+            print(f"[App] 문서화 완료: {len(formatted_content)}자")
+        except Exception as e:
+            print(f"[App] 문서화 실패, 원문 사용: {e}")
+            formatted_content = request.content
+
+        start = time.time()
+        result = self.pipeline.process_chat_save(
+            chat_content=formatted_content,
             creator_id=request.creator_id,
             creator_department=request.creator_department,
             title=title,
             description=description,
             visibility=request.visibility
         )
+
+        duration_ms = int((time.time() - start) * 1000)
+        self.activity_logger.log(
+            user_id=request.creator_id,
+            action="chat_save",
+            details={"title": title},
+            success=True,
+            duration_ms=duration_ms,
+        )
+
+        return result
     
     async def save_agent_result(self, request) -> Dict[str, Any]:
         """
@@ -177,8 +213,21 @@ class AIDriveService:
         현재: Pipeline으로 단순 위임
         향후: 에이전트 메타데이터 추가 등 가능
         """
-        return self.pipeline.process_agent_save(
-            agent_content=request.content,
+        # 에이전트 결과 문서화 (구조화)
+        try:
+            format_result = self._orchestrator.call_llm(
+                task="doc_format",
+                prompt=f"다음 에이전트 실행 결과를 구조화된 문서(보고서)로 변환하세요:\n\n{request.content}"
+            )
+            formatted_content = format_result["content"]
+            print(f"[App] 에이전트 결과 문서화 완료: {len(formatted_content)}자")
+        except Exception as e:
+            print(f"[App] 문서화 실패, 원문 사용: {e}")
+            formatted_content = request.content
+
+        start = time.time()
+        result = self.pipeline.process_agent_save(
+            agent_output=formatted_content,
             creator_id=request.creator_id,
             creator_department=request.creator_department,
             agent_name=request.agent_name,
@@ -186,16 +235,22 @@ class AIDriveService:
             description=request.description or "",
             visibility=request.visibility
         )
+
+        duration_ms = int((time.time() - start) * 1000)
+        self.activity_logger.log(
+            user_id=request.creator_id,
+            action="agent_save",
+            details={"agent_name": request.agent_name},
+            success=True,
+            duration_ms=duration_ms,
+        )
+
+        return result
     
     async def search_documents(self, request) -> list:
         """
         RAG 검색 (Facade)
-        
-        현재: RAGSearcher로 단순 위임
-        향후: 검색 결과 후처리, 권한 필터링 강화 등 가능
         """
-        start = time.time()
-        
         # Lazy initialization
         if not self._rag_searcher:
             from services.ai_drive.core.rag_search import RAGSearcher
@@ -205,19 +260,6 @@ class AIDriveService:
             query=request.query,
             user_department=request.user_department,
             top_k=request.top_k
-        )
-        
-        # 활동 로그
-        duration_ms = int((time.time() - start) * 1000)
-        self.activity_logger.log(
-            user_id=request.user_id if hasattr(request, 'user_id') else "",
-            action="search",
-            details={
-                "query": request.query[:100],
-                "results_count": len(results),
-            },
-            success=True,
-            duration_ms=duration_ms,
         )
         
         return results
@@ -264,7 +306,7 @@ class AIDriveService:
         # Milvus에서 벡터 삭제
         from services.ai_drive.db.milvus_client import MilvusClient
         milvus_client = MilvusClient()
-        milvus_client.delete_by_document(doc_id)
+        milvus_client.delete_by_doc_id(doc_id)
         
         # 활동 로그 (activity_logger로 통일)
         self.activity_logger.log(
@@ -307,6 +349,15 @@ class AIDriveService:
         
         if not result["success"]:
             raise ValueError(result.get("error", "메타데이터 수정 실패"))
+
+        # [Critical Fix] Milvus 메타데이터 동기화 (visibility)
+        if visibility:
+            try:
+                from services.ai_drive.db.milvus_client import MilvusClient
+                milvus_client = MilvusClient()
+                milvus_client.update_metadata(doc_id, visibility=visibility)
+            except Exception as e:
+                print(f"[App] Milvus Update Failed: {e}")
         
         # 활동 로그
         self.activity_logger.log(
@@ -337,6 +388,11 @@ class AIDriveService:
             question=request.question,
             user_id=request.user_id
         )
+        
+        # API 응답 형식에 맞게 필드 추가
+        result["success"] = "error" not in result
+        result["doc_id"] = doc_id
+        result["question"] = request.question
         
         # 활동 로그
         duration_ms = int((time.time() - start) * 1000)

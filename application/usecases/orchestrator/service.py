@@ -11,13 +11,15 @@ from typing import Dict, List, Optional
 import time
 from services.orchestrator.pipeline import Pipeline
 from services.common.activity_logger import get_activity_logger
+from services.ai_hub.db.agent_repo import AgentRepository
+from application.database import get_db
 class Orchestrator:
     def __init__(self):
         # Initialize the Service Layer instance (Pipeline)
         self.pipeline = Pipeline()
         self.activity_logger = get_activity_logger()
 
-    async def process(self, user_input: str, user_id: str, context_id: str = None, model_type: str = "AUTO", use_rag: bool = False) -> Dict:
+    async def process(self, user_input: str, user_id: str, context_id: str = None, model_type: str = "AUTO", use_rag: bool = False, agent_id: str = None) -> Dict:
         '''
         서비스 계층으로 처리를 위임합니다.
         
@@ -34,14 +36,43 @@ class Orchestrator:
         self.pipeline.researcher.use_rag = use_rag
         
         # 모델 타입에 따라 분기
+        # [Agent] 에이전트 정보 조회 및 시스템 프롬프트 로드
+        system_prompt = None
+        if agent_id:
+            try:
+                db_gen = get_db()
+                db = next(db_gen)
+                try:
+                    agent_repo = AgentRepository()
+                    agent = agent_repo.get_agent(db, agent_id)
+                    
+                    if agent:
+                        system_prompt = agent.system_prompt
+                        if model_type == "AUTO" and agent.model_type != "AUTO":
+                            model_type = agent.model_type
+                            
+                        print(f"[Orchestrator] Agent Active: {agent.name} (Model: {model_type})")
+                    else:
+                        print(f"[Orchestrator] Warning: Agent {agent_id} not found.")
+                finally:
+                    db.close()
+            except Exception as e:
+                print(f"[Orchestrator] Failed to load agent context: {e}")
+
+        # 모델 타입에 따라 분기
         if model_type == "AUTO":
-            result = self.pipeline.process(user_input, user_id=user_id)
+            result = self.pipeline.process(
+                user_input=user_input, 
+                user_id=user_id,
+                system_prompt=system_prompt  # [New] Inject Agent Persona
+            )
         else:
             result = self.pipeline.process_premium(
                 user_input=user_input,
                 model_type=model_type,
                 use_rag=use_rag,
-                user_id=user_id
+                user_id=user_id,
+                system_prompt=system_prompt  # [New] Inject Agent Persona
             )
         
         # 활동 로그
@@ -87,6 +118,24 @@ class Orchestrator:
             Pipeline.call_llm()의 반환값 dict
         """
         return self.pipeline.call_llm(task=task, prompt=prompt, options=options)
+
+    def save_chat_log(self, user_id: str, session_id: str, user_input: str, ai_response: str):
+        """채팅 로그 DB 저장"""
+        from services.orchestrator.db.tables import ChatLog
+        from application.database import get_db
+        
+        db = next(get_db())
+        try:
+            new_log = ChatLog(
+                user_id=user_id,
+                session_id=session_id,
+                user_input=user_input,
+                ai_response=ai_response
+            )
+            db.add(new_log)
+            db.commit()
+        finally:
+            db.close()
 
 # Singleton Instance
 orchestrator = Orchestrator()

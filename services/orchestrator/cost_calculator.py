@@ -88,6 +88,13 @@ class CostCalculator:
                 output_price_per_1m=0.80,
                 provider="Meta"
             ),
+            
+            # OpenAI Embedding 모델
+            "text-embedding-3-small": ModelPricing(
+                input_price_per_1m=0.02,
+                output_price_per_1m=0.0,
+                provider="OpenAI"
+            ),
         }
         
         # 환율 (USD to KRW)

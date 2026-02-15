@@ -3,12 +3,26 @@ AI Drive API Router
 HTTP 요청/응답 처리만 담당합니다.
 Application Layer(Facade)로 위임합니다.
 """
-
+from fastapi.responses import FileResponse
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Query
 from pydantic import BaseModel
 from typing import List, Optional, Any
 
 from application.usecases.ai_drive.service import drive_service
+
+import os
+from application.auth import decode_access_token
+from fastapi import Depends
+from fastapi.security import OAuth2PasswordBearer
+
+# 인증 의존성 설정
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+
+def get_current_user_id(token: str = Depends(oauth2_scheme)):
+    payload = decode_access_token(token)
+    if payload is None:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    return payload.get("user_id")
 
 # ==================== 라우터 설정 ====================
 
@@ -145,7 +159,8 @@ async def upload_document(
     title: Optional[str] = Form(None),
     description: str = Form(""),
     visibility: str = Form("team"),
-    tags: str = Form("")  # 쉼표로 구분
+    tags: str = Form(""),  # 쉼표로 구분
+    user_id: str = Depends(get_current_user_id)
 ):
     """
     파일 업로드 API
@@ -181,7 +196,7 @@ async def upload_document(
 
 
 @router.post("/documents/chat-save", response_model=DocumentResponse)
-async def save_chat(request: ChatSaveRequest):
+async def save_chat(request: ChatSaveRequest, user_id: str = Depends(get_current_user_id)):
     """
     채팅 저장 API
     
@@ -196,7 +211,7 @@ async def save_chat(request: ChatSaveRequest):
 
 
 @router.post("/documents/agent-save", response_model=DocumentResponse)
-async def save_agent_result(request: AgentSaveRequest):
+async def save_agent_result(request: AgentSaveRequest, user_id: str = Depends(get_current_user_id)):
     """
     에이전트 결과 저장 API
     
@@ -211,7 +226,7 @@ async def save_agent_result(request: AgentSaveRequest):
 
 
 @router.post("/documents/search", response_model=SearchResponse)
-async def search_documents(request: SearchRequest):
+async def search_documents(request: SearchRequest, user_id: str = Depends(get_current_user_id)):
     """
     RAG 검색 API
     
@@ -235,7 +250,8 @@ async def list_documents(
     department: Optional[str] = Query(None),
     visibility: Optional[str] = Query(None),
     status: str = Query("active"),
-    limit: int = Query(50)
+    limit: int = Query(50),
+    user_id: str = Depends(get_current_user_id)
 ):
     """
     문서 목록 조회 API
@@ -260,7 +276,7 @@ async def list_documents(
 
 
 @router.get("/documents/{doc_id}", response_model=DocumentDetail)
-async def get_document(doc_id: str):
+async def get_document(doc_id: str, user_id: str = Depends(get_current_user_id)):
     """
     문서 상세 조회 API
     
@@ -279,7 +295,7 @@ async def get_document(doc_id: str):
 
 
 @router.patch("/documents/{doc_id}")
-async def update_document_metadata(doc_id: str, request: UpdateMetadataRequest):
+async def update_document_metadata(doc_id: str, request: UpdateMetadataRequest, user_id: str = Depends(get_current_user_id)):
     """
     문서 메타데이터 수정 API
     
@@ -307,7 +323,7 @@ async def update_document_metadata(doc_id: str, request: UpdateMetadataRequest):
 
 
 @router.delete("/documents/{doc_id}")
-async def delete_document(doc_id: str, user_id: str = Query(...)):
+async def delete_document(doc_id: str, user_id: str = Depends(get_current_user_id)):
     """
     문서 삭제 API
     
@@ -320,9 +336,42 @@ async def delete_document(doc_id: str, user_id: str = Query(...)):
     except Exception as e:
         raise HTTPException(500, f"문서 삭제 실패: {str(e)}")
 
+@router.get("/documents/{doc_id}/file")
+async def get_document_file(doc_id: str, download: bool = Query(False), user_id: str = Depends(get_current_user_id)):
+    """
+    문서 원본 파일 서빙
+    
+    - download=false: 브라우저에서 미리보기 (PDF 등)
+    - download=true: 파일 다운로드
+    """
+    try:
+        document = await drive_service.get_document(doc_id)
+        if not document:
+            raise HTTPException(404, "문서를 찾을 수 없습니다")
+        
+        file_path = document.get("file_path")
+        if not file_path or not os.path.exists(file_path):
+            raise HTTPException(404, "파일을 찾을 수 없습니다")
+        
+        filename = document.get("filename", "document")
+        
+        if download:
+            return FileResponse(
+                path=file_path,
+                filename=filename,
+                media_type="application/octet-stream"
+            )
+        else:
+            # 미리보기용 (Content-Type 자동 감지)
+            return FileResponse(path=file_path, filename=filename)
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(500, f"파일 조회 실패: {str(e)}")
 
 @router.post("/documents/{doc_id}/chat", response_model=DocChatResponse)
-async def chat_with_document(doc_id: str, request: DocChatRequest):
+async def chat_with_document(doc_id: str, request: DocChatRequest, user_id: str = Depends(get_current_user_id)):
     """
     문서 채팅 API
     

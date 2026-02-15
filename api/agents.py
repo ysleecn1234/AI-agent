@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import List, Optional
@@ -84,6 +84,63 @@ async def publish_agent(req: PublishRequest, db: Session = Depends(get_db), user
         raise HTTPException(status_code=400, detail=str(e))
 
 from application.usecases.ai_hub.service import hub_service
+
+@router.get("/")
+def list_agents(
+    sort_by: str = "newest",
+    category: str = None,
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id)
+):
+    """배포된 에이전트 목록 조회"""
+    agents = hub_service.get_public_agents(db, sort_by=sort_by, category=category)
+    return [
+        {
+            "id": str(a.id),
+            "name": a.name,
+            "description": a.description,
+            "category": getattr(a, 'category', '기타'),
+            "visibility": a.is_public,
+            "creator_id": str(a.creator_id) if a.creator_id else None,
+            "is_active": True,
+        }
+        for a in agents
+    ]
+
+@router.get("/recommend")
+async def recommend_agents(
+    query: str = Query(...),
+    user_id: str = Depends(get_current_user_id)
+):
+    """채팅 입력 기반 에이전트 추천"""
+    try:
+        recommendations = await agent_service.recommend_agents_for_chat(query)
+        return {"status": "success", "recommendations": recommendations}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/{agent_id}")
+def get_agent_detail(
+    agent_id: str,
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id)
+):
+    """에이전트 상세 조회"""
+    agent = hub_service.get_agent_details(db, agent_id)
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+    return {
+        "id": str(agent.id),
+        "name": agent.name,
+        "description": agent.description,
+        "category": getattr(agent, 'category', '기타'),
+        "system_prompt": agent.system_prompt,
+        "visibility": agent.is_public,
+        "creator_id": str(agent.creator_id) if agent.creator_id else None,
+        "model_type": agent.model_type,
+        "use_rag": agent.use_rag,
+        "is_active": True,
+    }
 
 @router.delete("/{agent_id}")
 def delete_agent(agent_id: str, db: Session = Depends(get_db), user_id: str = Depends(get_current_user_id)):
