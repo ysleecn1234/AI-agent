@@ -19,13 +19,29 @@ class AgentRepository:
             model_type=agent_data.get("model_type", "GPT-4"),
             parameters={}, # 기본 파라미터
             is_public=agent_data.get("visibility", "PRIVATE"),
-            use_rag=(agent_data.get("use_rag") == "True")
+            use_rag=(agent_data.get("use_rag") == "True"),
+            system_prompt=agent_data.get("system_prompt", ""),
+            input_example=agent_data.get("input_example", ""),
+            output_example=agent_data.get("output_example", "")
         )
         
         db.add(new_agent)
         db.commit()
         db.refresh(new_agent)
         return new_agent
+
+    def get_agent(self, db: Session, agent_id: str) -> Optional[object]:
+        """
+        에이전트를 조회합니다.
+        
+        Args:
+            agent_id: 조회할 에이전트 UUID
+            
+        Returns:
+            Agent 객체 또는 None
+        """
+        from services.ai_hub.db.tables import Agent
+        return db.query(Agent).filter(Agent.id == agent_id).first()
 
     def delete_agent(self, db: Session, agent_id: str) -> bool:
         """

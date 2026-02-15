@@ -4,22 +4,18 @@ AI 드라이브 - 문서 처리 파이프라인
 """
 
 import os
-import sys
 import uuid
 import time
+import shutil
 from typing import Dict, Any, List, Optional
 from pathlib import Path
 
-# 상위 디렉토리를 Python 경로에 추가
-current_dir = Path(__file__).parent
-sys.path.insert(0, str(current_dir))
-
-from utils.file_parser import FileParser
-from utils.chunker import TextChunker
-from core.embedding import EmbeddingGenerator
-from db.milvus_client import MilvusClient
-from db.postgres_client import PostgresClient
-from core.cost_manager import CostManager
+from services.ai_drive.utils.file_parser import FileParser
+from services.ai_drive.utils.chunker import TextChunker
+from services.ai_drive.core.embedding import EmbeddingGenerator
+from services.ai_drive.db.milvus_client import MilvusClient
+from services.ai_drive.db.postgres_client import PostgresClient
+from services.ai_drive.core.cost_manager import CostManager
 from services.common.cost_logger import get_cost_logger
 from services.orchestrator.cost_calculator import get_cost_calculator
 import json
@@ -45,6 +41,10 @@ class DocumentPipeline:
         self.orchestrator = orchestrator
         self.cost_logger = get_cost_logger()
         self.cost_calculator = get_cost_calculator()
+        
+        # [Storage] 원본 파일 저장소 초기화
+        self.storage_dir = os.path.join(os.getcwd(), "services/ai_drive/storage")
+        os.makedirs(self.storage_dir, exist_ok=True)
 
     def process_file_upload(
         self,
@@ -79,6 +79,7 @@ class DocumentPipeline:
         path = Path(file_path)
         filename = path.name
         file_type = path.suffix.lower().replace('.', '')
+        file_ext = file_type
         file_size = path.stat().st_size
         
         if not title:
@@ -112,18 +113,53 @@ class DocumentPipeline:
         try:
             # Step 1: PostgreSQL에 메타데이터 생성 (status: pending)
             print("[Step 1/5] 메타데이터 생성")
+            
+            # [Storage] 원본 파일 영구 저장 (Copy temp file -> storage/doc_id_filename)
+            # doc_id를 먼저 생성해야 하므로, create_document 호출 전에 임시 doc_id를 생성하거나,
+            # create_document 호출 후 doc_id를 받아 파일 저장 및 DB 업데이트를 해야 함.
+            # 여기서는 일단 doc_id를 먼저 생성하고, 파일 저장 후 DB에 file_path를 업데이트하는 방식으로 진행.
+            # 또는, doc_id를 uuid로 미리 생성하고 create_document에 전달. 여기서는 후자를 택함.
+            
+            # doc_id를 미리 생성
+            new_doc_id = str(uuid.uuid4())
+
+            original_filename = os.path.basename(file_path)
+            # temp prefix 제거 시도 (예: 'tmp_12345_original.pdf' -> 'original.pdf')
+            if '_' in original_filename and original_filename.startswith('tmp_'):
+                parts = original_filename.split('_', 2) # Split at most twice
+                if len(parts) > 2:
+                    original_filename = parts[2]
+                else: # If it's like 'tmp_12345'
+                    original_filename = original_filename # Keep as is or handle differently
+
+            perm_file_name = f"{new_doc_id}_{original_filename}"
+            perm_file_path = os.path.join(self.storage_dir, perm_file_name)
+            
+            db_file_path = "" # Default to empty if copy fails
+            try:
+                shutil.copy2(file_path, perm_file_path)
+                print(f"[Storage] 원본 파일 저장 완료: {perm_file_path}")
+                db_file_path = perm_file_path # DB에는 영구 저장 경로 기록
+            except Exception as e:
+                print(f"[Storage] 파일 저장 실패 (무시): {e}")
+                # 실패 시 임시 경로 유지 (주의: 곧 삭제될 수 있음)
+                # 또는 아예 저장 경로를 기록하지 않음. 여기서는 빈 문자열로 처리.
+                db_file_path = "" # If permanent storage fails, don't record a path that might not exist.
+
             doc_id = self.postgres_client.create_document(
+                doc_id=new_doc_id, # 미리 생성한 doc_id 사용
                 title=title,
                 creator_id=creator_id,
                 creator_department=creator_department,
                 description=description,
                 visibility=visibility,
+                file_path=db_file_path,  # 영구 경로 사용
                 file_size=file_size,
-                file_type=file_type,
+                file_type=file_ext, # Changed to file_ext
                 tags=tags,
                 doc_type=doc_type,
                 filename=filename,
-                source_type="file",
+                source_type="upload", # Changed source_type to "upload"
                 version=version,
                 parent_doc_id=parent_doc_id
             )
@@ -153,7 +189,7 @@ class DocumentPipeline:
                     "doc_id": doc_id,
                     "title": title,
                     "filename": filename,
-                    "file_type": file_type,
+                    "file_type": file_ext, # Changed to file_ext
                     "chunk_count": 0,
                     "total_tokens": 0,
                     "cost_krw": 0,
@@ -222,7 +258,7 @@ class DocumentPipeline:
                 "doc_id": doc_id,
                 "title": title,
                 "filename": filename,
-                "file_type": file_type,
+                "file_type": file_ext, # Changed to file_ext
                 "chunk_count": len(chunks),
                 "total_tokens": actual_tokens,
                 "cost_krw": round(embed_cost["cost_krw"]["total"], 4),
@@ -265,14 +301,31 @@ class DocumentPipeline:
         print(f"[Pipeline] 채팅 저장 시작: {title}")
         
         try:
-            # Step 1: PostgreSQL에 메타데이터 생성
+            # doc_id를 미리 생성
+            doc_id = str(uuid.uuid4())
+
+            # [Storage] 채팅 내용 텍스트 파일 저장 (.txt)
+            perm_file_name = f"{doc_id}.txt"
+            perm_file_path = os.path.join(self.storage_dir, perm_file_name)
+            
+            try:
+                with open(perm_file_path, 'w', encoding='utf-8') as f:
+                    f.write(chat_content)
+                print(f"[Storage] 채팅 로그 저장 완료: {perm_file_path}")
+            except Exception as e:
+                print(f"[Storage] 채팅 저장 실패 (무시): {e}")
+                perm_file_path = "" # If permanent storage fails, don't record a path that might not exist.
+
+            # Step 1: 메타데이터 DB 저장
             print("[Step 1/4] 메타데이터 생성")
-            doc_id = self.postgres_client.create_document(
-                title=title,
+            self.postgres_client.create_document(
+                doc_id=doc_id, # 미리 생성한 doc_id 사용
                 creator_id=creator_id,
                 creator_department=creator_department,
+                title=title,
                 description=description,
                 visibility=visibility,
+                file_path=perm_file_path, # 영구 경로 기록
                 file_size=len(chat_content.encode('utf-8')),
                 file_type="chat",
                 source_type="chat"
@@ -396,14 +449,31 @@ class DocumentPipeline:
         print(f"[Pipeline] 에이전트 결과 저장 시작: {title}")
         
         try:
-            # Step 1: PostgreSQL에 메타데이터 생성
+            # doc_id를 미리 생성
+            doc_id = str(uuid.uuid4())
+
+            # [Storage] 에이전트 결과 텍스트 파일 저장 (.txt)
+            perm_file_name = f"{doc_id}.txt"
+            perm_file_path = os.path.join(self.storage_dir, perm_file_name)
+            
+            try:
+                with open(perm_file_path, 'w', encoding='utf-8') as f:
+                    f.write(agent_output)
+                print(f"[Storage] 에이전트 결과 저장 완료: {perm_file_path}")
+            except Exception as e:
+                print(f"[Storage] 에이전트 저장 실패 (무시): {e}")
+                perm_file_path = "" # If permanent storage fails, don't record a path that might not exist.
+
+            # Step 1: 메타데이터 DB 저장
             print("[Step 1/4] 메타데이터 생성")
-            doc_id = self.postgres_client.create_document(
-                title=title,
+            self.postgres_client.create_document(
+                doc_id=doc_id, # 미리 생성한 doc_id 사용
                 creator_id=creator_id,
                 creator_department=creator_department,
+                title=title,
                 description=description,
                 visibility=visibility,
+                file_path=perm_file_path, # 영구 경로 기록
                 file_size=len(agent_output.encode('utf-8')),
                 file_type="agent",
                 source_type="agent",
@@ -431,10 +501,7 @@ class DocumentPipeline:
                 }
             
             # AI 태깅
-            tags_result = self.auto_tagger.generate_tags(agent_output, title)
-            tags = tags_result.get("tags", [])
-            keywords = tags_result.get("keywords", [])
-            doc_type = tags_result.get("doc_type", "기타")
+            tags, keywords, doc_type = self._generate_tags_with_llm(agent_output[:3000])
 
             # PostgreSQL에 태그 업데이트
             self.postgres_client.update_document_tags(doc_id, tags, keywords, doc_type)
@@ -581,6 +648,6 @@ if __name__ == "__main__":
         print("=" * 80)
         
     except Exception as e:
-        print(f"\n❌ 테스트 실패: {str(e)}")
+        print(f"\n 테스트 실패: {str(e)}")
         import traceback
         traceback.print_exc()

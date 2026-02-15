@@ -60,8 +60,11 @@ class AgentManager:
         analysis = await orchestrator.recommend_agents(user_msg, conversation_history)
         
         # 2. 검색 수행 (DB 세션은 상위에서 주입받아야 함 - 현재는 None으로 호출될 수 있음)
-        # TODO: Service Layer에서 DB 세션을 넘겨주도록 개선 필요
-        return self.search_agents_by_analysis(analysis)
+        db = SessionLocal()
+        try:
+            return self.search_agents_by_analysis(analysis, db=db)
+        finally:
+            db.close()
 
     def search_agents_by_analysis(self, analysis: Dict, db: Session = None) -> List[Dict]:
         """
@@ -254,17 +257,23 @@ class AgentManager:
         
         if not draft:
             raise ValueError("Draft not found or expired")
+
+        # 1. Save to RDB (Postgres) FIRST to get the ID
+        new_agent = self.repo.create_agent(db, draft)
             
-        # 1. Vectorize & Save to Milvus (Agent Dedicated Store)
+        # 2. Vectorize & Save to Milvus (Agent Dedicated Store)
         if self.use_rag:
             try:
+                # [Fix] Postgres에서 생성된 ID를 draft에 주입하여 Milvus와 동기화
+                draft['id'] = str(new_agent.id)
+                
                 # 임베딩 생성 (Description + System Prompt)
                 text_to_embed = f"{draft.get('name', '')} {draft.get('description', '')} {draft.get('system_prompt', '')}"
                 embedding = self.embedding_generator.create(text_to_embed)
                 
                 # Agent Vector Store 저장
                 self.milvus_client.insert_agent(draft, embedding)
-                print(f"[Hub] Agent Vectorized & Saved to Milvus: {draft.get('name')}")
+                print(f"[Hub] Agent Vectorized & Saved to Milvus: {draft.get('name')} (ID: {draft['id']})")
                 
                 # [Log] Cost & Activity (Publishing)
                 try:
@@ -285,10 +294,7 @@ class AgentManager:
                         
             except Exception as e:
                 print(f"[Hub] Vectorization Failed: {e}")
-                # 실패해도 DB 저장은 진행할지 여부 결정 (현재는 진행)
-
-        # 2. Save to RDB (Postgres)
-        new_agent = self.repo.create_agent(db, draft)
+                # 실패 시 - 여기선 로그만 남김 (이미 DB엔 저장됨)
         
         # Cleanup Redis
         redis_client.delete(key)
