@@ -17,7 +17,7 @@ class AgentRepository:
             description=agent_data.get("description", ""),
             category=agent_data.get("category", "UNCATEGORIZED"),
             model_type=agent_data.get("model_type", "GPT-4"),
-            parameters={}, # 기본 파라미터
+            # parameters={}, # [Fix] 존재하지 않는 컬럼 제거
             is_public=agent_data.get("visibility", "PRIVATE"),
             use_rag=(agent_data.get("use_rag") == "True"),
             system_prompt=agent_data.get("system_prompt", ""),
