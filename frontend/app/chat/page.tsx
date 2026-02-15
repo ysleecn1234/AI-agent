@@ -390,18 +390,16 @@ export default function ChatPage() {
                                 >
                                     {msg.role === 'assistant' ? (
                                         <div className="prose prose-sm max-w-none 
-                                            prose-headings:font-bold prose-headings:text-gray-900
-                                            prose-h1:text-xl prose-h1:mb-3 prose-h1:mt-4
-                                            prose-h2:text-lg prose-h2:mb-2 prose-h2:mt-3
-                                            prose-h3:text-base prose-h3:mb-2 prose-h3:mt-3
-                                            prose-p:text-gray-800 prose-p:leading-relaxed prose-p:my-2
-                                            prose-ul:my-2 prose-ul:ml-4 prose-li:my-1
-                                            prose-ol:my-2 prose-ol:ml-4
-                                            prose-strong:text-gray-900 prose-strong:font-semibold
-                                            prose-code:bg-gray-100 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-sm
-                                            prose-pre:bg-gray-900 prose-pre:text-gray-100 prose-pre:p-4 prose-pre:rounded-lg prose-pre:overflow-x-auto
-                                            prose-blockquote:border-l-4 prose-blockquote:border-blue-500 prose-blockquote:pl-4 prose-blockquote:italic
-                                            prose-a:text-blue-600 prose-a:underline">
+                                            prose-headings:font-semibold prose-headings:mb-2 prose-headings:mt-3
+                                            prose-p:my-1.5 prose-p:leading-relaxed
+                                            prose-ul:my-1.5 prose-ul:list-disc prose-ul:pl-5
+                                            prose-ol:my-1.5 prose-ol:list-decimal prose-ol:pl-5
+                                            prose-li:my-0.5
+                                            prose-strong:font-semibold
+                                            prose-code:bg-gray-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-code:font-mono
+                                            prose-pre:bg-gray-900 prose-pre:text-gray-100 prose-pre:p-3 prose-pre:rounded prose-pre:my-2 prose-pre:overflow-x-auto
+                                            prose-blockquote:border-l-2 prose-blockquote:border-gray-300 prose-blockquote:pl-3 prose-blockquote:italic prose-blockquote:text-gray-700
+                                            prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline">
                                             <ReactMarkdown>{msg.content}</ReactMarkdown>
                                         </div>
                                     ) : (
