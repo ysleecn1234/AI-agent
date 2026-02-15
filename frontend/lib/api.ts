@@ -64,6 +64,18 @@ class ApiClient {
         });
 
         if (!response.ok) {
+            // 401 Unauthorized: 토큰 만료 또는 유효하지 않음
+            if (response.status === 401) {
+                this.clearToken();
+                if (typeof window !== 'undefined') {
+                    // 로그인 페이지로 리다이렉트 (현재 페이지 저장)
+                    const currentPath = window.location.pathname;
+                    if (currentPath !== '/auth/login' && currentPath !== '/auth/register') {
+                        window.location.href = '/auth/login';
+                    }
+                }
+            }
+            
             const error = await response.json().catch(() => ({ message: 'Unknown error' }));
             throw new Error(error.message || `API Error: ${response.status}`);
         }
