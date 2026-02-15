@@ -77,7 +77,7 @@ export default function DocumentDetailPage() {
     const fetchDocument = async () => {
         try {
             const token = localStorage.getItem('access_token');
-            const response = await fetch(`http://localhost:8000/drive/documents/${documentId}`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://223.130.142.76:8000'}/drive/documents/${documentId}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                 },
@@ -109,7 +109,7 @@ export default function DocumentDetailPage() {
 
         try {
             const token = localStorage.getItem('access_token');
-            const response = await fetch(`http://localhost:8000/drive/documents/${documentId}/chat`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://223.130.142.76:8000'}/drive/documents/${documentId}/chat`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
