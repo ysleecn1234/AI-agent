@@ -20,6 +20,28 @@ sys.path.insert(0, str(project_root))
 from .logger import get_logger
 from .cost_calculator import get_cost_calculator
 from services.common.cost_logger import get_cost_logger
+from services.ai_drive.db.postgres_client import PostgresClient
+from services.ai_drive.db.milvus_client import MilvusClient
+from services.ai_drive.core.embedding import EmbeddingGenerator
+import uuid
+import datetime
+import shutil # For file operations
+try:
+    import fitz  # PyMuPDF
+except ImportError:
+    fitz = None
+try:
+    import docx
+except ImportError:
+    docx = None
+try:
+    from pptx import Presentation
+except ImportError:
+    Presentation = None
+try:
+    import openpyxl
+except ImportError:
+    openpyxl = None
 
 # 환경 변수 로드
 load_dotenv()
@@ -207,7 +229,7 @@ TASK_MODEL_CONFIG = {
         ),
     },
     "doc_format": { 
-        "models": ["gemini-1.5-flash", "gpt-4o-mini"],
+        "models": ["gpt-4o-mini", "gemini-1.5-flash"],
         "temperature": 0.3,
         "max_tokens": 2000,
         "description": "채팅/에이전트 대화를 구조화된 문서로 변환",
@@ -1093,6 +1115,11 @@ class Pipeline:
         self.logger = get_logger()
         self.cost_calculator = get_cost_calculator()
         self.cost_logger = get_cost_logger()
+        
+        # [New] AI Drive Clients
+        self.postgres_client = PostgresClient()
+        self.milvus_client = MilvusClient()
+        self.embedding_generator = EmbeddingGenerator()
 
     def call_llm(self, task: str, prompt: str, options: dict = None) -> dict:
         """
@@ -1611,3 +1638,226 @@ class Pipeline:
                 "error": str(e),
                 "status": "failed"
             }
+
+    # ==================== AI Drive Integration ====================
+    
+    def process_chat_save(
+        self, 
+        chat_content: str, 
+        creator_id: str, 
+        creator_department: str, 
+        title: str, 
+        description: str, 
+        visibility: str
+    ) -> Dict[str, Any]:
+        """
+        채팅 내용 저장 (파일 + DB + 벡터)
+        이미 포맷팅된 내용을 받아 저장만 수행 (Service Layer에서 Format 완료)
+        """
+        print(f"[Pipeline] 채팅 저장 시작 (Title: {title})")
+        
+        # 파일명 생성 (랜덤 UUID)
+        filename = f"chat_{uuid.uuid4()}.md"
+                
+        doc_id = self.process_file_upload(
+            file_content=chat_content,
+            filename=filename,
+            title=title,
+            description=description,
+            creator_id=creator_id,
+            source_type="chat",
+            creator_department=creator_department,
+            visibility=visibility
+        )
+        
+        return {
+            "status": "success",
+            "doc_id": doc_id,
+            "title": title
+        }
+
+    def process_agent_save(
+        self, 
+        agent_output: str, 
+        creator_id: str, 
+        creator_department: str, 
+        agent_name: str, 
+        title: str, 
+        description: str, 
+        visibility: str
+    ) -> Dict[str, Any]:
+        """
+        에이전트 실행 결과 저장
+        """
+        print(f"[Pipeline] 에이전트 결과 저장 (Agent: {agent_name})")
+        
+        filename = f"agent_{agent_name}_{int(time.time())}.md"
+            
+        doc_id = self.process_file_upload(
+            file_content=agent_output,
+            filename=filename,
+            title=title,
+            description=description,
+            creator_id=creator_id,
+            source_type="agent",
+            creator_department=creator_department,
+            visibility=visibility,
+            agent_name=agent_name
+        )
+        
+        return {"status": "success", "doc_id": doc_id}
+
+    def process_file_upload(
+        self, 
+        title: str,
+        creator_id: str,
+        filename: str = None, # Make optional to support service.py call
+        file_content: str = None, 
+        file_path: str = None,
+        description: str = "",
+        source_type: str = "file",
+        creator_department: str = "General",
+        visibility: str = "team",
+        **kwargs
+    ) -> str:
+        """
+        파일 업로드 처리 (DB 저장 + 벡터 인덱싱)
+        - filename: 없을 경우 file_path나 title에서 유추
+        """
+        # Filename Fallback Logic
+        if not filename:
+            if file_path:
+                filename = os.path.basename(file_path)
+            else:
+                ext = "txt"
+                if title and "." in title:
+                    clean_title = title.replace(" ", "_")
+                    filename = clean_title
+                else:
+                    filename = f"{uuid.uuid4()}.{ext}"
+        
+        print(f"[Pipeline] 파일 처리 시작: {filename}")
+        
+        target_dir = "files"
+        os.makedirs(target_dir, exist_ok=True)
+        target_path = os.path.join(target_dir, filename)
+        
+        # 1. 파일 시스템 저장/이동
+        final_content = ""
+        
+        if file_content:
+            # 문자열 내용 저장
+            with open(target_path, "w", encoding="utf-8") as f:
+                f.write(file_content)
+            final_content = file_content
+            
+        elif file_path:
+            # 기존 파일 복사 (임시 -> 영구)
+            # shutil imported at top
+            shutil.copy2(file_path, target_path)
+            
+            # 텍스트 추출 (확장자 기반 파싱)
+            final_content = self._extract_text(target_path)
+            
+        else:
+            raise ValueError("file_content 또는 file_path 중 하나는 필수입니다.")
+
+        file_size = os.path.getsize(target_path)
+        
+        # 2. DB 메타데이터 생성
+        doc_id = self.postgres_client.create_document(
+            title=title,
+            creator_id=creator_id, 
+            creator_department=creator_department,
+            description=description,
+            visibility=visibility,
+            file_size=file_size,
+            file_type=filename.split('.')[-1].lower() if '.' in filename else 'txt',
+            filename=filename,
+            source_type=source_type,
+            file_path=target_path
+        )
+        
+        # 3. 청킹 및 벡터화 (텍스트가 있는 경우만)
+        if final_content and len(final_content.strip()) > 0:
+            chunks = self._chunk_text(final_content)
+            if chunks:
+                try:
+                    print(f"  → 임베딩 생성 ({len(chunks)} 청크)")
+                    embeddings = self.embedding_generator.create_batch(chunks)
+                    
+                    # 4. Milvus 저장
+                    self.milvus_client.insert(
+                        doc_id=doc_id, 
+                        chunks=chunks,
+                        embeddings=embeddings,
+                        visibility=visibility,
+                        creator_department=creator_department
+                    )
+                    
+                    # 5. 청크 개수 업데이트
+                    self.postgres_client.update_chunk_count(doc_id, len(chunks))
+                    print(f"  ✓ 벡터 인덱싱 완료 ({len(chunks)}개)")
+                    
+                except Exception as e:
+                    print(f"  ⚠️ 벡터 인덱싱 실패: {e}")
+        else:
+            print(f"  ⚠️ 텍스트 추출 불가 또는 빈 파일 (인덱싱 건너뜀)")
+        
+        return doc_id
+
+    def _extract_text(self, file_path: str) -> str:
+        """파일에서 텍스트 추출 (PDF, DOCX, PPTX, XLSX, TXT 지원)"""
+        ext = file_path.split('.')[-1].lower() if '.' in file_path else ""
+        text = ""
+        
+        try:
+            if ext == "pdf" and fitz:
+                doc = fitz.open(file_path)
+                text = "\n".join([page.get_text() for page in doc])
+                
+            elif ext == "docx" and docx:
+                doc = docx.Document(file_path)
+                text = "\n".join([p.text for p in doc.paragraphs])
+                
+            elif ext == "pptx" and Presentation:
+                prs = Presentation(file_path)
+                text = ""
+                for slide in prs.slides:
+                    for shape in slide.shapes:
+                        if hasattr(shape, "text"):
+                            text += shape.text + "\n"
+                            
+            elif ext == "xlsx" and openpyxl:
+                wb = openpyxl.load_workbook(file_path, data_only=True)
+                for sheet in wb:
+                    for row in sheet.iter_rows(values_only=True):
+                        text += " ".join([str(cell) for cell in row if cell]) + "\n"
+                        
+            else:
+                # 텍스트 파일 시도 (기본)
+                with open(file_path, "r", encoding="utf-8") as f:
+                    text = f.read()
+                    
+            return text
+            
+        except Exception as e:
+            print(f"  ⚠️ 텍스트 추출 오류 ({ext}): {e}")
+            return ""
+
+    def _chunk_text(self, text: str, chunk_size: int = 1000, overlap: int = 200) -> List[str]:
+        """간단한 텍스트 청킹 (Overlap 적용)"""
+        if not text:
+            return []
+            
+        chunks = []
+        start = 0
+        text_len = len(text)
+        
+        while start < text_len:
+            end = start + chunk_size
+            chunk = text[start:end]
+            chunks.append(chunk)
+            start += (chunk_size - overlap)
+            
+        return chunks
