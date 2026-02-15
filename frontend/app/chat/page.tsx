@@ -40,6 +40,29 @@ export default function ChatPage() {
     const [isLoadingAgents, setIsLoadingAgents] = useState(false);
     const [sessionId, setSessionId] = useState<string | null>(null);
 
+    // 에이전트 실시간 추천 (디바운스)
+    useEffect(() => {
+        if (!message.trim() || message.length < 3) {
+            setRecommendedAgents([]);
+            return;
+        }
+
+        const timer = setTimeout(async () => {
+            setIsLoadingAgents(true);
+            try {
+                const agents = await api.recommendAgents(message);
+                setRecommendedAgents(agents);
+            } catch (error) {
+                console.error('Failed to fetch recommended agents:', error);
+                setRecommendedAgents([]);
+            } finally {
+                setIsLoadingAgents(false);
+            }
+        }, 500); // 500ms 디바운스
+
+        return () => clearTimeout(timer);
+    }, [message]);
+
     const handleSend = async () => {
         if (!message.trim() || isLoading) return;
 

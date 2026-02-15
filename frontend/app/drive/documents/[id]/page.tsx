@@ -285,9 +285,9 @@ export default function DocumentDetailPage() {
                 <div className="w-1/2 border-r border-gray-200 bg-white overflow-y-auto p-6">
                     <div className="max-w-3xl mx-auto">
                         <div className="prose prose-sm max-w-none">
-                            {document.type === 'pdf' && document.url ? (
+                            {['pdf', 'docx', 'xlsx', 'pptx', 'txt', 'md'].includes(document.type) ? (
                                 <iframe
-                                    src={document.url}
+                                    src={`${process.env.NEXT_PUBLIC_API_URL || 'http://223.130.142.76:8000'}/drive/documents/${documentId}/file`}
                                     className="w-full h-[800px] border border-gray-200 rounded-lg"
                                     title={document.name}
                                 />

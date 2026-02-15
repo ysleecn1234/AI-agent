@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Menu, User, Search, Upload, FileText, File, FileSpreadsheet, Presentation, LogOut, Settings, MessageSquare, FolderOpen, Bot, Archive, ChevronUp, ChevronDown, MoreVertical, Trash2 } from 'lucide-react';
+import { Menu, User, Search, Upload, FileText, File, FileSpreadsheet, Presentation, LogOut, Settings, MessageSquare, FolderOpen, Bot, Archive, ChevronUp, ChevronDown, MoreVertical, Trash2, Download } from 'lucide-react';
 import UploadModal from '@/components/upload-modal';
 import { api } from '@/lib/api';
 
@@ -83,6 +83,37 @@ export default function DrivePage() {
         } else {
             setSortColumn(column);
             setSortDirection('asc');
+        }
+    };
+
+    const handleDownload = async (documentId: string, documentName: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+
+        try {
+            // API 호출: 문서 다운로드
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://223.130.142.76:8000'}/drive/documents/${documentId}/file?download=true`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('다운로드 실패');
+            }
+
+            // Blob으로 변환하여 다운로드
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = documentName;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } catch (error) {
+            console.error('Download failed:', error);
+            alert('다운로드에 실패했습니다.');
         }
     };
 
@@ -409,6 +440,13 @@ export default function DrivePage() {
                                                         </button>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end">
+                                                        <DropdownMenuItem
+                                                            onClick={(e) => handleDownload(doc.id, doc.name, e)}
+                                                        >
+                                                            <Download className="w-4 h-4 mr-2" />
+                                                            다운로드
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuSeparator />
                                                         <DropdownMenuItem
                                                             onClick={(e) => handleDelete(doc.id, e)}
                                                             className="text-red-600 focus:text-red-600"
