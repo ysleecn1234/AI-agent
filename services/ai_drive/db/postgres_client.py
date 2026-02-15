@@ -356,7 +356,7 @@ class PostgresClient:
 
     def list_documents(
         self,
-        creator_department: str = None,
+        department: str = None, # [Fix] 파라미터명 일치 (department -> creator_department)
         visibility: str = None,
         status: str = "active",
         is_latest: bool = True,
@@ -368,8 +368,8 @@ class PostgresClient:
         try:
             query = session.query(Document)
             
-            if creator_department:
-                query = query.filter(Document.creator_department == creator_department)
+            if department:
+                query = query.filter(Document.creator_department == department)
             if visibility:
                 query = query.filter(Document.visibility == visibility)
             if status:
