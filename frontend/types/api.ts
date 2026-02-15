@@ -151,6 +151,7 @@ export interface ChatSource {
 export interface ChatResponse {
     response: string;
     used_model: string;
+    session_id: string;
     sources?: ChatSource[];
 }
 

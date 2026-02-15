@@ -37,6 +37,7 @@ export default function ChatPage() {
     const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
     const [recommendedAgents, setRecommendedAgents] = useState<Agent[]>([]);
     const [isLoadingAgents, setIsLoadingAgents] = useState(false);
+    const [sessionId, setSessionId] = useState<string | null>(null);
 
     const handleSend = async () => {
         if (!message.trim() || isLoading) return;
@@ -53,7 +54,11 @@ export default function ChatPage() {
                 model_type: selectedModel,
                 use_rag: driveEnabled,
                 agent_id: agentId,
+                context_id: sessionId || undefined,
             });
+
+            // session_id 저장 (대화 이어가기)
+            setSessionId(response.session_id);
 
             setMessages(prev => [...prev, { 
                 role: 'assistant', 
