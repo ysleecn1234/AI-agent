@@ -123,9 +123,23 @@ class ApiClient {
     }
 
     public async uploadDocument(file: File, visibility: 'private' | 'team' | 'public'): Promise<Document> {
+        // 매번 최신 토큰 읽기
+        if (typeof window !== 'undefined') {
+            this.token = localStorage.getItem('access_token');
+        }
+
         const formData = new FormData();
         formData.append('file', file);
         formData.append('visibility', visibility);
+        
+        // 백엔드 필수 필드 추가
+        const creatorId = typeof window !== 'undefined' ? localStorage.getItem('user_id') || '' : '';
+        const department = typeof window !== 'undefined' ? localStorage.getItem('department') || '개발팀' : '개발팀';
+        
+        formData.append('creator_id', creatorId);
+        formData.append('creator_department', department);
+        formData.append('description', '');
+        formData.append('tags', '');
 
         // Content-Type header must be removed to let browser set boundary for FormData
         const headers: any = { ...(this.token ? { 'Authorization': `Bearer ${this.token}` } : {}) };
