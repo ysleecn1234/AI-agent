@@ -47,6 +47,11 @@ class ApiClient {
     }
 
     private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+        // 매번 최신 토큰 읽기 (로그인 후 토큰 반영)
+        if (typeof window !== 'undefined') {
+            this.token = localStorage.getItem('access_token');
+        }
+        
         const headers: HeadersInit = {
             'Content-Type': 'application/json',
             ...(this.token ? { 'Authorization': `Bearer ${this.token}` } : {}),
