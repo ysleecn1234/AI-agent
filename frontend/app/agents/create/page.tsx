@@ -35,14 +35,35 @@ export default function CreateAgentPage() {
 
     const handleComplete = async () => {
         try {
-            await api.createAgentDraft({
-                name: draft.name,
-                description: draft.description,
-                category: draft.category,
-                visibility: draft.visibility,
-                system_prompt: draft.systemPrompt,
+            // 1. Draft 생성
+            const draftResponse = await api.createAgentDraft({
                 selected_messages: draft.messages || []
             });
+
+            // 2. Step1 업데이트
+            await api.updateAgentStep1({
+                draft_id: draftResponse.draft_id,
+                name: draft.name,
+                description: draft.description,
+                input_example: draft.messages?.[0]?.content || '',
+                output_example: draft.messages?.[1]?.content || ''
+            });
+
+            // 3. Step2 업데이트
+            await api.updateAgentStep2({
+                draft_id: draftResponse.draft_id,
+                category: draft.category,
+                visibility: draft.visibility,
+                model_type: draft.model,
+                use_rag: draft.ragEnabled,
+                linked_doc_ids: draft.knowledgeBaseId ? [draft.knowledgeBaseId] : []
+            });
+
+            // 4. 최종 발행
+            await api.publishAgent({
+                draft_id: draftResponse.draft_id
+            });
+
             alert('에이전트가 생성되었습니다!');
             router.push('/agents');
         } catch (error) {

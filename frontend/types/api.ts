@@ -125,12 +125,28 @@ export interface AgentDetail extends Agent {
 }
 
 export interface CreateAgentRequest {
+    selected_messages: Array<{ role: string; content: string }>;
+}
+
+export interface UpdateAgentStep1Request {
+    draft_id: string;
     name: string;
     description: string;
+    input_example: string;
+    output_example: string;
+}
+
+export interface UpdateAgentStep2Request {
+    draft_id: string;
     category: string;
-    visibility: 'private' | 'team' | 'public';
-    system_prompt?: string;
-    selected_messages?: Array<{ role: string; content: string }>;
+    visibility: string;
+    model_type: string;
+    use_rag: boolean;
+    linked_doc_ids: string[];
+}
+
+export interface PublishAgentRequest {
+    draft_id: string;
 }
 
 // Chat

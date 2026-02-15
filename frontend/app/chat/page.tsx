@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import ReactMarkdown from 'react-markdown';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -197,22 +198,43 @@ export default function ChatPage() {
         visibility: 'private' | 'team' | 'public';
     }) => {
         try {
-            const content = data.scope === 'single' && selectedMessageIndex !== null
-                ? messages[selectedMessageIndex].content
-                : messages.map(m => `${m.role}: ${m.content}`).join('\n\n');
+            // 1. 선택된 메시지 준비
+            const selectedMessages = data.scope === 'single' && selectedMessageIndex !== null
+                ? [messages[selectedMessageIndex]].map(m => ({ role: m.role, content: m.content }))
+                : messages.map(m => ({ role: m.role, content: m.content }));
 
-            // API 연동: 에이전트 초안 생성
-            const draft = await api.createAgentDraft({
-                name: data.name,
-                description: data.description,
-                category: data.category,
-                visibility: data.visibility,
-                system_prompt: `Based on this content:\n\n${content}`
+            // 2. Draft 생성 (대화 내용만 전송)
+            const draftResponse = await api.createAgentDraft({
+                selected_messages: selectedMessages
             });
 
-            alert('Agent 초안이 생성되었습니다!');
+            // 3. Step1 업데이트 (이름, 설명 등)
+            await api.updateAgentStep1({
+                draft_id: draftResponse.draft_id,
+                name: data.name,
+                description: data.description,
+                input_example: selectedMessages[0]?.content || '',
+                output_example: selectedMessages[1]?.content || ''
+            });
+
+            // 4. Step2 업데이트 (카테고리, 공개범위 등)
+            await api.updateAgentStep2({
+                draft_id: draftResponse.draft_id,
+                category: data.category,
+                visibility: data.visibility,
+                model_type: 'gpt-4o-mini',
+                use_rag: false,
+                linked_doc_ids: []
+            });
+
+            // 5. 최종 발행
+            const publishResponse = await api.publishAgent({
+                draft_id: draftResponse.draft_id
+            });
+
+            alert('Agent가 생성되었습니다!');
             setAgentModalOpen(false);
-            router.push(`/agents/create?draftId=${draft.id}`);
+            router.push(`/agents`);
         } catch (error) {
             console.error('Agent creation failed:', error);
             alert('Agent 생성에 실패했습니다.');
@@ -343,7 +365,13 @@ export default function ChatPage() {
                                         : 'bg-white text-gray-800 border border-gray-200'
                                         }`}
                                 >
-                                    <p className="whitespace-pre-wrap">{msg.content}</p>
+                                    {msg.role === 'assistant' ? (
+                                        <div className="prose prose-sm max-w-none prose-headings:mt-3 prose-headings:mb-2 prose-p:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-1">
+                                            <ReactMarkdown>{msg.content}</ReactMarkdown>
+                                        </div>
+                                    ) : (
+                                        <p className="whitespace-pre-wrap">{msg.content}</p>
+                                    )}
                                 </div>
 
                                 {/* RAG Sources (AI messages only) */}

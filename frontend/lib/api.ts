@@ -169,8 +169,29 @@ class ApiClient {
         return this.request<AgentDetail>(`/agents/${id}`);
     }
 
-    public async createAgentDraft(data: CreateAgentRequest): Promise<Agent> {
-        return this.request<Agent>('/agents/draft', {
+    public async createAgentDraft(data: CreateAgentRequest): Promise<{ status: string; draft_id: string; message: string }> {
+        return this.request<{ status: string; draft_id: string; message: string }>('/agents/draft', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+    }
+
+    public async updateAgentStep1(data: any): Promise<{ status: string }> {
+        return this.request<{ status: string }>('/agents/draft/step1', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+    }
+
+    public async updateAgentStep2(data: any): Promise<{ status: string }> {
+        return this.request<{ status: string }>('/agents/draft/step2', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+    }
+
+    public async publishAgent(data: { draft_id: string }): Promise<{ status: string; agent_id: string }> {
+        return this.request<{ status: string; agent_id: string }>('/agents/publish', {
             method: 'POST',
             body: JSON.stringify(data),
         });
