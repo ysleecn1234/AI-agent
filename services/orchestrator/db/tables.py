@@ -6,7 +6,7 @@ import uuid
 from application.database import Base
 
 # ==========================================
-# 3. Chat Logs Table (Activity History)
+# Chat Logs Table (Activity History)
 # ==========================================
 class ChatLog(Base):
     __tablename__ = "chat_logs"

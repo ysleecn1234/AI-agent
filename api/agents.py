@@ -28,11 +28,15 @@ class Step1Update(BaseModel):
     input_example: str
     output_example: str
 
+from typing import Literal
+
+# ...
+
 class Step2Update(BaseModel):
     draft_id: str
     category: str
     # role removed (moved to description)
-    visibility: str
+    visibility: Literal["PRIVATE", "TEAM", "PUBLIC"] # [Updated] COMPANY -> PUBLIC
     model_type: str
     use_rag: bool
     linked_doc_ids: List[str]

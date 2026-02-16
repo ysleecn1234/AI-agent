@@ -20,6 +20,8 @@ sys.path.insert(0, str(project_root))
 from .logger import get_logger
 from .cost_calculator import get_cost_calculator
 from services.common.cost_logger import get_cost_logger
+import uuid
+import datetime
 
 # 환경 변수 로드
 load_dotenv()
@@ -207,7 +209,7 @@ TASK_MODEL_CONFIG = {
         ),
     },
     "doc_format": { 
-        "models": ["gemini-1.5-flash", "gpt-4o-mini"],
+        "models": ["gpt-4o-mini", "gemini-1.5-flash"],
         "temperature": 0.3,
         "max_tokens": 2000,
         "description": "채팅/에이전트 대화를 구조화된 문서로 변환",
@@ -1611,3 +1613,4 @@ class Pipeline:
                 "error": str(e),
                 "status": "failed"
             }
+

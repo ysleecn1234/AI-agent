@@ -27,6 +27,7 @@ class Token(BaseModel):
     token_type: str
     user_name: str
     department: str
+    user_id: str # [New] Frontend needs this
 
 # 2. Endpoints
 @router.post("/register", response_model=Token)
@@ -58,7 +59,8 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
         "access_token": access_token, 
         "token_type": "bearer",
         "user_name": new_user.name,
-        "department": new_user.department
+        "department": new_user.department,
+        "user_id": str(new_user.id) # [New] Check 1
     }
 
 @router.post("/login", response_model=Token)
@@ -81,5 +83,6 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
         "access_token": access_token, 
         "token_type": "bearer",
         "user_name": db_user.name,
-        "department": db_user.department
+        "department": db_user.department,
+        "user_id": str(db_user.id) # [New] Check 2
     }

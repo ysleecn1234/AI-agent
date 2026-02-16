@@ -32,7 +32,7 @@ class Agent(Base):
     output_example = Column(Text, nullable=True)
 
     # 설정 및 공개 범위
-    is_public = Column(String(20), nullable=False, default="PRIVATE")  # TEAM, PRIVATE
+    is_public = Column(String(20), nullable=False, default="PRIVATE")  # TEAM, PRIVATE, PUBLIC
     model_type = Column(String(50), nullable=False, default="AUTO")    # AUTO, GPT4 등
 
     # RAG 통합 전략
