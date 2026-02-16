@@ -48,30 +48,12 @@ export default function DrivePage() {
         try {
             // API 호출: 문서 목록 조회
             const docs = await api.getDocuments();
-            setDocuments(docs);
+            // 방어적 코드: 배열이 아니면 빈 배열로 설정
+            setDocuments(Array.isArray(docs) ? docs : []);
         } catch (error) {
             console.error('Error fetching documents:', error);
-            // Mock data fallback (개발 중 편의를 위해 유지하되, 실제로는 에러 처리 필요)
-            setDocuments([
-                {
-                    id: '1',
-                    name: '프로젝트 기획서.pdf',
-                    type: 'pdf',
-                    creator: '홍길동',
-                    created_at: '2026-02-09T10:30:00',
-                    visibility: 'team',
-                    size: 2048576,
-                },
-                {
-                    id: '2',
-                    name: '회의록.docx',
-                    type: 'docx',
-                    creator: '김철수',
-                    created_at: '2026-02-08T14:20:00',
-                    visibility: 'public',
-                    size: 1024000,
-                },
-            ]);
+            // 에러 발생 시 빈 배열로 설정
+            setDocuments([]);
         } finally {
             setIsLoading(false);
         }
