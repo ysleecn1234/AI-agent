@@ -115,7 +115,9 @@ class ApiClient {
 
     // Drive
     public async getDocuments(): Promise<Document[]> {
-        return this.request<Document[]>('/drive/documents');
+        const response = await this.request<any>('/drive/documents');
+        // 백엔드가 {success, documents, total_count} 형태로 반환
+        return Array.isArray(response) ? response : (response.documents || []);
     }
 
     public async getDocument(id: string): Promise<DocumentDetail> {
