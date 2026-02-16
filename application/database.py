@@ -51,5 +51,5 @@ class User(Base):
 
     # 관계 설정
     agents = relationship("services.ai_hub.db.tables.Agent", back_populates="creator")
-    chat_logs = relationship("services.orchestrator.db.tables.ChatLog", back_populates="user")
+    # chat_logs = relationship("services.orchestrator.db.tables.ChatLog", back_populates="user")  # TODO: 순환 참조 해결 필요
 
