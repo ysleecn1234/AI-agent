@@ -13,6 +13,7 @@ from services.orchestrator.pipeline import Pipeline
 from services.common.activity_logger import get_activity_logger
 from services.ai_hub.db.agent_repo import AgentRepository
 from application.database import get_db
+from services.orchestrator.db.tables import ChatLog
 class Orchestrator:
     def __init__(self):
         # Initialize the Service Layer instance (Pipeline)
@@ -121,9 +122,6 @@ class Orchestrator:
 
     def save_chat_log(self, user_id: str, session_id: str, user_input: str, ai_response: str):
         """채팅 로그 DB 저장"""
-        from services.orchestrator.db.tables import ChatLog
-        from application.database import get_db
-        
         db = next(get_db())
         try:
             new_log = ChatLog(
