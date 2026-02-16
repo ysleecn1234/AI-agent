@@ -27,7 +27,7 @@ export function SaveToDriveModal({ isOpen, onClose, onSave, content }: SaveToDri
     const [scope, setScope] = useState<'single' | 'all'>('single');
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
-    const [visibility, setVisibility] = useState<'private' | 'team' | 'public'>('private');
+    const [visibility, setVisibility] = useState<'private' | 'team' | 'public'>('team');
     const [showPreview, setShowPreview] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
 
@@ -144,9 +144,8 @@ export function SaveToDriveModal({ isOpen, onClose, onSave, content }: SaveToDri
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="private">🔒 나만 보기</SelectItem>
                                 <SelectItem value="team">👥 팀 공유</SelectItem>
-                                <SelectItem value="public">🌐 전체 공개</SelectItem>
+                                <SelectItem value="public">🌐 전사 공개</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -208,7 +207,7 @@ export function CreateAgentModal({ isOpen, onClose, onCreate, content }: CreateA
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [category, setCategory] = useState('기타');
-    const [visibility, setVisibility] = useState<'private' | 'team' | 'public'>('private');
+    const [visibility, setVisibility] = useState<'private' | 'team' | 'public'>('team');
     const [showPreview, setShowPreview] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
 

@@ -9,9 +9,9 @@ class AIHubService:
 
     def get_public_agents(self, db: Session, sort_by: str = "newest", category: Optional[str] = None) -> List[Agent]:
         """
-        Fetch agents that are marked as public (PUBLIC, TEAM, COMPANY).
+        Fetch agents that are marked as 'TEAM' or 'COMPANY' (Public).
         """
-        query = db.query(Agent).filter(Agent.is_public.in_(["PUBLIC", "TEAM", "COMPANY"]))
+        query = db.query(Agent).filter(Agent.is_public.in_(["TEAM", "COMPANY"]))
 
         # Filter by Category
         if category:
