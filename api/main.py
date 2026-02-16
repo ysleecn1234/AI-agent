@@ -7,7 +7,7 @@ from . import auth, chat, agents, drive
 # [New] Import Models explicitly to ensure tables are created
 from services.orchestrator.db.tables import ChatLog
 from services.ai_hub.db.tables import Agent
-from services.ai_drive.db.tables import Document
+from services.ai_drive.db.postgres_client import Document
 
 # 모델 등록 (Base.metadata.create_all()이 테이블을 생성하려면 필요)
 from services.orchestrator.db.tables import ChatLog
