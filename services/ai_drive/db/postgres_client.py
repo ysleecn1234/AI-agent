@@ -356,7 +356,7 @@ class PostgresClient:
 
     def list_documents(
         self,
-        department: str = None, # [Fix] 파라미터명 일치 (department -> creator_department)
+        department: str = None, 
         visibility: str = None,
         status: str = "active",
         is_latest: bool = True,
