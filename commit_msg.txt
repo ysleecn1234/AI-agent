@@ -1,6 +1,5 @@
-fix: visibility를 TEAM/COMPANY로 표준화, private 옵션 제거
+fix: 로그인/회원가입 시 user_id 저장하여 업로드 422 에러 해결
 
-- 프론트엔드: private 옵션 제거, 기본값 team으로 변경
-- 백엔드: team→TEAM, public→COMPANY 매핑
-- 시드 에이전트: PUBLIC→TEAM 변경
-- Hub 필터: TEAM, COMPANY만 표시
+- 백엔드: 로그인/회원가입 응답에 user_id 추가
+- 프론트엔드: user_id를 localStorage에 저장
+- TypeScript: AuthResponse 타입에 user_id 추가

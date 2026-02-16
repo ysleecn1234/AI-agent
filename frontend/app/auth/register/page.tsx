@@ -49,6 +49,7 @@ export default function RegisterPage() {
 
             // 토큰 저장 (api.register에서 이미 access_token 저장됨)
             localStorage.setItem('access_token', data.access_token);
+            localStorage.setItem('user_id', data.user_id);
             localStorage.setItem('user_name', data.user_name);
             localStorage.setItem('department', data.department);
 

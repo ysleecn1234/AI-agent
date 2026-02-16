@@ -57,6 +57,7 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
     return {
         "access_token": access_token, 
         "token_type": "bearer",
+        "user_id": str(new_user.id),
         "user_name": new_user.name,
         "department": new_user.department
     }
@@ -80,6 +81,7 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
     return {
         "access_token": access_token, 
         "token_type": "bearer",
+        "user_id": str(db_user.id),
         "user_name": db_user.name,
         "department": db_user.department
     }
