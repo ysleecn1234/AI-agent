@@ -1,0 +1,5 @@
+fix: 로그인/회원가입 시 user_id 저장하여 업로드 422 에러 해결
+
+- 백엔드: 로그인/회원가입 응답에 user_id 추가
+- 프론트엔드: user_id를 localStorage에 저장
+- TypeScript: AuthResponse 타입에 user_id 추가

@@ -4,6 +4,15 @@ env/
 
 # 보안 (유료 API 키 및 DB 접속 정보)
 .env
+.env.*
+*.env
+**/credentials.json
+**/*key*.txt
+**/*keys*.txt
+**/*secret*.txt
+*.pem
+**/*key*.pem
+**/*keys*.pem
 
 # 파이썬 실행 찌꺼기 및 캐시
 __pycache__/
@@ -26,8 +35,18 @@ services/ai_drive/uploads/
 
 # 저장 파일
 services/ai_drive/storage/
-.env.keys
-*.pem
+
+# Development Artifacts
+*.db
+test_result.txt
 
 # Node.js (프론트엔드)
 node_modules/
+.next/
+out/
+*.tsbuildinfo
+.npm
+.eslintcache
+
+# API Keys (Feature-X에서 추가)
+.env.keys

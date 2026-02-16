@@ -14,10 +14,10 @@ services:
     environment:
       - POSTGRES_HOST=agent-postgres
       - POSTGRES_PORT=5432
-      - POSTGRES_DB=ai_hub
       - POSTGRES_USER=aiagent
       - POSTGRES_PASSWORD=aiagent123
-      - REDIS_HOST=redis
+      - POSTGRES_DB=ai_hub
+      - REDIS_HOST=agent-redis
       - MILVUS_HOST=milvus-standalone
     depends_on:
       - postgres

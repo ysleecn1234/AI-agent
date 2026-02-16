@@ -25,6 +25,7 @@ class UserLogin(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str
+    user_id: str
     user_name: str
     department: str
     user_id: str # [New] Frontend needs this
@@ -58,6 +59,7 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
     return {
         "access_token": access_token, 
         "token_type": "bearer",
+        "user_id": str(new_user.id),
         "user_name": new_user.name,
         "department": new_user.department,
         "user_id": str(new_user.id) # [New] Check 1
@@ -82,6 +84,7 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
     return {
         "access_token": access_token, 
         "token_type": "bearer",
+        "user_id": str(db_user.id),
         "user_name": db_user.name,
         "department": db_user.department,
         "user_id": str(db_user.id) # [New] Check 2
