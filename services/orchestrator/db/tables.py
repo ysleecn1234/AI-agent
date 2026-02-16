@@ -21,4 +21,4 @@ class ChatLog(Base):
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
 
     # Relationships
-    user = relationship("application.database.User", back_populates="chat_logs")
+    # user = relationship("application.database.User", back_populates="chat_logs")  # TODO: User.chat_logs 복원 후 활성화
