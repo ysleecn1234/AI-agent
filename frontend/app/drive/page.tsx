@@ -12,18 +12,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Menu, User, Search, Upload, FileText, File, FileSpreadsheet, Presentation, LogOut, Settings, MessageSquare, FolderOpen, Bot, Archive, ChevronUp, ChevronDown, MoreVertical, Trash2, Download } from 'lucide-react';
 import UploadModal from '@/components/upload-modal';
 import { api } from '@/lib/api';
+import type { Document } from '@/types/api';
 
-interface Document {
-    id: string;
-    name: string;
-    type: string;
-    creator: string;
-    created_at: string;
-    visibility: 'private' | 'team' | 'public';
-    size: number;
-}
-
-type SortColumn = 'type' | 'name' | 'creator' | 'created_at' | 'visibility';
+type SortColumn = 'file_type' | 'title' | 'creator_department' | 'modified_at' | 'visibility';
 type SortDirection = 'asc' | 'desc';
 
 export default function DrivePage() {
@@ -31,7 +22,7 @@ export default function DrivePage() {
     const [documents, setDocuments] = useState<Document[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [filterTab, setFilterTab] = useState<'all' | 'public' | 'team'>('all');
-    const [sortColumn, setSortColumn] = useState<SortColumn>('created_at');
+    const [sortColumn, setSortColumn] = useState<SortColumn>('modified_at');
     const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
     const [uploadModalOpen, setUploadModalOpen] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -118,7 +109,7 @@ export default function DrivePage() {
             // 현재 api.ts 파일 수정을 최소화하려면 일단 fetch 유지하되 토큰 가져오는 방식만 통일.
 
             const token = localStorage.getItem('access_token');
-            const response = await fetch(`http://localhost:8000/drive/documents/${documentId}`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://223.130.142.76:8000'}/drive/documents/${documentId}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -142,9 +133,9 @@ export default function DrivePage() {
         router.push('/auth/login');
     };
 
-    const getFileIcon = (type: string) => {
-        const fileType = (type || '').toLowerCase();
-        switch (fileType) {
+    const getFileIcon = (fileType: string) => {
+        const t = (fileType || '').toLowerCase();
+        switch (t) {
             case 'pdf':
                 return <FileText className="w-5 h-5 text-red-500" />;
             case 'docx':
@@ -182,11 +173,9 @@ export default function DrivePage() {
 
     const filteredDocuments = documents
         .filter((doc) => {
-            // Filter by search query
-            if (searchQuery && !doc.name.toLowerCase().includes(searchQuery.toLowerCase())) {
+            if (searchQuery && !(doc.title || '').toLowerCase().includes(searchQuery.toLowerCase())) {
                 return false;
             }
-            // Filter by tab
             if (filterTab === 'public' && doc.visibility !== 'public') return false;
             if (filterTab === 'team' && doc.visibility !== 'team') return false;
             return true;
@@ -195,7 +184,6 @@ export default function DrivePage() {
             const aValue = a[sortColumn];
             const bValue = b[sortColumn];
             const direction = sortDirection === 'asc' ? 1 : -1;
-
             if (typeof aValue === 'string' && typeof bValue === 'string') {
                 return aValue.localeCompare(bValue) * direction;
             }
@@ -335,44 +323,44 @@ export default function DrivePage() {
                                 <TableRow>
                                     <TableHead className="w-[50px]">
                                         <button
-                                            onClick={() => handleSort('type')}
+                                            onClick={() => handleSort('file_type')}
                                             className="flex items-center gap-1 hover:text-blue-600"
                                         >
                                             유형
-                                            {sortColumn === 'type' && (
+                                            {sortColumn === 'file_type' && (
                                                 sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
                                             )}
                                         </button>
                                     </TableHead>
                                     <TableHead>
                                         <button
-                                            onClick={() => handleSort('name')}
+                                            onClick={() => handleSort('title')}
                                             className="flex items-center gap-1 hover:text-blue-600"
                                         >
                                             파일명
-                                            {sortColumn === 'name' && (
+                                            {sortColumn === 'title' && (
                                                 sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
                                             )}
                                         </button>
                                     </TableHead>
                                     <TableHead>
                                         <button
-                                            onClick={() => handleSort('creator')}
+                                            onClick={() => handleSort('creator_department')}
                                             className="flex items-center gap-1 hover:text-blue-600"
                                         >
                                             제작자
-                                            {sortColumn === 'creator' && (
+                                            {sortColumn === 'creator_department' && (
                                                 sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
                                             )}
                                         </button>
                                     </TableHead>
                                     <TableHead>
                                         <button
-                                            onClick={() => handleSort('created_at')}
+                                            onClick={() => handleSort('modified_at')}
                                             className="flex items-center gap-1 hover:text-blue-600"
                                         >
                                             날짜
-                                            {sortColumn === 'created_at' && (
+                                            {sortColumn === 'modified_at' && (
                                                 sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
                                             )}
                                         </button>
@@ -407,14 +395,14 @@ export default function DrivePage() {
                                 ) : (
                                     filteredDocuments.map((doc) => (
                                         <TableRow
-                                            key={doc.id}
+                                            key={doc.doc_id}
                                             className="hover:bg-gray-50"
                                         >
-                                            <TableCell onClick={() => router.push(`/drive/documents/${doc.id}`)} className="cursor-pointer">{getFileIcon(doc.type)}</TableCell>
-                                            <TableCell onClick={() => router.push(`/drive/documents/${doc.id}`)} className="font-medium cursor-pointer">{doc.name}</TableCell>
-                                            <TableCell onClick={() => router.push(`/drive/documents/${doc.id}`)} className="cursor-pointer">{doc.creator}</TableCell>
-                                            <TableCell onClick={() => router.push(`/drive/documents/${doc.id}`)} className="cursor-pointer">{formatDate(doc.created_at)}</TableCell>
-                                            <TableCell onClick={() => router.push(`/drive/documents/${doc.id}`)} className="cursor-pointer">{getVisibilityBadge(doc.visibility)}</TableCell>
+                                            <TableCell onClick={() => router.push(`/drive/documents/${doc.doc_id}`)} className="cursor-pointer">{getFileIcon(doc.file_type)}</TableCell>
+                                            <TableCell onClick={() => router.push(`/drive/documents/${doc.doc_id}`)} className="font-medium cursor-pointer">{doc.title}</TableCell>
+                                            <TableCell onClick={() => router.push(`/drive/documents/${doc.doc_id}`)} className="cursor-pointer">{doc.creator_department}</TableCell>
+                                            <TableCell onClick={() => router.push(`/drive/documents/${doc.doc_id}`)} className="cursor-pointer">{formatDate(doc.modified_at)}</TableCell>
+                                            <TableCell onClick={() => router.push(`/drive/documents/${doc.doc_id}`)} className="cursor-pointer">{getVisibilityBadge(doc.visibility)}</TableCell>
                                             <TableCell>
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
@@ -424,14 +412,14 @@ export default function DrivePage() {
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end">
                                                         <DropdownMenuItem
-                                                            onClick={(e) => handleDownload(doc.id, doc.name, e)}
+                                                            onClick={(e) => handleDownload(doc.doc_id, doc.title, e)}
                                                         >
                                                             <Download className="w-4 h-4 mr-2" />
                                                             다운로드
                                                         </DropdownMenuItem>
                                                         <DropdownMenuSeparator />
                                                         <DropdownMenuItem
-                                                            onClick={(e) => handleDelete(doc.id, e)}
+                                                            onClick={(e) => handleDelete(doc.doc_id, e)}
                                                             className="text-red-600 focus:text-red-600"
                                                         >
                                                             <Trash2 className="w-4 h-4 mr-2" />

@@ -18,21 +18,31 @@ interface Message {
     content: string;
 }
 
+// 백엔드 DocumentDetail 스펙
 interface DocumentData {
-    id: string;
-    name: string;
-    type: string;
-    content: string;
-    url?: string;
-    description?: string;
-    visibility?: 'private' | 'team' | 'public';
-    tags?: string[];
+    doc_id: string;
+    title: string;
+    description: string;
+    creator_id: string;
+    creator_department: string;
+    created_at: string;
+    modified_at: string;
+    visibility: string;
+    status: string;
+    file_size: number;
+    file_type: string;
+    version: number;
+    is_latest: boolean;
+    tags: string[];
+    filename: string;
+    source_type: string;
+    chunk_count: number;
 }
 
 export default function DocumentDetailPage() {
     const router = useRouter();
     const params = useParams();
-    const documentId = params.id as string;
+    const documentId = (params?.id as string) ?? '';
 
     const [document, setDocument] = useState<DocumentData | null>(null);
     const [messages, setMessages] = useState<Message[]>([]);
@@ -50,11 +60,13 @@ export default function DocumentDetailPage() {
     const userId = typeof window !== 'undefined' ? localStorage.getItem('user_name') || '' : '';
 
     useEffect(() => {
+        if (!documentId) return;
         fetchDocument();
         fetchFilePreview();
     }, [documentId]);
 
     const fetchFilePreview = async () => {
+        if (!documentId) return;
         try {
             const token = localStorage.getItem('access_token');
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://223.130.142.76:8000'}/drive/documents/${documentId}/file`, {
@@ -75,6 +87,7 @@ export default function DocumentDetailPage() {
     };
 
     const fetchDocument = async () => {
+        if (!documentId) return;
         try {
             const token = localStorage.getItem('access_token');
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://223.130.142.76:8000'}/drive/documents/${documentId}`, {
@@ -89,13 +102,7 @@ export default function DocumentDetailPage() {
             setDocument(data);
         } catch (error) {
             console.error('Error fetching document:', error);
-            // Mock data for development
-            setDocument({
-                id: documentId,
-                name: '프로젝트 기획서.pdf',
-                type: 'pdf',
-                content: '이 문서는 프로젝트 기획서입니다.\n\n주요 내용:\n1. 프로젝트 개요\n2. 목표 및 범위\n3. 일정 계획\n4. 예산 계획',
-            });
+            setDocument(null);
         }
     };
 
@@ -143,10 +150,10 @@ export default function DocumentDetailPage() {
 
     const handleOpenEditModal = () => {
         if (document) {
-            setEditTitle(document.name);
+            setEditTitle(document.title);
             setEditDescription(document.description || '');
-            setEditVisibility(document.visibility || 'team');
-            setEditTags(document.tags?.join(', ') || '');
+            setEditVisibility((document.visibility || 'team') as 'private' | 'team' | 'public');
+            setEditTags((document.tags || []).join(', '));
             setEditModalOpen(true);
         }
     };
@@ -160,7 +167,7 @@ export default function DocumentDetailPage() {
                 .map(t => t.trim())
                 .filter(t => t.length > 0);
 
-            await api.updateDocumentMetadata(document.id, {
+            await api.updateDocumentMetadata(document.doc_id, {
                 user_id: userId,
                 title: editTitle,
                 description: editDescription,
@@ -184,6 +191,24 @@ export default function DocumentDetailPage() {
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
                     <p className="text-gray-600">문서를 불러오는 중...</p>
                 </div>
+            </div>
+        );
+    }
+
+    if (!documentId) {
+        return (
+            <div className="flex flex-col h-screen bg-gray-50 items-center justify-center">
+                <p className="text-gray-500">문서 ID가 없습니다.</p>
+                <Button variant="outline" onClick={() => router.push('/drive')} className="mt-4">Drive로 돌아가기</Button>
+            </div>
+        );
+    }
+
+    if (!document) {
+        return (
+            <div className="flex flex-col h-screen bg-gray-50 items-center justify-center">
+                <p className="text-gray-500">문서를 불러오는 중...</p>
+                <Button variant="outline" onClick={() => router.push('/drive')} className="mt-4">Drive로 돌아가기</Button>
             </div>
         );
     }
@@ -258,7 +283,7 @@ export default function DocumentDetailPage() {
                     </Sheet>
 
                     {/* Document Title */}
-                    <h1 className="text-lg font-semibold text-gray-900">{document.name}</h1>
+                    <h1 className="text-lg font-semibold text-gray-900">{document.title}</h1>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -311,7 +336,7 @@ export default function DocumentDetailPage() {
                                 <iframe
                                     src={fileUrl}
                                     className="w-full h-[800px] border border-gray-200 rounded-lg"
-                                    title={document.name}
+                                    title={document.title}
                                 />
                             ) : (
                                 <div className="flex items-center justify-center h-[800px] border border-gray-200 rounded-lg bg-gray-50">

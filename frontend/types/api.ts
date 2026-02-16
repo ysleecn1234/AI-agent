@@ -30,20 +30,37 @@ export interface User {
     department: string;
 }
 
-// Drive
+// Drive - 백엔드 DocumentListItem / DocumentDetail 스펙
 export interface Document {
-    id: string;
-    name: string;
-    type: string;
-    creator: string;
-    created_at: string;
-    visibility: 'private' | 'team' | 'public';
-    size: number;
+    doc_id: string;
+    title: string;
+    creator_department: string;
+    visibility: string;
+    status: string;
+    file_type: string;
+    version: number;
+    modified_at: string;
+    tags: string[];
 }
 
-export interface DocumentDetail extends Document {
-    content?: string;
-    url?: string;
+export interface DocumentDetail {
+    doc_id: string;
+    title: string;
+    description: string;
+    creator_id: string;
+    creator_department: string;
+    created_at: string;
+    modified_at: string;
+    visibility: string;
+    status: string;
+    file_size: number;
+    file_type: string;
+    version: number;
+    is_latest: boolean;
+    tags: string[];
+    filename: string;
+    source_type: string;
+    chunk_count: number;
 }
 
 export interface ArchivedDocument {
