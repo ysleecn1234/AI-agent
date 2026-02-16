@@ -143,7 +143,8 @@ export default function DrivePage() {
     };
 
     const getFileIcon = (type: string) => {
-        switch (type.toLowerCase()) {
+        const fileType = (type || '').toLowerCase();
+        switch (fileType) {
             case 'pdf':
                 return <FileText className="w-5 h-5 text-red-500" />;
             case 'docx':
