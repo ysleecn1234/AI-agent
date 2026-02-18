@@ -40,7 +40,7 @@ class AgentService:
             },
         )
         
-        return draft_id
+        return draft_id, filled_template
 
     def list_drafts(self, user_id: str):
         return agent_manager.list_drafts(user_id)

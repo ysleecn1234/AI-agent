@@ -44,14 +44,19 @@ class Step2Update(BaseModel):
 class PublishRequest(BaseModel):
     draft_id: str
 
+
+class RecommendRequest(BaseModel):
+    """에이전트 추천 요청 (채팅 내용 + 대화 맥락)"""
+    query: str
+    conversation_history: Optional[List[dict]] = None  # [{"role": "user"|"assistant", "content": "..."}]
+
 # --- Endpoints ---
 
 @router.post("/draft")
 async def create_draft(req: DraftCreateRequest, user_id: str = Depends(get_current_user_id)):
-    """마법사 시작: 대화 내용으로부터 초안 생성"""
-    # 오케스트레이터 분석 + Redis 저장
-    draft_id = await agent_service.generate_draft_from_chat(user_id, req.selected_messages)
-    return {"status": "success", "draft_id": draft_id, "message": "Draft created in Redis with Orchestrator analysis."}
+    """마법사 시작: 대화 내용으로부터 초안 생성 (내용 기반 name/description/category 등 자동 채움)"""
+    draft_id, filled = await agent_service.generate_draft_from_chat(user_id, req.selected_messages)
+    return {"status": "success", "draft_id": draft_id, "filled": filled, "message": "Draft created in Redis with Orchestrator analysis."}
 
 @router.get("/drafts")
 def list_drafts(user_id: str = Depends(get_current_user_id)):
@@ -112,13 +117,29 @@ def list_agents(
     ]
 
 @router.get("/recommend")
-async def recommend_agents(
+async def recommend_agents_get(
     query: str = Query(...),
     user_id: str = Depends(get_current_user_id)
 ):
-    """채팅 입력 기반 에이전트 추천"""
+    """채팅 입력 기반 에이전트 추천 (GET, 대화 히스토리 없음)"""
     try:
-        recommendations = await agent_service.recommend_agents_for_chat(query)
+        recommendations = await agent_service.recommend_agents_for_chat(query, conversation_history=None)
+        return {"status": "success", "recommendations": recommendations}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/recommend")
+async def recommend_agents_post(
+    req: RecommendRequest,
+    user_id: str = Depends(get_current_user_id)
+):
+    """채팅 입력 + 대화 히스토리 기반 에이전트 추천 (권장)"""
+    try:
+        recommendations = await agent_service.recommend_agents_for_chat(
+            req.query,
+            conversation_history=req.conversation_history
+        )
         return {"status": "success", "recommendations": recommendations}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

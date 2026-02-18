@@ -3,7 +3,7 @@ AI Drive API Router
 HTTP 요청/응답 처리만 담당합니다.
 Application Layer(Facade)로 위임합니다.
 """
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Query
 from pydantic import BaseModel
 from typing import List, Optional, Any
@@ -325,23 +325,56 @@ async def update_document_metadata(doc_id: str, request: UpdateMetadataRequest, 
 @router.delete("/documents/{doc_id}")
 async def delete_document(doc_id: str, user_id: str = Depends(get_current_user_id)):
     """
-    문서 삭제 API
-    
-    - HTTP 처리만 담당
-    - Application Layer로 위임
+    문서 삭제 API (아카이브로 이동)
     """
     try:
-        result = await drive_service.delete_document(doc_id, user_id)
+        await drive_service.delete_document(doc_id, user_id)
         return {"success": True, "message": "문서가 삭제되었습니다"}
     except Exception as e:
         raise HTTPException(500, f"문서 삭제 실패: {str(e)}")
+
+
+@router.post("/documents/{doc_id}/restore")
+async def restore_document(doc_id: str, user_id: str = Depends(get_current_user_id)):
+    """아카이브 문서 복원"""
+    try:
+        await drive_service.restore_document(doc_id, user_id)
+        return {"success": True, "message": "문서가 복원되었습니다"}
+    except ValueError as e:
+        raise HTTPException(404, str(e))
+    except Exception as e:
+        raise HTTPException(500, f"복원 실패: {str(e)}")
+
+
+@router.delete("/documents/{doc_id}/permanent")
+async def permanent_delete_document(doc_id: str, user_id: str = Depends(get_current_user_id)):
+    """아카이브 문서 영구 삭제"""
+    try:
+        await drive_service.permanent_delete_document(doc_id, user_id)
+        return {"success": True, "message": "문서가 영구 삭제되었습니다"}
+    except ValueError as e:
+        raise HTTPException(404, str(e))
+    except Exception as e:
+        raise HTTPException(500, f"영구 삭제 실패: {str(e)}")
+
+def _read_text_file_utf8(file_path: str) -> bytes:
+    """텍스트 파일을 UTF-8/CP949 등에서 읽어 UTF-8 bytes로 반환 (미리보기 깨짐 방지)"""
+    for enc in ("utf-8", "cp949", "euc-kr"):
+        try:
+            with open(file_path, "r", encoding=enc) as f:
+                return f.read().encode("utf-8")
+        except (UnicodeDecodeError, LookupError):
+            continue
+    with open(file_path, "rb") as f:
+        return f.read()
+
 
 @router.get("/documents/{doc_id}/file")
 async def get_document_file(doc_id: str, download: bool = Query(False), user_id: str = Depends(get_current_user_id)):
     """
     문서 원본 파일 서빙
     
-    - download=false: 브라우저에서 미리보기 (PDF 등)
+    - download=false: 브라우저에서 미리보기 (PDF 등). txt/md는 charset=utf-8로 서빙해 깨짐 방지.
     - download=true: 파일 다운로드
     """
     try:
@@ -354,16 +387,23 @@ async def get_document_file(doc_id: str, download: bool = Query(False), user_id:
             raise HTTPException(404, "파일을 찾을 수 없습니다")
         
         filename = document.get("filename", "document")
-        
+        ext = (os.path.splitext(filename)[1] or "").lower()
+        is_text = ext in (".txt", ".md", ".csv")
+
         if download:
             return FileResponse(
                 path=file_path,
                 filename=filename,
                 media_type="application/octet-stream"
             )
-        else:
-            # 미리보기용 (Content-Type 자동 감지)
-            return FileResponse(path=file_path, filename=filename)
+        if is_text:
+            # 텍스트 파일: 인코딩 정규화 후 UTF-8로 응답 (미리보기 깨짐 방지)
+            body = _read_text_file_utf8(file_path)
+            return Response(
+                content=body,
+                media_type="text/plain; charset=utf-8",
+            )
+        return FileResponse(path=file_path, filename=filename)
     
     except HTTPException:
         raise

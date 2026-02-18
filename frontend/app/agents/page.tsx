@@ -88,8 +88,8 @@ export default function AgentsPage() {
 
         // Tab filter
         if (activeTab === 'my') return agent.creator === userName;
-        if (activeTab === 'team') return agent.visibility === 'team';
-        if (activeTab === 'public') return agent.visibility === 'public';
+        if (activeTab === 'team') return (agent.visibility || '').toLowerCase() === 'team';
+        if (activeTab === 'public') return (agent.visibility || '').toLowerCase() === 'public';
 
         // Category filter
         if (categoryFilter !== 'all' && agent.category !== categoryFilter) return false;
@@ -316,7 +316,7 @@ export default function AgentsPage() {
                                                     <span className="font-medium text-gray-700">{agent.creator}</span>
                                                     <span>•</span>
                                                     <Badge variant="secondary" className="text-xs">
-                                                        {agent.visibility === 'public' ? '🌐 전체' : agent.visibility === 'team' ? '👥 팀' : '🔒 나만'}
+                                                        {(agent.visibility || '').toLowerCase() === 'public' ? '🌐 전체' : (agent.visibility || '').toLowerCase() === 'team' ? '👥 팀' : '🔒 나만'}
                                                     </Badge>
                                                 </div>
                                             </CardContent>

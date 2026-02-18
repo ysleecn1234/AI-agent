@@ -11,13 +11,16 @@ class AgentRepository:
         # 지연 임포트 (Lazy Import)
         from services.ai_hub.db.tables import Agent
         
-        # visibility 값 매핑: 프론트엔드(소문자) → 백엔드(대문자)
+        # visibility 값 매핑: PRIVATE | TEAM | PUBLIC (백엔드 스펙)
         visibility_map = {
             "team": "TEAM",
-            "public": "COMPANY"  # public → COMPANY로 매핑
+            "public": "PUBLIC",
+            "TEAM": "TEAM",
+            "PUBLIC": "PUBLIC",
+            "PRIVATE": "PRIVATE",
         }
         visibility = agent_data.get("visibility", "team")
-        is_public_value = visibility_map.get(visibility, "TEAM")  # 기본값: TEAM
+        is_public_value = visibility_map.get(visibility) or (visibility if visibility in ("PRIVATE", "TEAM", "PUBLIC") else "TEAM")
         
         new_agent = Agent(
             creator_id=agent_data["user_id"],

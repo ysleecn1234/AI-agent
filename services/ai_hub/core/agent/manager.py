@@ -135,25 +135,50 @@ class AgentManager:
                 for agent in db_agents:
                     agent_id_str = str(agent.id)
                     match_score = candidate_map.get(agent_id_str, 0)
-                    
-                    results.append({
-                        "id": agent_id_str,
-                        "name": agent.name,
-                        "description": agent.description,
-                        "author": "Unknown", # DB 스키마 확인 필요
-                        "is_official": agent.is_public,
-                        "match_score": match_score
-                    })
+                    results.append(_agent_to_recommendation_item(agent, match_score))
                 
                 # 점수순 정렬
-                results.sort(key=lambda x: x["match_score"], reverse=True)
+                results.sort(key=lambda x: x.get("match_score", 0), reverse=True)
                 
             except Exception as e:
                 print(f"[Hub] DB Fetch Failed: {e}")
                 import traceback
                 traceback.print_exc()
 
+        # 3. Fallback: 벡터 결과 없을 때 DB 키워드/전체에서 추천
+        if not results and db:
+            try:
+                from services.ai_hub.db.hub_repo import HubRepository
+                hub_repo = HubRepository()
+                fallback_agents = []
+                search_term = (keywords[0] if keywords else None) or topic or "일반"
+                if search_term and search_term != "General":
+                    fallback_agents = hub_repo.get_agents_by_keyword(db, search_term)
+                if not fallback_agents:
+                    fallback_agents = hub_repo.get_all_public_agents(db)
+                for agent in fallback_agents[:5]:
+                    results.append(_agent_to_recommendation_item(agent, 0))
+            except Exception as e:
+                print(f"[Hub] Fallback search failed: {e}")
+
         return results
+
+
+def _agent_to_recommendation_item(agent, match_score: float = 0) -> Dict:
+    """DB Agent → 프론트 Agent 형식 추천 항목"""
+    return {
+        "id": str(agent.id),
+        "name": agent.name,
+        "description": agent.description,
+        "category": getattr(agent, "category", "기타"),
+        "visibility": getattr(agent, "is_public", "PRIVATE"),
+        "creator": str(agent.creator_id) if agent.creator_id else "Unknown",
+        "creator_id": str(agent.creator_id) if agent.creator_id else None,
+        "created_at": getattr(agent, "created_at", None)
+        and getattr(agent.created_at, "isoformat", lambda: "")() or "",
+        "is_active": True,
+        "match_score": match_score,
+    }
 
     # --- 1. Definition Management ---
 

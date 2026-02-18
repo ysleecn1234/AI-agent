@@ -11,6 +11,7 @@ import { api } from '@/lib/api';
 export default function CreateAgentPage() {
     const router = useRouter();
     const [currentStep, setCurrentStep] = useState<1 | 2>(1);
+    const [draftId, setDraftId] = useState<string | null>(null);
     const [draft, setDraft] = useState<AgentDraft>({
         name: '',
         description: '',
@@ -24,8 +25,29 @@ export default function CreateAgentPage() {
         messages: []
     });
 
-    const handleNext = () => {
-        if (currentStep === 1) setCurrentStep(2);
+    const handleNext = async () => {
+        if (currentStep !== 1 || !draft.messages?.length) {
+            setCurrentStep(2);
+            return;
+        }
+        try {
+            const res = await api.createAgentDraft({ selected_messages: draft.messages });
+            setDraftId(res.draft_id);
+            if (res.filled) {
+                const f = res.filled;
+                setDraft(prev => ({
+                    ...prev,
+                    name: f.name ?? prev.name,
+                    description: f.description ?? prev.description,
+                    category: f.category ?? prev.category,
+                    systemPrompt: f.system_prompt ?? prev.systemPrompt
+                }));
+            }
+            setCurrentStep(2);
+        } catch (e) {
+            console.error('Draft 생성 실패, Step2만 이동:', e);
+            setCurrentStep(2);
+        }
     };
 
     const handleBack = () => {
@@ -34,35 +56,53 @@ export default function CreateAgentPage() {
     };
 
     const handleComplete = async () => {
+        let id = draftId;
+        let name = draft.name;
+        let description = draft.description;
+        let category = draft.category;
+        let inputExample = draft.messages?.[0]?.content ?? '';
+        let outputExample = draft.messages?.[1]?.content ?? '';
+
+        if (!id && draft.messages?.length) {
+            try {
+                const res = await api.createAgentDraft({ selected_messages: draft.messages });
+                id = res.draft_id;
+                if (res.filled) {
+                    name = res.filled.name ?? name;
+                    description = res.filled.description ?? description;
+                    category = res.filled.category ?? category;
+                    inputExample = res.filled.input_example ?? inputExample;
+                    outputExample = res.filled.output_example ?? outputExample;
+                }
+            } catch (e) {
+                console.error(e);
+                alert('Draft 생성에 실패했습니다.');
+                return;
+            }
+        }
+        if (!id) {
+            alert('먼저 [다음]을 눌러 기획을 완료해 주세요.');
+            return;
+        }
         try {
-            // 1. Draft 생성
-            const draftResponse = await api.createAgentDraft({
-                selected_messages: draft.messages || []
-            });
-
-            // 2. Step1 업데이트
             await api.updateAgentStep1({
-                draft_id: draftResponse.draft_id,
-                name: draft.name,
-                description: draft.description,
-                input_example: draft.messages?.[0]?.content || '',
-                output_example: draft.messages?.[1]?.content || ''
+                draft_id: id,
+                name,
+                description,
+                input_example: inputExample,
+                output_example: outputExample
             });
 
-            // 3. Step2 업데이트
             await api.updateAgentStep2({
-                draft_id: draftResponse.draft_id,
-                category: draft.category,
-                visibility: draft.visibility,
+                draft_id: id,
+                category,
+                visibility: (draft.visibility || 'private').toUpperCase() as 'PRIVATE' | 'TEAM' | 'PUBLIC',
                 model_type: draft.model,
                 use_rag: draft.ragEnabled,
                 linked_doc_ids: draft.knowledgeBaseId ? [draft.knowledgeBaseId] : []
             });
 
-            // 4. 최종 발행
-            await api.publishAgent({
-                draft_id: draftResponse.draft_id
-            });
+            await api.publishAgent({ draft_id: id });
 
             alert('에이전트가 생성되었습니다!');
             router.push('/agents');

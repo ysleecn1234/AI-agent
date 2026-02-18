@@ -317,6 +317,38 @@ class AIDriveService:
         )
         
         return True
+
+    async def restore_document(self, doc_id: str, user_id: str) -> bool:
+        """아카이브 문서 복원 (상태만 active로 변경, Milvus 재임베딩은 별도)"""
+        doc = self.db_client.get_document(doc_id)
+        if not doc:
+            raise ValueError("문서를 찾을 수 없습니다")
+        if doc.get("status") != "archived":
+            raise ValueError("아카이브된 문서만 복원할 수 있습니다")
+        self.db_client.update_document_status(doc_id, "active")
+        self.activity_logger.log(
+            user_id=user_id,
+            action="restore",
+            details={"doc_id": doc_id},
+            doc_id=doc_id,
+        )
+        return True
+
+    async def permanent_delete_document(self, doc_id: str, user_id: str) -> bool:
+        """아카이브 문서 영구 삭제"""
+        doc = self.db_client.get_document(doc_id)
+        if not doc:
+            raise ValueError("문서를 찾을 수 없습니다")
+        if doc.get("status") != "archived":
+            raise ValueError("아카이브된 문서만 영구 삭제할 수 있습니다")
+        self.db_client.hard_delete_document(doc_id)
+        self.activity_logger.log(
+            user_id=user_id,
+            action="permanent_delete",
+            details={"doc_id": doc_id},
+            doc_id=doc_id,
+        )
+        return True
     
     async def update_metadata(
         self,
