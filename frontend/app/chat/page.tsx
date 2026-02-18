@@ -40,29 +40,6 @@ export default function ChatPage() {
     const [isLoadingAgents, setIsLoadingAgents] = useState(false);
     const [sessionId, setSessionId] = useState<string | null>(null);
 
-    // 에이전트 실시간 추천 (디바운스)
-    useEffect(() => {
-        if (!message.trim() || message.length < 3) {
-            setRecommendedAgents([]);
-            return;
-        }
-
-        const timer = setTimeout(async () => {
-            setIsLoadingAgents(true);
-            try {
-                const agents = await api.recommendAgents(message);
-                setRecommendedAgents(agents);
-            } catch (error) {
-                console.error('Failed to fetch recommended agents:', error);
-                setRecommendedAgents([]);
-            } finally {
-                setIsLoadingAgents(false);
-            }
-        }, 500); // 500ms 디바운스
-
-        return () => clearTimeout(timer);
-    }, [message]);
-
     const handleSend = async () => {
         if (!message.trim() || isLoading) return;
 
@@ -127,13 +104,16 @@ export default function ChatPage() {
             setIsLoadingAgents(true);
             try {
                 if (!message.trim()) {
-                    // Show top 5 agents when no input
+                    // 입력 없을 때 상위 5개
                     const agents = await api.getAgents();
                     setRecommendedAgents(agents.slice(0, 5));
-                } else {
-                    // Use backend recommendation API
+                } else if (message.trim().length >= 3) {
+                    // 채팅 맥락 포함 추천 (최근 10개 메시지)
+                    const conversationHistory = messages
+                        .slice(-10)
+                        .map((m) => ({ role: m.role, content: m.content }));
                     try {
-                        const recommended = await api.recommendAgents(message);
+                        const recommended = await api.recommendAgents(message, conversationHistory);
                         setRecommendedAgents(recommended.slice(0, 5));
                     } catch (error) {
                         // Fallback to client-side filtering if API not available
@@ -146,6 +126,8 @@ export default function ChatPage() {
                         ).slice(0, 5);
                         setRecommendedAgents(filtered.length > 0 ? filtered : agents.slice(0, 5));
                     }
+                } else {
+                    setRecommendedAgents([]);
                 }
             } catch (error) {
                 console.error('Failed to fetch agents:', error);
@@ -156,7 +138,7 @@ export default function ChatPage() {
         }, 500); // 500ms debounce
 
         return () => clearTimeout(timeoutId);
-    }, [agentEnabled, message]);
+    }, [agentEnabled, message, messages]);
 
     const handleSelectAgent = (agent: Agent) => {
         setAgentId(agent.id);
@@ -240,11 +222,11 @@ export default function ChatPage() {
                 output_example: selectedMessages[1]?.content || ''
             });
 
-            // 4. Step2 업데이트 (카테고리, 공개범위 등)
+            // 4. Step2 업데이트 (카테고리, 공개범위 등, 백엔드: PRIVATE | TEAM | PUBLIC)
             await api.updateAgentStep2({
                 draft_id: draftResponse.draft_id,
                 category: data.category,
-                visibility: data.visibility,
+                visibility: data.visibility.toUpperCase() as 'PRIVATE' | 'TEAM' | 'PUBLIC',
                 model_type: 'gpt-4o-mini',
                 use_rag: false,
                 linked_doc_ids: []

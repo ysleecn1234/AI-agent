@@ -114,10 +114,21 @@ class ApiClient {
     }
 
     // Drive
-    public async getDocuments(): Promise<Document[]> {
-        const response = await this.request<any>('/drive/documents');
-        // 백엔드가 {success, documents, total_count} 형태로 반환
+    public async getDocuments(params?: { status?: string; limit?: number }): Promise<Document[]> {
+        const q = new URLSearchParams();
+        if (params?.status) q.set('status', params.status);
+        if (params?.limit != null) q.set('limit', String(params.limit));
+        const query = q.toString() ? `?${q.toString()}` : '';
+        const response = await this.request<any>(`/drive/documents${query}`);
         return Array.isArray(response) ? response : (response.documents || []);
+    }
+
+    public async restoreDocument(docId: string): Promise<void> {
+        return this.request<void>(`/drive/documents/${docId}/restore`, { method: 'POST' });
+    }
+
+    public async permanentDeleteDocument(docId: string): Promise<void> {
+        return this.request<void>(`/drive/documents/${docId}/permanent`, { method: 'DELETE' });
     }
 
     public async getDocument(id: string): Promise<DocumentDetail> {
@@ -197,8 +208,8 @@ class ApiClient {
         return this.request<AgentDetail>(`/agents/${id}`);
     }
 
-    public async createAgentDraft(data: CreateAgentRequest): Promise<{ status: string; draft_id: string; message: string }> {
-        return this.request<{ status: string; draft_id: string; message: string }>('/agents/draft', {
+    public async createAgentDraft(data: CreateAgentRequest): Promise<{ status: string; draft_id: string; filled?: { name?: string; description?: string; category?: string; input_example?: string; output_example?: string; system_prompt?: string }; message: string }> {
+        return this.request<{ status: string; draft_id: string; filled?: { name?: string; description?: string; category?: string; input_example?: string; output_example?: string; system_prompt?: string }; message: string }>('/agents/draft', {
             method: 'POST',
             body: JSON.stringify(data),
         });
@@ -231,8 +242,20 @@ class ApiClient {
         });
     }
 
-    public async recommendAgents(query: string): Promise<Agent[]> {
-        return this.request<Agent[]>(`/agents/recommend?query=${encodeURIComponent(query)}`);
+    /**
+     * 채팅 내용·대화 맥락 기반 에이전트 추천.
+     * conversationHistory 있으면 POST로 전달해 맥락 반영 추천.
+     */
+    public async recommendAgents(
+        query: string,
+        conversationHistory?: Array<{ role: string; content: string }>
+    ): Promise<Agent[]> {
+        const payload = { query, conversation_history: conversationHistory ?? undefined };
+        const res = await this.request<{ status: string; recommendations: Agent[] }>(
+            '/agents/recommend',
+            { method: 'POST', body: JSON.stringify(payload) }
+        );
+        return res.recommendations ?? [];
     }
 
     // Generate metadata

@@ -7,20 +7,32 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Menu, User, RotateCcw, Trash2, MessageSquare, FolderOpen, Bot, Settings, LogOut, Archive, FileText, File, FileSpreadsheet, Presentation } from 'lucide-react';
+import Link from 'next/link';
+import { api } from '@/lib/api';
+import type { Document, ArchivedDocument } from '@/types/api';
 
-interface ArchivedDocument {
-    id: string;
-    name: string;
-    type: string;
-    deleted_at: string;
-    days_remaining: number;
+const ARCHIVE_DAYS = 30;
+
+function toArchivedDocument(doc: Document): ArchivedDocument {
+    const deletedAt = doc.modified_at ? new Date(doc.modified_at).getTime() : Date.now();
+    const daysSince = Math.floor((Date.now() - deletedAt) / 86400000);
+    const days_remaining = Math.max(0, ARCHIVE_DAYS - daysSince);
+    return {
+        id: doc.doc_id,
+        name: doc.title,
+        type: doc.file_type || 'file',
+        deleted_at: doc.modified_at || new Date().toISOString(),
+        days_remaining,
+    };
 }
 
 export default function ArchivePage() {
     const router = useRouter();
     const [archivedDocuments, setArchivedDocuments] = useState<ArchivedDocument[]>([]);
+    const [chatSavedDocuments, setChatSavedDocuments] = useState<Document[]>([]);
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const [isLoadingChat, setIsLoadingChat] = useState(true);
 
     const userName = typeof window !== 'undefined' ? localStorage.getItem('user_name') || '사용자' : '사용자';
 
@@ -28,57 +40,39 @@ export default function ArchivePage() {
         fetchArchivedDocuments();
     }, []);
 
+    useEffect(() => {
+        fetchChatSavedDocuments();
+    }, []);
+
     const fetchArchivedDocuments = async () => {
         setIsLoading(true);
         try {
-            const token = localStorage.getItem('access_token');
-            const response = await fetch('http://localhost:8000/drive/archive', {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
-
-            if (!response.ok) throw new Error('Failed to fetch archived documents');
-
-            const data = await response.json();
-            setArchivedDocuments(data.documents || []);
+            const docs = await api.getDocuments({ status: 'archived', limit: 100 });
+            setArchivedDocuments(docs.map(toArchivedDocument));
         } catch (error) {
             console.error('Error fetching archived documents:', error);
-            // Mock data for development
-            setArchivedDocuments([
-                {
-                    id: '1',
-                    name: '오래된 기획서.pdf',
-                    type: 'pdf',
-                    deleted_at: '2026-02-05T10:30:00',
-                    days_remaining: 25,
-                },
-                {
-                    id: '2',
-                    name: '이전 회의록.docx',
-                    type: 'docx',
-                    deleted_at: '2026-01-20T14:20:00',
-                    days_remaining: 9,
-                },
-            ]);
+            setArchivedDocuments([]);
         } finally {
             setIsLoading(false);
         }
     };
 
+    const fetchChatSavedDocuments = async () => {
+        setIsLoadingChat(true);
+        try {
+            const docs = await api.getDocuments({ status: 'active', limit: 200 });
+            setChatSavedDocuments(docs.filter((d) => (d.file_type || '').toLowerCase() === 'chat'));
+        } catch (error) {
+            console.error('Error fetching chat-saved documents:', error);
+            setChatSavedDocuments([]);
+        } finally {
+            setIsLoadingChat(false);
+        }
+    };
+
     const handleRestore = async (id: string) => {
         try {
-            const token = localStorage.getItem('access_token');
-            const response = await fetch(`http://localhost:8000/drive/restore/${id}`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
-
-            if (!response.ok) throw new Error('Failed to restore document');
-
-            // Refresh the list
+            await api.restoreDocument(id);
             fetchArchivedDocuments();
         } catch (error) {
             console.error('Error restoring document:', error);
@@ -87,22 +81,9 @@ export default function ArchivePage() {
     };
 
     const handlePermanentDelete = async (id: string) => {
-        if (!confirm('정말로 영구 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
-            return;
-        }
-
+        if (!confirm('정말로 영구 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) return;
         try {
-            const token = localStorage.getItem('access_token');
-            const response = await fetch(`http://localhost:8000/drive/permanent/${id}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
-
-            if (!response.ok) throw new Error('Failed to delete document');
-
-            // Refresh the list
+            await api.permanentDeleteDocument(id);
             fetchArchivedDocuments();
         } catch (error) {
             console.error('Error deleting document:', error);
@@ -245,8 +226,59 @@ export default function ArchivePage() {
                         </div>
                     </div>
 
-                    {/* Archive Table */}
+                    {/* 채팅 저장 목록 (과거 채팅셋) */}
                     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                        <div className="px-4 py-3 border-b border-gray-200">
+                            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                                <MessageSquare className="w-5 h-5 text-blue-600" />
+                                채팅 저장 목록
+                            </h2>
+                            <p className="text-sm text-gray-500 mt-0.5">채팅에서 Drive로 저장한 대화 목록입니다</p>
+                        </div>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>제목</TableHead>
+                                    <TableHead>부서</TableHead>
+                                    <TableHead>수정일</TableHead>
+                                    <TableHead className="text-right">이동</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {isLoadingChat ? (
+                                    <TableRow>
+                                        <TableCell colSpan={4} className="text-center py-6 text-gray-500">로딩 중...</TableCell>
+                                    </TableRow>
+                                ) : chatSavedDocuments.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={4} className="text-center py-6 text-gray-500">저장된 채팅이 없습니다</TableCell>
+                                    </TableRow>
+                                ) : (
+                                    chatSavedDocuments.map((doc) => (
+                                        <TableRow key={doc.doc_id}>
+                                            <TableCell className="font-medium">{doc.title}</TableCell>
+                                            <TableCell>{doc.creator_department}</TableCell>
+                                            <TableCell>{doc.modified_at ? new Date(doc.modified_at).toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '-'}</TableCell>
+                                            <TableCell className="text-right">
+                                                <Link href={`/drive/documents/${doc.doc_id}`}>
+                                                    <Button variant="outline" size="sm">보기</Button>
+                                                </Link>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
+
+                    {/* Drive 아카이브 (삭제된 문서) */}
+                    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                        <div className="px-4 py-3 border-b border-gray-200">
+                            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                                <Archive className="w-5 h-5 text-blue-600" />
+                                삭제된 문서
+                            </h2>
+                        </div>
                         <Table>
                             <TableHeader>
                                 <TableRow>
