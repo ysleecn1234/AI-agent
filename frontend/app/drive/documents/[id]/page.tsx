@@ -299,7 +299,7 @@ export default function DocumentDetailPage() {
                         수정
                     </Button>
 
-                        {/* User Menu */}
+                    {/* User Menu */}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <button className="p-2 hover:bg-gray-100 rounded-lg">
@@ -471,7 +471,7 @@ export default function DocumentDetailPage() {
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="private">🔒 나만 보기</SelectItem>
+
                                     <SelectItem value="team">👥 팀 공유</SelectItem>
                                     <SelectItem value="public">🌐 전체 공개</SelectItem>
                                 </SelectContent>
@@ -497,7 +497,7 @@ export default function DocumentDetailPage() {
                         <Button variant="outline" onClick={() => setEditModalOpen(false)}>
                             취소
                         </Button>
-                        <Button 
+                        <Button
                             onClick={handleSaveMetadata}
                             className="bg-blue-600 hover:bg-blue-700"
                         >

@@ -29,7 +29,7 @@ const MAX_FILE_SIZE = 1024 * 1024 * 1024; // 1GB
 
 export default function UploadModal({ isOpen, onClose, onUploadSuccess }: UploadModalProps) {
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
-    const [visibility, setVisibility] = useState<'private' | 'team' | 'public'>('private');
+    const [visibility, setVisibility] = useState<'team' | 'public'>('team');
     const [uploadProgress, setUploadProgress] = useState(0);
     const [isUploading, setIsUploading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -110,7 +110,7 @@ export default function UploadModal({ isOpen, onClose, onUploadSuccess }: Upload
     const handleClose = () => {
         if (!isUploading) {
             setSelectedFile(null);
-            setVisibility('private');
+            setVisibility('team');
             setUploadProgress(0);
             setError(null);
             setIsDragging(false);
@@ -207,7 +207,7 @@ export default function UploadModal({ isOpen, onClose, onUploadSuccess }: Upload
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="private">🔒 나만 보기</SelectItem>
+
                                 <SelectItem value="team">👥 팀 공유</SelectItem>
                                 <SelectItem value="public">🌐 전체 공개</SelectItem>
                             </SelectContent>

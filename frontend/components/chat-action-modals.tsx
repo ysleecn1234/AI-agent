@@ -18,7 +18,7 @@ interface SaveToDriveModalProps {
         scope: 'single' | 'all';
         title: string;
         description: string;
-        visibility: 'private' | 'team' | 'public';
+        visibility: 'team' | 'public';
     }) => void;
     content: string;
 }
@@ -27,7 +27,7 @@ export function SaveToDriveModal({ isOpen, onClose, onSave, content }: SaveToDri
     const [scope, setScope] = useState<'single' | 'all'>('single');
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
-    const [visibility, setVisibility] = useState<'private' | 'team' | 'public'>('team');
+    const [visibility, setVisibility] = useState<'team' | 'public'>('team');
     const [showPreview, setShowPreview] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
 
@@ -50,10 +50,10 @@ export function SaveToDriveModal({ isOpen, onClose, onSave, content }: SaveToDri
             // Fallback to simple generation
             const lines = content.split('\n').filter(l => l.trim());
             const firstLine = lines[0] || '대화 내용';
-            const generatedTitle = firstLine.length > 50 
-                ? firstLine.substring(0, 50) + '...' 
+            const generatedTitle = firstLine.length > 50
+                ? firstLine.substring(0, 50) + '...'
                 : firstLine;
-            
+
             setTitle(generatedTitle || `채팅 문서 - ${new Date().toLocaleDateString()}`);
             setDescription(`${lines.length}개의 메시지를 포함한 대화 내용입니다.`);
         } finally {
@@ -68,7 +68,7 @@ export function SaveToDriveModal({ isOpen, onClose, onSave, content }: SaveToDri
         setScope('single');
         setTitle('');
         setDescription('');
-        setVisibility('private');
+        setVisibility('team');
         setShowPreview(false);
     };
 
@@ -161,7 +161,7 @@ export function SaveToDriveModal({ isOpen, onClose, onSave, content }: SaveToDri
                             <span>미리보기</span>
                             {showPreview ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                         </Button>
-                        
+
                         {showPreview && (
                             <div className="mt-3 p-4 bg-gray-50 border rounded-lg max-h-[200px] overflow-y-auto">
                                 <pre className="text-sm whitespace-pre-wrap text-gray-700">
@@ -176,8 +176,8 @@ export function SaveToDriveModal({ isOpen, onClose, onSave, content }: SaveToDri
                     <Button variant="outline" onClick={onClose}>
                         취소
                     </Button>
-                    <Button 
-                        onClick={handleSave} 
+                    <Button
+                        onClick={handleSave}
                         className="bg-blue-600 hover:bg-blue-700"
                         disabled={!title.trim() || isGenerating}
                     >
@@ -197,7 +197,7 @@ interface CreateAgentModalProps {
         name: string;
         description: string;
         category: string;
-        visibility: 'private' | 'team' | 'public';
+        visibility: 'team' | 'public';
     }) => void;
     content: string;
 }
@@ -207,7 +207,7 @@ export function CreateAgentModal({ isOpen, onClose, onCreate, content }: CreateA
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [category, setCategory] = useState('기타');
-    const [visibility, setVisibility] = useState<'private' | 'team' | 'public'>('team');
+    const [visibility, setVisibility] = useState<'team' | 'public'>('team');
     const [showPreview, setShowPreview] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
 
@@ -230,7 +230,7 @@ export function CreateAgentModal({ isOpen, onClose, onCreate, content }: CreateA
             console.error('Failed to generate agent metadata:', error);
             // Fallback to simple generation
             const contentLower = content.toLowerCase();
-            
+
             let detectedCategory = '기타';
             if (contentLower.includes('마케팅') || contentLower.includes('광고')) {
                 detectedCategory = '마케팅';
@@ -239,7 +239,7 @@ export function CreateAgentModal({ isOpen, onClose, onCreate, content }: CreateA
             } else if (contentLower.includes('데이터') || contentLower.includes('분석')) {
                 detectedCategory = '생산성';
             }
-            
+
             setName(`AI 어시스턴트 - ${new Date().toLocaleDateString()}`);
             setDescription('대화 내용을 기반으로 생성된 맞춤형 Agent입니다.');
             setCategory(detectedCategory);
@@ -256,7 +256,7 @@ export function CreateAgentModal({ isOpen, onClose, onCreate, content }: CreateA
         setName('');
         setDescription('');
         setCategory('기타');
-        setVisibility('private');
+        setVisibility('team');
         setShowPreview(false);
     };
 
@@ -354,7 +354,7 @@ export function CreateAgentModal({ isOpen, onClose, onCreate, content }: CreateA
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="private">🔒 나만 사용</SelectItem>
+
                                 <SelectItem value="team">👥 팀 공유</SelectItem>
                                 <SelectItem value="public">🌐 전체 공개</SelectItem>
                             </SelectContent>
@@ -372,7 +372,7 @@ export function CreateAgentModal({ isOpen, onClose, onCreate, content }: CreateA
                             <span>학습 데이터 미리보기</span>
                             {showPreview ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                         </Button>
-                        
+
                         {showPreview && (
                             <div className="mt-3 p-4 bg-gray-50 border rounded-lg max-h-[200px] overflow-y-auto">
                                 <pre className="text-sm whitespace-pre-wrap text-gray-700">
@@ -387,8 +387,8 @@ export function CreateAgentModal({ isOpen, onClose, onCreate, content }: CreateA
                     <Button variant="outline" onClick={onClose}>
                         취소
                     </Button>
-                    <Button 
-                        onClick={handleCreate} 
+                    <Button
+                        onClick={handleCreate}
                         className="bg-blue-600 hover:bg-blue-700"
                         disabled={!name.trim() || !description.trim() || isGenerating}
                     >

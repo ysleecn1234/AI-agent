@@ -80,13 +80,13 @@ export function Step2Config({ draft, setDraft, onBack, onComplete }: Step2Config
                             <Label>공개 범위</Label>
                             <Select
                                 value={draft.visibility}
-                                onValueChange={(value) => handleChange('visibility', value as 'private' | 'team' | 'public')}
+                                onValueChange={(value) => handleChange('visibility', value as 'team' | 'public')}
                             >
                                 <SelectTrigger>
                                     <SelectValue placeholder="공개 범위 선택" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="private">🔒 나만 사용</SelectItem>
+
                                     <SelectItem value="team">👥 팀 공유</SelectItem>
                                     <SelectItem value="public">🌐 전체 공개</SelectItem>
                                 </SelectContent>
