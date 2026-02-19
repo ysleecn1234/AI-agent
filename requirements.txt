@@ -182,6 +182,7 @@ xlrd==2.0.2
 zope.interface==8.0.1
 litellm>=1.50.0
 PyMuPDF>=1.23.0
+pdfplumber>=0.10.0
 python-docx>=0.8.11
 python-pptx>=0.6.21
 openpyxl>=3.1.2

@@ -3,7 +3,12 @@ AI 드라이브 - 파일 파싱 유틸리티
 지원 형식: PDF, DOCX, PPT, TXT, MD, CSV
 """
 
-import fitz  # PyMuPDF
+import pdfplumber  # 한글 PDF 파싱 지원
+try:
+    import fitz  # PyMuPDF (fallback용)
+    HAS_FITZ = True
+except ImportError:
+    HAS_FITZ = False
 from docx import Document
 from pptx import Presentation
 import csv
@@ -53,7 +58,7 @@ class FileParser:
     
     def parse_pdf(self, file_path: str) -> str:
         """
-        PDF 파일에서 텍스트 추출
+        PDF 파일에서 텍스트 추출 (pdfplumber 사용, 한글 지원)
         
         Args:
             file_path: PDF 파일 경로
@@ -64,20 +69,32 @@ class FileParser:
         text_content = []
         
         try:
-            doc = fitz.open(file_path)
-            
-            for page_num in range(len(doc)):
-                page = doc[page_num]
-                text = page.get_text()
-                
-                if text.strip():  # 빈 페이지 제외
-                    text_content.append(f"[Page {page_num + 1}]\n{text}")
-            
-            doc.close()
+            with pdfplumber.open(file_path) as pdf:
+                for page_num, page in enumerate(pdf.pages):
+                    text = page.extract_text()
+                    
+                    if text and text.strip():
+                        text_content.append(f"[Page {page_num + 1}]\n{text}")
             
         except Exception as e:
+            # pdfplumber 실패 시 fitz fallback
+            if HAS_FITZ:
+                print(f"  ⚠️ pdfplumber 실패, PyMuPDF로 재시도: {e}")
+                return self._parse_pdf_fitz(file_path)
             raise Exception(f"PDF 파싱 오류: {str(e)}")
         
+        return "\n\n".join(text_content)
+    
+    def _parse_pdf_fitz(self, file_path: str) -> str:
+        """PyMuPDF fallback"""
+        text_content = []
+        doc = fitz.open(file_path)
+        for page_num in range(len(doc)):
+            page = doc[page_num]
+            text = page.get_text()
+            if text.strip():
+                text_content.append(f"[Page {page_num + 1}]\n{text}")
+        doc.close()
         return "\n\n".join(text_content)
     
     def parse_docx(self, file_path: str) -> str:
