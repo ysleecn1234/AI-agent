@@ -380,7 +380,17 @@ export default function DocumentDetailPage() {
                                         {msg.role === 'user' ? (
                                             <p className="whitespace-pre-wrap">{msg.content}</p>
                                         ) : (
-                                            <div className="prose prose-sm max-w-none">
+                                            <div className="prose prose-sm max-w-none
+                                            prose-headings:font-semibold prose-headings:mb-2 prose-headings:mt-3
+                                            prose-p:my-1.5 prose-p:leading-relaxed
+                                            prose-ul:my-1.5 prose-ul:list-disc prose-ul:pl-5
+                                            prose-ol:my-1.5 prose-ol:list-decimal prose-ol:pl-5
+                                            prose-li:my-0.5
+                                            prose-strong:font-semibold
+                                            prose-code:bg-gray-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-code:font-mono
+                                            prose-pre:bg-gray-900 prose-pre:text-gray-100 prose-pre:p-3 prose-pre:rounded prose-pre:my-2 prose-pre:overflow-x-auto
+                                            prose-blockquote:border-l-2 prose-blockquote:border-gray-300 prose-blockquote:pl-3 prose-blockquote:italic prose-blockquote:text-gray-700
+                                            prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline">
                                                 <ReactMarkdown>{msg.content}</ReactMarkdown>
                                             </div>
                                         )}
