@@ -22,10 +22,11 @@ export default function LoginPage() {
 
     try {
       const data = await api.login({ email, password });
-      
+
       // 토큰 저장 (api.login에서 이미 access_token 저장)
       localStorage.setItem('user_id', data.user_id);
       localStorage.setItem('user_name', data.user_name);
+      localStorage.setItem('user_email', email);
       localStorage.setItem('department', data.department);
 
       // 채팅 페이지로 이동
