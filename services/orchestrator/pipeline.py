@@ -33,57 +33,56 @@ TASK_MODEL_CONFIG = {
     
     # ── 채팅 파이프라인 (5단계) ──
     "chat_routing": {
-        "models": ["gemini-1.5-flash", "gpt-4o-mini"],
+        "models": ["gemini-2.5-flash-lite", "gpt-5-nano"],
         "temperature": 0.1,
         "max_tokens": 10,
         "description": "의도 분류 및 복잡도 판단 (Router)",
         "system_prompt": None,
     },
-
     "chat_research": {
-        "models": ["gpt-4o-mini", "claude-3-haiku-20240307"],
+        "models": ["gpt-5-mini", "claude-haiku-4.5"],
         "temperature": 0.2,
         "max_tokens": 200,
         "description": "검색 쿼리 생성 및 검증 (Researcher)",
         "system_prompt": None,
     },
     "chat_simple": {
-        "models": ["gemini-1.5-flash", "gpt-4o-mini"],
+        "models": ["gemini-2.5-flash", "gpt-5-mini"],
         "temperature": 0.7,
         "max_tokens": 1000,
         "description": "단순 질의 답변 생성 (Reasoner - SIMPLE)",
         "system_prompt": None,
     },
     "chat_complex": {
-        "models": ["claude-3-5-sonnet-20240620", "gpt-4o"],
+        "models": ["claude-sonnet-4-6", "gpt-5.2"],
         "temperature": 0.1,
         "max_tokens": 1000,
         "description": "정밀 분석 답변 생성 (Reasoner - COMPLEX)",
         "system_prompt": None,
     },
     "chat_bulk": {
-        "models": ["claude-3-5-sonnet-20240620", "gpt-4o"],
+        "models": ["gemini-3-flash-preview", "gemini-2.5-flash"],
         "temperature": 0.1,
         "max_tokens": 2000,
         "description": "대량 문서 분석 답변 생성 (Reasoner - BULK)",
         "system_prompt": None,
     },
     "chat_reasoning": {
-        "models": ["claude-3-5-sonnet-20240620", "gpt-4o"],
+        "models": ["gpt-5.2-pro", "claude-opus-4-6"],
         "temperature": 0.1,
         "max_tokens": 1000,
         "description": "문맥 기반 답변 생성 (Reasoner)",
         "system_prompt": None,
     },
     "chat_synthesis": {
-        "models": ["gpt-4o-mini", "gemini-1.5-flash"],
+        "models": ["gpt-5-mini", "gemini-2.5-flash"],
         "temperature": 0.3,
         "max_tokens": 500,
         "description": "답변 종합 및 포맷팅 (Synthesizer)",
         "system_prompt": None,
     },
     "chat_guardrail": {
-        "models": ["llama-guard-3-8b", "claude-3-5-sonnet-20240620"],
+        "models": ["claude-haiku-4.5", "gpt-5.2"],
         "temperature": 0.1,
         "max_tokens": 1500,
         "description": "품질 검수 및 팩트체크 (Guardrail)",
@@ -104,7 +103,7 @@ TASK_MODEL_CONFIG = {
 
     # ── 에이전트 허브 (Phase 2~3) ──
     "agent_draft": {
-        "models": ["gpt-4o", "claude-3-5-sonnet-20240620"],
+        "models": ["gpt-5.2", "claude-sonnet-4-6"],
         "temperature": 0.3,
         "max_tokens": 1000,
         "description": "대화 분석 → 에이전트 생성 템플릿 채우기 (Pull-Fill)",
@@ -131,7 +130,7 @@ TASK_MODEL_CONFIG = {
         ),
     },
     "agent_recommend": {
-        "models": ["gemini-1.5-pro", "gpt-4o-mini"],
+        "models": ["gemini-3-pro-preview", "gpt-5-mini"],
         "temperature": 0.2,
         "max_tokens": 200,
         "description": "실시간 에이전트 추천을 위한 의도/주제/키워드 분석",
@@ -154,7 +153,7 @@ TASK_MODEL_CONFIG = {
 
     # ── AI Drive (문서 관리) ──
     "tagging": {
-        "models": ["gemini-1.5-flash", "gpt-4o-mini"],
+        "models":    ["gemini-2.5-flash", "gpt-5-mini"],
         "temperature": 0.1,
         "max_tokens": 300,
         "description": "문서 자동 태깅 - 태그/키워드/문서유형 추출",
@@ -174,7 +173,7 @@ TASK_MODEL_CONFIG = {
         ),
     },
     "title_gen": {
-        "models": ["gpt-4o-mini", "claude-3-haiku-20240307"],
+        "models": ["gpt-5-mini", "claude-haiku-4.5"],
         "temperature": 0.3,
         "max_tokens": 200,
         "description": "채팅/에이전트 결과 저장 시 제목·설명 자동 생성",
@@ -193,7 +192,7 @@ TASK_MODEL_CONFIG = {
         ),
     },
     "doc_chat": {
-        "models": ["claude-3-5-sonnet-20240620", "gemini-1.5-pro"],
+        "models": ["claude-opus-4-6", "gpt-5.2"],
         "temperature": 0.3,
         "max_tokens": 1500,
         "description": "문서별 채팅 - 특정 문서 기반 질의응답",
@@ -209,7 +208,7 @@ TASK_MODEL_CONFIG = {
         ),
     },
     "doc_format": { 
-        "models": ["gpt-4o-mini", "gemini-1.5-flash"],
+        "models": ["gpt-5-mini", "gemini-2.5-flash-lite"],
         "temperature": 0.3,
         "max_tokens": 2000,
         "description": "채팅/에이전트 대화를 구조화된 문서로 변환",
