@@ -97,8 +97,10 @@ export default function UploadModal({ isOpen, onClose, onUploadSuccess }: Upload
 
         try {
             await api.uploadDocument(selectedFile, visibility, (percent) => {
-                setUploadProgress(percent);
+                // 파일 전송은 90%까지만 표시 (나머지 10%는 서버 처리 시간)
+                setUploadProgress(Math.round(percent * 0.9));
             });
+            setUploadProgress(100);
             onUploadSuccess();
             handleClose();
         } catch (error) {
@@ -220,7 +222,9 @@ export default function UploadModal({ isOpen, onClose, onUploadSuccess }: Upload
                     {isUploading && (
                         <div className="space-y-2">
                             <div className="flex justify-between text-sm">
-                                <span className="text-gray-700">업로드 중...</span>
+                                <span className="text-gray-700">
+                                    {uploadProgress >= 90 ? '문서 처리 중...' : '업로드 중...'}
+                                </span>
                                 <span className="text-gray-700">{uploadProgress}%</span>
                             </div>
                             <Progress value={uploadProgress} />
