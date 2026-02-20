@@ -93,10 +93,12 @@ export default function UploadModal({ isOpen, onClose, onUploadSuccess }: Upload
         if (!selectedFile) return;
 
         setIsUploading(true);
-        // setUploadProgress(0); // Fetch API doesn't support progress easily, disabling for now or simulating 
+        setUploadProgress(0);
 
         try {
-            await api.uploadDocument(selectedFile, visibility);
+            await api.uploadDocument(selectedFile, visibility, (percent) => {
+                setUploadProgress(percent);
+            });
             onUploadSuccess();
             handleClose();
         } catch (error) {
