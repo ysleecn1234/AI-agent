@@ -113,6 +113,14 @@ class ApiClient {
         });
     }
 
+    public async getChatSessions(): Promise<{ session_id: string; title: string; last_at: string; first_at: string }[]> {
+        return this.request('/chat/sessions');
+    }
+
+    public async getChatSessionMessages(sessionId: string): Promise<{ session_id: string; messages: { role: string; content: string; created_at: string }[] }> {
+        return this.request(`/chat/sessions/${sessionId}`);
+    }
+
     // Drive
     public async getDocuments(params?: { status?: string; limit?: number }): Promise<Document[]> {
         const q = new URLSearchParams();

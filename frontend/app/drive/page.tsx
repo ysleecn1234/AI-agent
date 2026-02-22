@@ -9,17 +9,22 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Menu, User, Search, Upload, FileText, File, FileSpreadsheet, Presentation, LogOut, Settings, MessageSquare, FolderOpen, Bot, Archive, ChevronUp, ChevronDown, MoreVertical, Trash2, Download } from 'lucide-react';
+import { Menu, User, Search, Upload, FileText, File, FileSpreadsheet, Presentation, LogOut, Settings, MessageSquare, FolderOpen, Bot, Archive, ChevronUp, ChevronDown, MoreVertical, Trash2, Download, RotateCcw, Clock } from 'lucide-react';
 import UploadModal from '@/components/upload-modal';
 import { api } from '@/lib/api';
 import type { Document } from '@/types/api';
 
 type SortColumn = 'file_type' | 'title' | 'creator_department' | 'modified_at' | 'visibility';
 type SortDirection = 'asc' | 'desc';
+type MainTab = 'drive' | 'archive';
+
+const ARCHIVE_DAYS = 30;
 
 export default function DrivePage() {
     const router = useRouter();
+    const [mainTab, setMainTab] = useState<MainTab>('drive');
     const [documents, setDocuments] = useState<Document[]>([]);
+    const [archivedDocuments, setArchivedDocuments] = useState<Document[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [filterTab, setFilterTab] = useState<'all' | 'public' | 'team'>('all');
     const [sortColumn, setSortColumn] = useState<SortColumn>('modified_at');
@@ -27,6 +32,7 @@ export default function DrivePage() {
     const [uploadModalOpen, setUploadModalOpen] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const [isLoadingArchive, setIsLoadingArchive] = useState(false);
 
     const userName = typeof window !== 'undefined' ? localStorage.getItem('user_name') || '사용자' : '사용자';
 
@@ -34,19 +40,58 @@ export default function DrivePage() {
         fetchDocuments();
     }, []);
 
+    useEffect(() => {
+        if (mainTab === 'archive') fetchArchivedDocuments();
+    }, [mainTab]);
+
     const fetchDocuments = async () => {
         setIsLoading(true);
         try {
-            // API 호출: 문서 목록 조회
             const docs = await api.getDocuments();
-            // 방어적 코드: 배열이 아니면 빈 배열로 설정
             setDocuments(Array.isArray(docs) ? docs : []);
         } catch (error) {
             console.error('Error fetching documents:', error);
-            // 에러 발생 시 빈 배열로 설정
             setDocuments([]);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const fetchArchivedDocuments = async () => {
+        setIsLoadingArchive(true);
+        try {
+            const docs = await api.getDocuments({ status: 'archived', limit: 100 });
+            setArchivedDocuments(Array.isArray(docs) ? docs : []);
+        } catch (error) {
+            console.error('Error fetching archived documents:', error);
+            setArchivedDocuments([]);
+        } finally {
+            setIsLoadingArchive(false);
+        }
+    };
+
+    const getDaysRemaining = (modifiedAt: string) => {
+        const deletedAt = new Date(modifiedAt).getTime();
+        const daysSince = Math.floor((Date.now() - deletedAt) / 86400000);
+        return Math.max(0, ARCHIVE_DAYS - daysSince);
+    };
+
+    const handleRestore = async (docId: string) => {
+        try {
+            await api.restoreDocument(docId);
+            fetchArchivedDocuments();
+        } catch (error) {
+            alert('문서 복원에 실패했습니다.');
+        }
+    };
+
+    const handlePermanentDelete = async (docId: string) => {
+        if (!confirm('정말로 영구 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) return;
+        try {
+            await api.permanentDeleteDocument(docId);
+            fetchArchivedDocuments();
+        } catch (error) {
+            alert('문서 삭제에 실패했습니다.');
         }
     };
 
@@ -190,6 +235,10 @@ export default function DrivePage() {
             return 0;
         });
 
+    const filteredArchived = archivedDocuments.filter((doc) =>
+        !searchQuery || (doc.title || '').toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
     return (
         <div className="flex flex-col h-screen bg-gray-50">
             {/* Header */}
@@ -219,18 +268,18 @@ export default function DrivePage() {
                                 <span className="font-medium">채팅</span>
                             </button>
                             <button
+                                onClick={() => { router.push('/chat/history'); setSidebarOpen(false); }}
+                                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                                <Clock className="w-5 h-5 text-blue-600" />
+                                <span className="font-medium">채팅 기록</span>
+                            </button>
+                            <button
                                 onClick={() => { router.push('/drive'); setSidebarOpen(false); }}
                                 className="w-full flex items-center gap-3 px-4 py-3 text-left bg-blue-50 rounded-lg transition-colors"
                             >
                                 <FolderOpen className="w-5 h-5 text-blue-600" />
                                 <span className="font-medium text-blue-600">AI Drive</span>
-                            </button>
-                            <button
-                                onClick={() => { router.push('/drive/archive'); setSidebarOpen(false); }}
-                                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-100 rounded-lg transition-colors"
-                            >
-                                <Archive className="w-5 h-5 text-blue-600" />
-                                <span className="font-medium">아카이브</span>
                             </button>
                             <button
                                 onClick={() => { router.push('/agents'); setSidebarOpen(false); }}
@@ -282,19 +331,31 @@ export default function DrivePage() {
                 <div className="max-w-7xl mx-auto space-y-6">
                     {/* Page Header */}
                     <div className="flex items-center justify-between">
-                        <h1 className="text-3xl font-bold text-gray-900">AI Drive</h1>
-                        <Button
-                            onClick={() => setUploadModalOpen(true)}
-                            className="bg-blue-600 hover:bg-blue-700"
-                        >
-                            <Upload className="w-4 h-4 mr-2" />
-                            업로드
-                        </Button>
+                        <div className="flex items-center gap-4">
+                            <h1 className="text-3xl font-bold text-gray-900">AI Drive</h1>
+                            <Tabs value={mainTab} onValueChange={(v: any) => setMainTab(v)}>
+                                <TabsList>
+                                    <TabsTrigger value="drive">
+                                        <FolderOpen className="w-4 h-4 mr-1" />
+                                        내 문서
+                                    </TabsTrigger>
+                                    <TabsTrigger value="archive">
+                                        <Archive className="w-4 h-4 mr-1" />
+                                        휴지통
+                                    </TabsTrigger>
+                                </TabsList>
+                            </Tabs>
+                        </div>
+                        {mainTab === 'drive' && (
+                            <Button onClick={() => setUploadModalOpen(true)} className="bg-blue-600 hover:bg-blue-700">
+                                <Upload className="w-4 h-4 mr-2" />
+                                업로드
+                            </Button>
+                        )}
                     </div>
 
-                    {/* Search and Filters */}
+                    {/* Search */}
                     <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-4">
-                        {/* Search */}
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                             <Input
@@ -306,134 +367,159 @@ export default function DrivePage() {
                             />
                         </div>
 
-                        {/* Filter Tabs */}
-                        <Tabs value={filterTab} onValueChange={(value: any) => setFilterTab(value)}>
-                            <TabsList>
-                                <TabsTrigger value="all">전체</TabsTrigger>
-                                <TabsTrigger value="public">🌐 전체 공개</TabsTrigger>
-                                <TabsTrigger value="team">👥 팀 공유</TabsTrigger>
-                            </TabsList>
-                        </Tabs>
+                        {mainTab === 'drive' && (
+                            <Tabs value={filterTab} onValueChange={(value: any) => setFilterTab(value)}>
+                                <TabsList>
+                                    <TabsTrigger value="all">전체</TabsTrigger>
+                                    <TabsTrigger value="public">🌐 전체 공개</TabsTrigger>
+                                    <TabsTrigger value="team">👥 팀 공유</TabsTrigger>
+                                </TabsList>
+                            </Tabs>
+                        )}
                     </div>
 
-                    {/* Documents Table */}
-                    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead className="w-[50px]">
-                                        <button
-                                            onClick={() => handleSort('file_type')}
-                                            className="flex items-center gap-1 hover:text-blue-600"
-                                        >
-                                            유형
-                                            {sortColumn === 'file_type' && (
-                                                sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
-                                            )}
-                                        </button>
-                                    </TableHead>
-                                    <TableHead>
-                                        <button
-                                            onClick={() => handleSort('title')}
-                                            className="flex items-center gap-1 hover:text-blue-600"
-                                        >
-                                            파일명
-                                            {sortColumn === 'title' && (
-                                                sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
-                                            )}
-                                        </button>
-                                    </TableHead>
-                                    <TableHead>
-                                        <button
-                                            onClick={() => handleSort('creator_department')}
-                                            className="flex items-center gap-1 hover:text-blue-600"
-                                        >
-                                            제작자
-                                            {sortColumn === 'creator_department' && (
-                                                sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
-                                            )}
-                                        </button>
-                                    </TableHead>
-                                    <TableHead>
-                                        <button
-                                            onClick={() => handleSort('modified_at')}
-                                            className="flex items-center gap-1 hover:text-blue-600"
-                                        >
-                                            날짜
-                                            {sortColumn === 'modified_at' && (
-                                                sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
-                                            )}
-                                        </button>
-                                    </TableHead>
-                                    <TableHead>
-                                        <button
-                                            onClick={() => handleSort('visibility')}
-                                            className="flex items-center gap-1 hover:text-blue-600"
-                                        >
-                                            공개범위
-                                            {sortColumn === 'visibility' && (
-                                                sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
-                                            )}
-                                        </button>
-                                    </TableHead>
-                                    <TableHead className="w-[50px]"></TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {isLoading ? (
+                    {/* Drive Tab: Documents Table */}
+                    {mainTab === 'drive' && (
+                        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                            <Table>
+                                <TableHeader>
                                     <TableRow>
-                                        <TableCell colSpan={5} className="text-center py-8 text-gray-500">
-                                            로딩 중...
-                                        </TableCell>
+                                        <TableHead className="w-[50px]">
+                                            <button onClick={() => handleSort('file_type')} className="flex items-center gap-1 hover:text-blue-600">
+                                                유형
+                                                {sortColumn === 'file_type' && (sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />)}
+                                            </button>
+                                        </TableHead>
+                                        <TableHead>
+                                            <button onClick={() => handleSort('title')} className="flex items-center gap-1 hover:text-blue-600">
+                                                파일명
+                                                {sortColumn === 'title' && (sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />)}
+                                            </button>
+                                        </TableHead>
+                                        <TableHead>
+                                            <button onClick={() => handleSort('creator_department')} className="flex items-center gap-1 hover:text-blue-600">
+                                                제작자
+                                                {sortColumn === 'creator_department' && (sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />)}
+                                            </button>
+                                        </TableHead>
+                                        <TableHead>
+                                            <button onClick={() => handleSort('modified_at')} className="flex items-center gap-1 hover:text-blue-600">
+                                                날짜
+                                                {sortColumn === 'modified_at' && (sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />)}
+                                            </button>
+                                        </TableHead>
+                                        <TableHead>
+                                            <button onClick={() => handleSort('visibility')} className="flex items-center gap-1 hover:text-blue-600">
+                                                공개범위
+                                                {sortColumn === 'visibility' && (sortDirection === 'asc' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />)}
+                                            </button>
+                                        </TableHead>
+                                        <TableHead className="w-[50px]"></TableHead>
                                     </TableRow>
-                                ) : filteredDocuments.length === 0 ? (
+                                </TableHeader>
+                                <TableBody>
+                                    {isLoading ? (
+                                        <TableRow><TableCell colSpan={6} className="text-center py-8 text-gray-500">로딩 중...</TableCell></TableRow>
+                                    ) : filteredDocuments.length === 0 ? (
+                                        <TableRow><TableCell colSpan={6} className="text-center py-8 text-gray-500">문서가 없습니다</TableCell></TableRow>
+                                    ) : (
+                                        filteredDocuments.map((doc) => (
+                                            <TableRow key={doc.doc_id} className="hover:bg-gray-50">
+                                                <TableCell onClick={() => router.push(`/drive/documents/${doc.doc_id}`)} className="cursor-pointer">{getFileIcon(doc.file_type)}</TableCell>
+                                                <TableCell onClick={() => router.push(`/drive/documents/${doc.doc_id}`)} className="font-medium cursor-pointer">{doc.title}</TableCell>
+                                                <TableCell onClick={() => router.push(`/drive/documents/${doc.doc_id}`)} className="cursor-pointer">{doc.creator_department}</TableCell>
+                                                <TableCell onClick={() => router.push(`/drive/documents/${doc.doc_id}`)} className="cursor-pointer">{formatDate(doc.modified_at)}</TableCell>
+                                                <TableCell onClick={() => router.push(`/drive/documents/${doc.doc_id}`)} className="cursor-pointer">{getVisibilityBadge(doc.visibility)}</TableCell>
+                                                <TableCell>
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <button className="p-2 hover:bg-gray-200 rounded-lg transition-colors">
+                                                                <MoreVertical className="w-4 h-4 text-gray-600" />
+                                                            </button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end">
+                                                            <DropdownMenuItem onClick={(e) => handleDownload(doc.doc_id, doc.title, e)}>
+                                                                <Download className="w-4 h-4 mr-2" />
+                                                                다운로드
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuSeparator />
+                                                            <DropdownMenuItem onClick={(e) => handleDelete(doc.doc_id, e)} className="text-red-600 focus:text-red-600">
+                                                                <Trash2 className="w-4 h-4 mr-2" />
+                                                                삭제
+                                                            </DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </div>
+                    )}
+
+                    {/* Archive Tab */}
+                    {mainTab === 'archive' && (
+                        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                            <div className="px-4 py-3 border-b border-gray-100 bg-amber-50">
+                                <p className="text-sm text-amber-700">
+                                    삭제된 문서는 <strong>{ARCHIVE_DAYS}일</strong> 후 자동으로 영구 삭제됩니다.
+                                </p>
+                            </div>
+                            <Table>
+                                <TableHeader>
                                     <TableRow>
-                                        <TableCell colSpan={6} className="text-center py-8 text-gray-500">
-                                            문서가 없습니다
-                                        </TableCell>
+                                        <TableHead className="w-[50px]">유형</TableHead>
+                                        <TableHead>파일명</TableHead>
+                                        <TableHead>삭제일</TableHead>
+                                        <TableHead>남은 기간</TableHead>
+                                        <TableHead className="w-[120px]">작업</TableHead>
                                     </TableRow>
-                                ) : (
-                                    filteredDocuments.map((doc) => (
-                                        <TableRow
-                                            key={doc.doc_id}
-                                            className="hover:bg-gray-50"
-                                        >
-                                            <TableCell onClick={() => router.push(`/drive/documents/${doc.doc_id}`)} className="cursor-pointer">{getFileIcon(doc.file_type)}</TableCell>
-                                            <TableCell onClick={() => router.push(`/drive/documents/${doc.doc_id}`)} className="font-medium cursor-pointer">{doc.title}</TableCell>
-                                            <TableCell onClick={() => router.push(`/drive/documents/${doc.doc_id}`)} className="cursor-pointer">{doc.creator_department}</TableCell>
-                                            <TableCell onClick={() => router.push(`/drive/documents/${doc.doc_id}`)} className="cursor-pointer">{formatDate(doc.modified_at)}</TableCell>
-                                            <TableCell onClick={() => router.push(`/drive/documents/${doc.doc_id}`)} className="cursor-pointer">{getVisibilityBadge(doc.visibility)}</TableCell>
-                                            <TableCell>
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                        <button className="p-2 hover:bg-gray-200 rounded-lg transition-colors">
-                                                            <MoreVertical className="w-4 h-4 text-gray-600" />
-                                                        </button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end">
-                                                        <DropdownMenuItem
-                                                            onClick={(e) => handleDownload(doc.doc_id, doc.title, e)}
-                                                        >
-                                                            <Download className="w-4 h-4 mr-2" />
-                                                            다운로드
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuSeparator />
-                                                        <DropdownMenuItem
-                                                            onClick={(e) => handleDelete(doc.doc_id, e)}
-                                                            className="text-red-600 focus:text-red-600"
-                                                        >
-                                                            <Trash2 className="w-4 h-4 mr-2" />
-                                                            삭제
-                                                        </DropdownMenuItem>
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))
-                                )}
-                            </TableBody>
-                        </Table>
-                    </div>
+                                </TableHeader>
+                                <TableBody>
+                                    {isLoadingArchive ? (
+                                        <TableRow><TableCell colSpan={5} className="text-center py-8 text-gray-500">로딩 중...</TableCell></TableRow>
+                                    ) : filteredArchived.length === 0 ? (
+                                        <TableRow><TableCell colSpan={5} className="text-center py-8 text-gray-500">휴지통이 비어 있습니다</TableCell></TableRow>
+                                    ) : (
+                                        filteredArchived.map((doc) => {
+                                            const daysLeft = getDaysRemaining(doc.modified_at);
+                                            return (
+                                                <TableRow key={doc.doc_id} className="hover:bg-gray-50">
+                                                    <TableCell>{getFileIcon(doc.file_type)}</TableCell>
+                                                    <TableCell className="font-medium">{doc.title}</TableCell>
+                                                    <TableCell className="text-gray-500">{formatDate(doc.modified_at)}</TableCell>
+                                                    <TableCell>
+                                                        <span className={`text-sm font-medium ${daysLeft <= 3 ? 'text-red-600' : 'text-gray-600'}`}>
+                                                            {daysLeft}일 후 삭제
+                                                        </span>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <div className="flex items-center gap-2">
+                                                            <button
+                                                                onClick={() => handleRestore(doc.doc_id)}
+                                                                className="p-1.5 hover:bg-blue-100 rounded text-blue-600 transition-colors"
+                                                                title="복원"
+                                                            >
+                                                                <RotateCcw className="w-4 h-4" />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handlePermanentDelete(doc.doc_id)}
+                                                                className="p-1.5 hover:bg-red-100 rounded text-red-600 transition-colors"
+                                                                title="영구 삭제"
+                                                            >
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </button>
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            );
+                                        })
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </div>
+                    )}
                 </div>
             </div>
 
