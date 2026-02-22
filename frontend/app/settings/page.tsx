@@ -98,6 +98,15 @@ export default function SettingsPage() {
         setIsSaving(true);
         try {
             await api.updateSettings(settings);
+
+            // 변경된 계정 정보를 로컬 스토리지에 동기화
+            if (settings.account.name) {
+                localStorage.setItem('user_name', settings.account.name);
+            }
+            if (settings.account.department) {
+                localStorage.setItem('department', settings.account.department);
+            }
+
             alert('설정이 저장되었습니다!');
         } catch (error) {
             console.error('Error saving settings:', error);
@@ -421,13 +430,9 @@ export default function SettingsPage() {
                                     id="email"
                                     type="email"
                                     value={settings.account.email}
-                                    onChange={(e) =>
-                                        setSettings({
-                                            ...settings,
-                                            account: { ...settings.account, email: e.target.value }
-                                        })
-                                    }
                                     placeholder="email@example.com"
+                                    disabled
+                                    className="bg-gray-100 cursor-not-allowed"
                                 />
                             </div>
                             <div className="space-y-2">

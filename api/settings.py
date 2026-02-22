@@ -125,6 +125,17 @@ async def update_settings(request: SettingsRequest, user_id: str = Depends(get_c
             db.add(settings)
 
         db.commit()
+
+        # 계정 정보 업데이트 (users 테이블)
+        if request.account:
+            from application.database import User
+            user = db.query(User).filter(User.id == user_id).first()
+            if user:
+                user.name = request.account.name
+                user.department = request.account.department
+                # 이메일은 로그인 ID이므로 변경 불가
+                db.commit()
+
         return {"success": True, "message": "설정이 저장되었습니다"}
     except Exception as e:
         db.rollback()
