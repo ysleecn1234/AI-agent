@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Menu, User, RotateCcw, Trash2, MessageSquare, FolderOpen, Bot, Settings, LogOut, Clock, FileText, File, FileSpreadsheet, Presentation } from 'lucide-react';
+import { Menu, User, RotateCcw, Trash2, MessageSquare, FolderOpen, Bot, Settings, LogOut, Clock, Archive, FileText, File, FileSpreadsheet, Presentation } from 'lucide-react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import type { Document, ArchivedDocument } from '@/types/api';
