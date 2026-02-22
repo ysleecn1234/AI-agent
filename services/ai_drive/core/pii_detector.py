@@ -18,13 +18,23 @@ class PIIDetector:
     """
     
     def __init__(self):
-        # 정규식 패턴 정의
+        # 정규식 패턴 정의 (구체적 → 범용 순서로 정의)
+        # 감지 순서가 중요: 먼저 감지된 부분은 이후 패턴에서 제외
+        self.detection_order = [
+            "주민등록번호",
+            "신용카드번호",
+            "전화번호",
+            "이메일",
+            "계좌번호",
+            "주소",
+        ]
+        
         self.patterns = {
-            "주민등록번호": r'\d{6}[-\s]?\d{7}',
-            "전화번호": r'(01[016789][-\s]?\d{3,4}[-\s]?\d{4}|0\d{1,2}[-\s]?\d{3,4}[-\s]?\d{4})',
-            "이메일": r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}',
-            "계좌번호": r'\d{3,4}[-\s]?\d{2,4}[-\s]?\d{4,6}[-\s]?\d{0,4}',
-            "신용카드번호": r'\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}',
+            "주민등록번호": r'\b\d{6}[-\s]?\d{7}\b',
+            "전화번호": r'\b(01[016789][-\s]?\d{3,4}[-\s]?\d{4}|0\d{1,2}[-\s]?\d{3,4}[-\s]?\d{4})\b',
+            "이메일": r'\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b',
+            "계좌번호": r'\b\d{3,6}[-]\d{2,6}[-]\d{4,6}\b',
+            "신용카드번호": r'\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b',
             "주소": r'(서울|부산|대구|인천|광주|대전|울산|세종|경기|강원|충북|충남|전북|전남|경북|경남|제주)[시도]?\s?[\w]+[시군구]',
         }
         
@@ -40,7 +50,7 @@ class PIIDetector:
     
     def detect(self, text: str, enabled_items: Dict[str, bool] = None) -> Dict[str, Any]:
         """
-        텍스트에서 개인정보 감지
+        텍스트에서 개인정보 감지 (순서 기반, 중복 제거)
         
         Args:
             text: 검사할 텍스트
@@ -61,22 +71,27 @@ class PIIDetector:
         findings = []
         total_count = 0
         
-        # enabled_items로 감지할 패턴 필터링
+        # enabled_items로 활성 타입 필터링
         if enabled_items:
-            active_patterns = {}
-            for key, enabled in enabled_items.items():
-                if enabled and key in self.key_to_type:
-                    pii_type = self.key_to_type[key]
-                    if pii_type in self.patterns:
-                        active_patterns[pii_type] = self.patterns[pii_type]
+            active_types = [
+                self.key_to_type[key]
+                for key, enabled in enabled_items.items()
+                if enabled and key in self.key_to_type
+            ]
         else:
-            active_patterns = self.patterns
+            active_types = list(self.detection_order)
         
-        for pii_type, pattern in active_patterns.items():
-            matches = re.findall(pattern, text)
+        # 순서대로 감지하고, 매칭된 부분을 제거하여 중복 방지
+        remaining_text = text
+        for pii_type in self.detection_order:
+            if pii_type not in active_types or pii_type not in self.patterns:
+                continue
+                
+            pattern = self.patterns[pii_type]
+            matches = re.findall(pattern, remaining_text)
             
             if matches:
-                # 주민등록번호는 추가 검증 (앞자리가 유효한 생년월일인지)
+                # 주민등록번호는 추가 검증
                 if pii_type == "주민등록번호":
                     matches = self._validate_rrn(matches)
                 
@@ -87,6 +102,9 @@ class PIIDetector:
                         "count": count
                     })
                     total_count += count
+                    
+                    # 매칭된 부분을 제거하여 다음 패턴에서 중복 감지 방지
+                    remaining_text = re.sub(pattern, '___', remaining_text)
         
         return {
             "has_pii": total_count > 0,
