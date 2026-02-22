@@ -221,16 +221,20 @@ export function CreateAgentModal({ isOpen, onClose, onCreate, content }: CreateA
     const generateAgentInfo = async () => {
         setIsGenerating(true);
         try {
-            // Call backend API for LLM-based generation
-            const metadata = await api.generateAgentMetadata(content);
-            setName(metadata.name);
-            setDescription(metadata.description);
-            setCategory(metadata.category);
+            // /agents/draft 로 LLM 기반 메타데이터 생성
+            const result = await api.createAgentDraft({
+                selected_messages: [{ role: 'user', content }],
+            });
+            const filled = result.filled;
+            if (filled) {
+                setName(filled.name || '');
+                setDescription(filled.description || '');
+                setCategory(filled.category || '기타');
+            }
         } catch (error) {
             console.error('Failed to generate agent metadata:', error);
-            // Fallback to simple generation
+            // Fallback
             const contentLower = content.toLowerCase();
-
             let detectedCategory = '기타';
             if (contentLower.includes('마케팅') || contentLower.includes('광고')) {
                 detectedCategory = '마케팅';
@@ -239,7 +243,6 @@ export function CreateAgentModal({ isOpen, onClose, onCreate, content }: CreateA
             } else if (contentLower.includes('데이터') || contentLower.includes('분석')) {
                 detectedCategory = '생산성';
             }
-
             setName(`AI 어시스턴트 - ${new Date().toLocaleDateString()}`);
             setDescription('대화 내용을 기반으로 생성된 맞춤형 Agent입니다.');
             setCategory(detectedCategory);
