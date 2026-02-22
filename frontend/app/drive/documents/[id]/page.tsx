@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Menu, User, Send, ArrowLeft, MessageSquare, FolderOpen, Bot, Settings, LogOut, Archive, Edit } from 'lucide-react';
+import { Menu, User, Send, ArrowLeft, MessageSquare, FolderOpen, Bot, Settings, LogOut, Clock, Edit } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -253,18 +253,18 @@ export default function DocumentDetailPage() {
                                     <span className="font-medium">채팅</span>
                                 </button>
                                 <button
+                                    onClick={() => { router.push('/chat/history'); setSidebarOpen(false); }}
+                                    className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-100 rounded-lg transition-colors"
+                                >
+                                    <Clock className="w-5 h-5 text-blue-600" />
+                                    <span className="font-medium">채팅 기록</span>
+                                </button>
+                                <button
                                     onClick={() => { router.push('/drive'); setSidebarOpen(false); }}
                                     className="w-full flex items-center gap-3 px-4 py-3 text-left bg-blue-50 rounded-lg transition-colors"
                                 >
                                     <FolderOpen className="w-5 h-5 text-blue-600" />
                                     <span className="font-medium text-blue-600">AI Drive</span>
-                                </button>
-                                <button
-                                    onClick={() => { router.push('/drive/archive'); setSidebarOpen(false); }}
-                                    className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-100 rounded-lg transition-colors"
-                                >
-                                    <Archive className="w-5 h-5 text-blue-600" />
-                                    <span className="font-medium">아카이브</span>
                                 </button>
                                 <button
                                     onClick={() => { router.push('/agents'); setSidebarOpen(false); }}

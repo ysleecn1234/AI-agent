@@ -24,10 +24,10 @@ import {
     Menu,
     MessageSquare,
     FolderOpen,
-    Archive,
     Bot,
     Settings,
-    LogOut
+    LogOut,
+    Clock
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import type { Agent } from '@/types/api';
@@ -140,18 +140,18 @@ export default function AgentsPage() {
                                     <span className="font-medium">채팅</span>
                                 </button>
                                 <button
+                                    onClick={() => { router.push('/chat/history'); setSidebarOpen(false); }}
+                                    className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-100 rounded-lg transition-colors"
+                                >
+                                    <Clock className="w-5 h-5 text-blue-600" />
+                                    <span className="font-medium">채팅 기록</span>
+                                </button>
+                                <button
                                     onClick={() => { router.push('/drive'); setSidebarOpen(false); }}
                                     className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-100 rounded-lg transition-colors"
                                 >
                                     <FolderOpen className="w-5 h-5 text-blue-600" />
                                     <span className="font-medium">AI Drive</span>
-                                </button>
-                                <button
-                                    onClick={() => { router.push('/drive/archive'); setSidebarOpen(false); }}
-                                    className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-100 rounded-lg transition-colors"
-                                >
-                                    <Archive className="w-5 h-5 text-blue-600" />
-                                    <span className="font-medium">아카이브</span>
                                 </button>
                                 <button
                                     onClick={() => { router.push('/agents'); setSidebarOpen(false); }}
