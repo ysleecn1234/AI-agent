@@ -33,6 +33,8 @@ export default function UploadModal({ isOpen, onClose, onUploadSuccess }: Upload
     const [uploadProgress, setUploadProgress] = useState(0);
     const [isUploading, setIsUploading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [errorDetail, setErrorDetail] = useState<string | null>(null);
+    const [showErrorDetail, setShowErrorDetail] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
 
     const validateFile = (file: File): string | null => {
@@ -103,9 +105,18 @@ export default function UploadModal({ isOpen, onClose, onUploadSuccess }: Upload
             setUploadProgress(100);
             onUploadSuccess();
             handleClose();
-        } catch (error) {
+        } catch (error: any) {
             console.error('Upload error:', error);
-            setError('파일 업로드 중 오류가 발생했습니다.');
+            const msg = error?.message || '파일 업로드 중 오류가 발생했습니다.';
+            // PII 관련 에러면 간단 메시지 + 상세 내용 분리
+            if (msg.includes('개인정보')) {
+                setError('개인정보가 포함된 문서입니다.');
+                setErrorDetail(msg);
+            } else {
+                setError(msg);
+                setErrorDetail(null);
+            }
+            setShowErrorDetail(false);
         } finally {
             setIsUploading(false);
         }
@@ -117,6 +128,8 @@ export default function UploadModal({ isOpen, onClose, onUploadSuccess }: Upload
             setVisibility('team');
             setUploadProgress(0);
             setError(null);
+            setErrorDetail(null);
+            setShowErrorDetail(false);
             setIsDragging(false);
             onClose();
         }
@@ -200,6 +213,21 @@ export default function UploadModal({ isOpen, onClose, onUploadSuccess }: Upload
                     {error && (
                         <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                             <p className="text-sm text-red-600">{error}</p>
+                            {errorDetail && (
+                                <>
+                                    <button
+                                        onClick={() => setShowErrorDetail(!showErrorDetail)}
+                                        className="text-xs text-red-400 hover:text-red-600 mt-1 underline"
+                                    >
+                                        {showErrorDetail ? '접기' : '상세 보기'}
+                                    </button>
+                                    {showErrorDetail && (
+                                        <p className="text-xs text-red-500 mt-2 bg-red-100 rounded p-2">
+                                            {errorDetail}
+                                        </p>
+                                    )}
+                                </>
+                            )}
                         </div>
                     )}
 

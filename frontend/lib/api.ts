@@ -186,7 +186,13 @@ class ApiClient {
                 if (xhr.status >= 200 && xhr.status < 300) {
                     resolve(JSON.parse(xhr.responseText));
                 } else {
-                    reject(new Error(`Upload failed: ${xhr.statusText}`));
+                    // 서버 에러 메시지 추출 (FastAPI의 {"detail": "..."} 형식)
+                    let message = `Upload failed: ${xhr.statusText}`;
+                    try {
+                        const body = JSON.parse(xhr.responseText);
+                        if (body.detail) message = body.detail;
+                    } catch { }
+                    reject(new Error(message));
                 }
             };
 
