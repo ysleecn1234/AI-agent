@@ -301,6 +301,18 @@ class ApiClient {
             body: JSON.stringify({ content }),
         });
     }
+
+    // Settings
+    public async getSettings(): Promise<any> {
+        return this.request<any>('/settings');
+    }
+
+    public async updateSettings(data: any): Promise<any> {
+        return this.request<any>('/settings', {
+            method: 'PUT',
+            body: JSON.stringify(data),
+        });
+    }
 }
 
 export const api = ApiClient.getInstance();

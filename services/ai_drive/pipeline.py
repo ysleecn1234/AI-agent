@@ -13,6 +13,7 @@ from pathlib import Path
 from services.ai_drive.utils.file_parser import FileParser
 from services.ai_drive.utils.chunker import TextChunker
 from services.ai_drive.core.embedding import EmbeddingGenerator
+from services.ai_drive.core.pii_detector import PIIDetector
 from services.ai_drive.db.milvus_client import MilvusClient
 from services.ai_drive.db.postgres_client import PostgresClient
 from services.ai_drive.core.cost_manager import CostManager
@@ -36,6 +37,7 @@ class DocumentPipeline:
         self.file_parser = FileParser()
         self.chunker = TextChunker()
         self.embedding_generator = EmbeddingGenerator()
+        self.pii_detector = PIIDetector()
         self.milvus_client = MilvusClient()
         self.postgres_client = PostgresClient()
         self.orchestrator = orchestrator
@@ -45,6 +47,30 @@ class DocumentPipeline:
         # [Storage] 원본 파일 저장소 초기화
         self.storage_dir = os.path.join(os.getcwd(), "services/ai_drive/storage")
         os.makedirs(self.storage_dir, exist_ok=True)
+
+    def _get_user_pii_settings(self, user_id: str) -> Dict[str, Any]:
+        """사용자의 PII 설정을 DB에서 조회"""
+        try:
+            from application.database import SessionLocal, UserSettings
+            db = SessionLocal()
+            settings = db.query(UserSettings).filter(
+                UserSettings.user_id == user_id
+            ).first()
+            db.close()
+            
+            if settings:
+                return {
+                    "mode": settings.privacy_mode,
+                    "detection_items": settings.detection_items,
+                }
+        except Exception as e:
+            print(f"  ⚠️ PII 설정 조회 실패 (기본값 사용): {e}")
+        
+        # 기본값: 모든 항목 감지 + 차단 모드
+        return {
+            "mode": "block",
+            "detection_items": None,  # None이면 PIIDetector가 모든 항목 감지
+        }
 
     def process_file_upload(
         self,
@@ -168,12 +194,42 @@ class DocumentPipeline:
             self.postgres_client.update_document_status(doc_id, "processing")
             
             # Step 2: 파일 파싱
-            print("[Step 2/5] 파일 파싱")
+            print("[Step 2/6] 파일 파싱")
             text = self.file_parser.parse(file_path)
             print(f"  → 추출된 텍스트: {len(text)}자")
             
+            # Step 2.5: 개인정보(PII) 감지
+            print("[Step 2.5/6] 개인정보 감지")
+            pii_settings = self._get_user_pii_settings(creator_id)
+            pii_mode = pii_settings.get("mode", "block")
+            enabled_items = pii_settings.get("detection_items", None)
+            
+            pii_result = self.pii_detector.detect(text, enabled_items)
+            
+            if pii_result["has_pii"]:
+                findings_str = ", ".join(
+                    f"{f['type']} {f['count']}건" for f in pii_result['findings']
+                )
+                print(f"  ⚠️ 개인정보 감지: {findings_str}")
+                
+                if pii_mode == "block":
+                    # 차단 모드: 문서 삭제 후 에러 반환
+                    self.postgres_client.update_document_status(doc_id, "rejected")
+                    # 저장된 파일도 삭제
+                    if os.path.exists(perm_file_path):
+                        os.remove(perm_file_path)
+                    raise ValueError(
+                        f"개인정보가 감지되어 업로드가 차단되었습니다: {findings_str}"
+                    )
+                elif pii_mode == "mask":
+                    # 마스킹 모드: PII를 마스킹 처리 후 계속 진행
+                    text = self.pii_detector.mask(text, enabled_items)
+                    print("  → 개인정보 마스킹 완료")
+            else:
+                print("  ✅ 개인정보 미감지")
+            
             # Step 3: 청킹
-            print("[Step 3/5] 텍스트 청킹")
+            print("[Step 3/6] 텍스트 청킹")
             chunks = self.chunker.chunk(text)
             print(f"  → 생성된 청크: {len(chunks)}개")
 

@@ -53,3 +53,19 @@ class User(Base):
     agents = relationship("services.ai_hub.db.tables.Agent", back_populates="creator")
     # chat_logs = relationship("services.orchestrator.db.tables.ChatLog", back_populates="user")  # TODO: 순환 참조 해결 필요
 
+
+class UserSettings(Base):
+    """사용자별 개인정보 보호 설정"""
+    __tablename__ = "user_settings"
+
+    user_id = Column(UUID(as_uuid=True), primary_key=True)
+    privacy_mode = Column(String(20), default="block")  # block / mask
+    detection_items = Column(JSONB, default=lambda: {
+        "ssn": True,
+        "phone": True,
+        "email": True,
+        "creditCard": True,
+        "account": True,
+        "address": True,
+    })
+

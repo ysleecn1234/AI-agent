@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Menu, User, Settings, MessageSquare, FolderOpen, Bot, Clock, LogOut, Save } from 'lucide-react';
+import { api } from '@/lib/api';
 
 interface SettingsData {
     privacy: {
@@ -36,7 +37,7 @@ export default function SettingsPage() {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
-    
+
     const [settings, setSettings] = useState<SettingsData>({
         privacy: {
             mode: 'block',
@@ -64,22 +65,12 @@ export default function SettingsPage() {
 
     const fetchSettings = async () => {
         setIsLoading(true);
-        const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://223.130.142.76:8000';
         try {
-            const token = localStorage.getItem('access_token');
-            const response = await fetch(`${BASE_URL}/settings`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
-
-            if (!response.ok) throw new Error('Failed to fetch settings');
-
-            const data = await response.json();
+            const data = await api.getSettings();
             setSettings(data);
         } catch (error) {
             console.error('Error fetching settings:', error);
-            // Mock data for development
+            // API 실패 시 기본값
             setSettings({
                 privacy: {
                     mode: 'block',
@@ -93,9 +84,9 @@ export default function SettingsPage() {
                     },
                 },
                 account: {
-                    name: localStorage.getItem('user_name') || '홍길동',
-                    email: localStorage.getItem('user_email') || 'user@example.com',
-                    department: localStorage.getItem('department') || '개발팀',
+                    name: localStorage.getItem('user_name') || '',
+                    email: localStorage.getItem('user_email') || '',
+                    department: localStorage.getItem('department') || '',
                 },
             });
         } finally {
@@ -105,20 +96,8 @@ export default function SettingsPage() {
 
     const handleSaveSettings = async () => {
         setIsSaving(true);
-        const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://223.130.142.76:8000';
         try {
-            const token = localStorage.getItem('access_token');
-            const response = await fetch(`${BASE_URL}/settings`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                },
-                body: JSON.stringify(settings),
-            });
-
-            if (!response.ok) throw new Error('Failed to save settings');
-
+            await api.updateSettings(settings);
             alert('설정이 저장되었습니다!');
         } catch (error) {
             console.error('Error saving settings:', error);
@@ -256,7 +235,7 @@ export default function SettingsPage() {
                                 <Label className="text-base font-semibold">개인정보 처리 방식</Label>
                                 <RadioGroup
                                     value={settings.privacy.mode}
-                                    onValueChange={(value: 'block' | 'mask') => 
+                                    onValueChange={(value: 'block' | 'mask') =>
                                         setSettings({
                                             ...settings,
                                             privacy: { ...settings.privacy, mode: value }

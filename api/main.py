@@ -3,11 +3,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from application.database import engine, Base
-from . import auth, chat, agents, drive
+from . import auth, chat, agents, drive, settings
 # [New] Import Models explicitly to ensure tables are created
 from services.orchestrator.db.tables import ChatLog
 from services.ai_hub.db.tables import Agent
 from services.ai_drive.db.postgres_client import Document
+from application.database import UserSettings
 
 # 모델 등록 (Base.metadata.create_all()이 테이블을 생성하려면 필요)
 from services.orchestrator.db.tables import ChatLog
@@ -40,6 +41,7 @@ app.include_router(auth.router)
 app.include_router(chat.router)
 app.include_router(agents.router)
 app.include_router(drive.router)  # AI Drive 라우터 추가
+app.include_router(settings.router)  # 설정 라우터 추가
 
 # CORS 미들웨어 (개발 환경에서는 전체 허용)
 app.add_middleware(
