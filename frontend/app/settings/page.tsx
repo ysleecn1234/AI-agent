@@ -64,9 +64,10 @@ export default function SettingsPage() {
 
     const fetchSettings = async () => {
         setIsLoading(true);
+        const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://223.130.142.76:8000';
         try {
             const token = localStorage.getItem('access_token');
-            const response = await fetch('http://localhost:8000/settings', {
+            const response = await fetch(`${BASE_URL}/settings`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                 },
@@ -104,9 +105,10 @@ export default function SettingsPage() {
 
     const handleSaveSettings = async () => {
         setIsSaving(true);
+        const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://223.130.142.76:8000';
         try {
             const token = localStorage.getItem('access_token');
-            const response = await fetch('http://localhost:8000/settings', {
+            const response = await fetch(`${BASE_URL}/settings`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
