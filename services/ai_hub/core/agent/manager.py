@@ -163,23 +163,6 @@ class AgentManager:
 
         return results
 
-
-def _agent_to_recommendation_item(agent, match_score: float = 0) -> Dict:
-    """DB Agent → 프론트 Agent 형식 추천 항목"""
-    return {
-        "id": str(agent.id),
-        "name": agent.name,
-        "description": agent.description,
-        "category": getattr(agent, "category", "기타"),
-        "visibility": getattr(agent, "is_public", "PRIVATE"),
-        "creator": str(agent.creator_id) if agent.creator_id else "Unknown",
-        "creator_id": str(agent.creator_id) if agent.creator_id else None,
-        "created_at": getattr(agent, "created_at", None)
-        and getattr(agent.created_at, "isoformat", lambda: "")() or "",
-        "is_active": True,
-        "match_score": match_score,
-    }
-
     # --- 1. Definition Management ---
 
     def get_standard_template(self) -> Dict:
@@ -326,3 +309,20 @@ def _agent_to_recommendation_item(agent, match_score: float = 0) -> Dict:
         redis_client.srem(f"user_drafts:{draft['user_id']}", draft_id)
         
         return new_agent
+
+
+def _agent_to_recommendation_item(agent, match_score: float = 0) -> Dict:
+    """DB Agent → 프론트 Agent 형식 추천 항목"""
+    return {
+        "id": str(agent.id),
+        "name": agent.name,
+        "description": agent.description,
+        "category": getattr(agent, "category", "기타"),
+        "visibility": getattr(agent, "is_public", "PRIVATE"),
+        "creator": str(agent.creator_id) if agent.creator_id else "Unknown",
+        "creator_id": str(agent.creator_id) if agent.creator_id else None,
+        "created_at": getattr(agent, "created_at", None)
+        and getattr(agent.created_at, "isoformat", lambda: "")() or "",
+        "is_active": True,
+        "match_score": match_score,
+    }
