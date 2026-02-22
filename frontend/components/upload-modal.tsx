@@ -29,7 +29,7 @@ const MAX_FILE_SIZE = 1024 * 1024 * 1024; // 1GB
 
 export default function UploadModal({ isOpen, onClose, onUploadSuccess }: UploadModalProps) {
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
-    const [visibility, setVisibility] = useState<'private' | 'team' | 'public'>('private');
+    const [visibility, setVisibility] = useState<'team' | 'public'>('team');
     const [uploadProgress, setUploadProgress] = useState(0);
     const [isUploading, setIsUploading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -93,10 +93,14 @@ export default function UploadModal({ isOpen, onClose, onUploadSuccess }: Upload
         if (!selectedFile) return;
 
         setIsUploading(true);
-        // setUploadProgress(0); // Fetch API doesn't support progress easily, disabling for now or simulating 
+        setUploadProgress(0);
 
         try {
-            await api.uploadDocument(selectedFile, visibility);
+            await api.uploadDocument(selectedFile, visibility, (percent) => {
+                // 파일 전송은 90%까지만 표시 (나머지 10%는 서버 처리 시간)
+                setUploadProgress(Math.round(percent * 0.9));
+            });
+            setUploadProgress(100);
             onUploadSuccess();
             handleClose();
         } catch (error) {
@@ -110,7 +114,7 @@ export default function UploadModal({ isOpen, onClose, onUploadSuccess }: Upload
     const handleClose = () => {
         if (!isUploading) {
             setSelectedFile(null);
-            setVisibility('private');
+            setVisibility('team');
             setUploadProgress(0);
             setError(null);
             setIsDragging(false);
@@ -207,7 +211,7 @@ export default function UploadModal({ isOpen, onClose, onUploadSuccess }: Upload
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="private">🔒 나만 보기</SelectItem>
+
                                 <SelectItem value="team">👥 팀 공유</SelectItem>
                                 <SelectItem value="public">🌐 전체 공개</SelectItem>
                             </SelectContent>
@@ -218,7 +222,9 @@ export default function UploadModal({ isOpen, onClose, onUploadSuccess }: Upload
                     {isUploading && (
                         <div className="space-y-2">
                             <div className="flex justify-between text-sm">
-                                <span className="text-gray-700">업로드 중...</span>
+                                <span className="text-gray-700">
+                                    {uploadProgress >= 90 ? '문서 처리 중...' : '업로드 중...'}
+                                </span>
                                 <span className="text-gray-700">{uploadProgress}%</span>
                             </div>
                             <Progress value={uploadProgress} />

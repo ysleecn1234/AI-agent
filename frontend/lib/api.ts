@@ -51,7 +51,7 @@ class ApiClient {
         if (typeof window !== 'undefined') {
             this.token = localStorage.getItem('access_token');
         }
-        
+
         const headers: HeadersInit = {
             'Content-Type': 'application/json',
             ...(this.token ? { 'Authorization': `Bearer ${this.token}` } : {}),
@@ -75,7 +75,7 @@ class ApiClient {
                     }
                 }
             }
-            
+
             const error = await response.json().catch(() => ({ message: 'Unknown error' }));
             throw new Error(error.message || `API Error: ${response.status}`);
         }
@@ -135,7 +135,11 @@ class ApiClient {
         return this.request<DocumentDetail>(`/drive/documents/${id}`);
     }
 
-    public async uploadDocument(file: File, visibility: 'private' | 'team' | 'public'): Promise<Document> {
+    public async uploadDocument(
+        file: File,
+        visibility: 'team' | 'public',
+        onProgress?: (percent: number) => void
+    ): Promise<Document> {
         // 매번 최신 토큰 읽기
         if (typeof window !== 'undefined') {
             this.token = localStorage.getItem('access_token');
@@ -144,30 +148,43 @@ class ApiClient {
         const formData = new FormData();
         formData.append('file', file);
         formData.append('visibility', visibility);
-        
+
         // 백엔드 필수 필드 추가
         const creatorId = typeof window !== 'undefined' ? localStorage.getItem('user_id') || '' : '';
         const department = typeof window !== 'undefined' ? localStorage.getItem('department') || '개발팀' : '개발팀';
-        
+
         formData.append('creator_id', creatorId);
         formData.append('creator_department', department);
         formData.append('description', '');
         formData.append('tags', '');
 
-        // Content-Type header must be removed to let browser set boundary for FormData
-        const headers: any = { ...(this.token ? { 'Authorization': `Bearer ${this.token}` } : {}) };
+        // XMLHttpRequest로 업로드 진행률 추적
+        return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', `${API_BASE_URL}/drive/documents/upload`);
 
-        const response = await fetch(`${API_BASE_URL}/drive/documents/upload`, {
-            method: 'POST',
-            headers,
-            body: formData,
+            if (this.token) {
+                xhr.setRequestHeader('Authorization', `Bearer ${this.token}`);
+            }
+
+            xhr.upload.onprogress = (e) => {
+                if (e.lengthComputable && onProgress) {
+                    const percent = Math.round((e.loaded / e.total) * 100);
+                    onProgress(percent);
+                }
+            };
+
+            xhr.onload = () => {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    resolve(JSON.parse(xhr.responseText));
+                } else {
+                    reject(new Error(`Upload failed: ${xhr.statusText}`));
+                }
+            };
+
+            xhr.onerror = () => reject(new Error('네트워크 오류'));
+            xhr.send(formData);
         });
-
-        if (!response.ok) {
-            throw new Error(`Upload failed: ${response.statusText}`);
-        }
-
-        return response.json();
     }
 
     public async saveChatToDrive(data: ChatSaveRequest): Promise<any> {
@@ -184,7 +201,7 @@ class ApiClient {
     }
 
     public async updateDocumentMetadata(
-        id: string, 
+        id: string,
         data: {
             user_id: string;
             title?: string;
@@ -266,10 +283,10 @@ class ApiClient {
         });
     }
 
-    public async generateAgentMetadata(content: string): Promise<{ 
-        name: string; 
-        description: string; 
-        category: string 
+    public async generateAgentMetadata(content: string): Promise<{
+        name: string;
+        description: string;
+        category: string
     }> {
         return this.request<{ name: string; description: string; category: string }>('/generate/agent-metadata', {
             method: 'POST',

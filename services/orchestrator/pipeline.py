@@ -33,59 +33,58 @@ TASK_MODEL_CONFIG = {
     
     # ── 채팅 파이프라인 (5단계) ──
     "chat_routing": {
-        "models": ["gemini-1.5-flash", "gpt-4o-mini"],
+        "models": ["gemini/gemini-2.5-flash-lite", "gpt-5-nano"],
         "temperature": 0.1,
         "max_tokens": 10,
         "description": "의도 분류 및 복잡도 판단 (Router)",
         "system_prompt": None,
     },
-
     "chat_research": {
-        "models": ["gpt-4o-mini", "claude-3-haiku-20240307"],
+        "models": ["gpt-5-mini", "claude-haiku-4.5"],
         "temperature": 0.2,
-        "max_tokens": 200,
+        "max_tokens": 500,
         "description": "검색 쿼리 생성 및 검증 (Researcher)",
         "system_prompt": None,
     },
     "chat_simple": {
-        "models": ["gemini-1.5-flash", "gpt-4o-mini"],
+        "models": ["gemini/gemini-2.5-flash", "gpt-5-mini"],
         "temperature": 0.7,
-        "max_tokens": 1000,
+        "max_tokens": 2000,
         "description": "단순 질의 답변 생성 (Reasoner - SIMPLE)",
         "system_prompt": None,
     },
     "chat_complex": {
-        "models": ["claude-3-5-sonnet-20240620", "gpt-4o"],
+        "models": ["claude-sonnet-4-6", "gpt-5.2"],
         "temperature": 0.1,
-        "max_tokens": 1000,
+        "max_tokens": 4000,
         "description": "정밀 분석 답변 생성 (Reasoner - COMPLEX)",
         "system_prompt": None,
     },
     "chat_bulk": {
-        "models": ["claude-3-5-sonnet-20240620", "gpt-4o"],
+        "models": ["gemini/gemini-3-flash-preview", "gemini/gemini-2.5-flash"],
         "temperature": 0.1,
-        "max_tokens": 2000,
+        "max_tokens": 4000,
         "description": "대량 문서 분석 답변 생성 (Reasoner - BULK)",
         "system_prompt": None,
     },
     "chat_reasoning": {
-        "models": ["claude-3-5-sonnet-20240620", "gpt-4o"],
+        "models": ["gpt-5.2-pro", "claude-opus-4-6"],
         "temperature": 0.1,
-        "max_tokens": 1000,
+        "max_tokens": 4000,
         "description": "문맥 기반 답변 생성 (Reasoner)",
         "system_prompt": None,
     },
     "chat_synthesis": {
-        "models": ["gpt-4o-mini", "gemini-1.5-flash"],
+        "models": ["gemini/gemini-2.5-flash", "claude-haiku-4.5"],
         "temperature": 0.3,
-        "max_tokens": 500,
+        "max_tokens": 4000,
         "description": "답변 종합 및 포맷팅 (Synthesizer)",
         "system_prompt": None,
     },
     "chat_guardrail": {
-        "models": ["llama-guard-3-8b", "claude-3-5-sonnet-20240620"],
+        "models": ["claude-haiku-4.5", "gpt-5.2"],
         "temperature": 0.1,
-        "max_tokens": 1500,
+        "max_tokens": 2000,
         "description": "품질 검수 및 팩트체크 (Guardrail)",
         "system_prompt": (
             "당신은 AI 답변 품질 검수 전문가입니다.\n"
@@ -104,9 +103,9 @@ TASK_MODEL_CONFIG = {
 
     # ── 에이전트 허브 (Phase 2~3) ──
     "agent_draft": {
-        "models": ["gpt-4o", "claude-3-5-sonnet-20240620"],
+        "models": ["gpt-5.2", "claude-sonnet-4-6"],
         "temperature": 0.3,
-        "max_tokens": 1000,
+        "max_tokens": 2000,
         "description": "대화 분석 → 에이전트 생성 템플릿 채우기 (Pull-Fill)",
         "system_prompt": (
             "당신은 AI 에이전트 설계 전문가입니다.\n"
@@ -131,9 +130,9 @@ TASK_MODEL_CONFIG = {
         ),
     },
     "agent_recommend": {
-        "models": ["gemini-1.5-pro", "gpt-4o-mini"],
+        "models": ["gemini/gemini-3.1-pro-preview", "gpt-5-mini"],
         "temperature": 0.2,
-        "max_tokens": 200,
+        "max_tokens": 500,
         "description": "실시간 에이전트 추천을 위한 의도/주제/키워드 분석",
         "system_prompt": (
             "당신은 사용자 의도 분석 전문가입니다.\n"
@@ -154,9 +153,9 @@ TASK_MODEL_CONFIG = {
 
     # ── AI Drive (문서 관리) ──
     "tagging": {
-        "models": ["gemini-1.5-flash", "gpt-4o-mini"],
+        "models":    ["gemini/gemini-2.5-flash", "gpt-5-mini"],
         "temperature": 0.1,
-        "max_tokens": 300,
+        "max_tokens": 500,
         "description": "문서 자동 태깅 - 태그/키워드/문서유형 추출",
         "system_prompt": (
             "당신은 기업 문서 분류 전문가입니다.\n"
@@ -174,9 +173,9 @@ TASK_MODEL_CONFIG = {
         ),
     },
     "title_gen": {
-        "models": ["gpt-4o-mini", "claude-3-haiku-20240307"],
+        "models": ["gpt-5-mini", "claude-haiku-4.5"],
         "temperature": 0.3,
-        "max_tokens": 200,
+        "max_tokens": 500,
         "description": "채팅/에이전트 결과 저장 시 제목·설명 자동 생성",
         "system_prompt": (
             "당신은 문서 제목 생성 전문가입니다.\n"
@@ -193,9 +192,9 @@ TASK_MODEL_CONFIG = {
         ),
     },
     "doc_chat": {
-        "models": ["claude-3-5-sonnet-20240620", "gemini-1.5-pro"],
+        "models": ["claude-opus-4-6", "gpt-5.2"],
         "temperature": 0.3,
-        "max_tokens": 1500,
+        "max_tokens": 4000,
         "description": "문서별 채팅 - 특정 문서 기반 질의응답",
         "system_prompt": (
             "당신은 기업 내부 문서 전문 AI 어시스턴트입니다.\n"
@@ -209,9 +208,9 @@ TASK_MODEL_CONFIG = {
         ),
     },
     "doc_format": { 
-        "models": ["gpt-4o-mini", "gemini-1.5-flash"],
+        "models": ["gpt-5-mini", "gemini/gemini-2.5-flash-lite"],
         "temperature": 0.3,
-        "max_tokens": 2000,
+        "max_tokens": 4000,
         "description": "채팅/에이전트 대화를 구조화된 문서로 변환",
         "system_prompt": (
             "당신은 대화 내용을 구조화된 문서로 변환하는 전문가입니다.\n"
@@ -234,7 +233,7 @@ PREMIUM_MODELS = {
         "temperature": 0.3,
     },
     "GEMINI_3_PRO": {
-        "model": "gemini/gemini-3-pro",
+        "model": "gemini/gemini-3.1-pro-preview",
         "display_name": "Gemini 3 Pro",
         "max_tokens": 4000,
         "temperature": 0.3,
@@ -254,33 +253,25 @@ PREMIUM_MODELS = {
 }
 
 # 프리미엄 모델용 메가 시스템 프롬프트 (5단계 파이프라인 로직 통합)
-PREMIUM_SYSTEM_PROMPT = """당신은 기업용 AI 어시스턴트입니다. 사용자의 요청에 대해 다음 단계를 내부적으로 수행하여 최고 품질의 답변을 제공하세요.
+PREMIUM_SYSTEM_PROMPT = """당신은 세계 최고 수준의 AI 어시스턴트입니다. 사용자의 요청에 대해 최고 품질의 답변을 제공하세요.
 
-[1단계: 의도 분석]
-- 사용자 요청의 의도를 파악하세요 (질의/분석/생성/검색)
-- 요청의 복잡도를 판단하세요
+[핵심 원칙]
+1. 항상 풍부하고 자세하게 답변하세요. 짧고 간결한 답변은 금지입니다.
+2. 웹 검색 결과가 제공되면 반드시 활용하여 최신 정보를 포함하세요.
+3. 제공된 참고 자료에 없는 내용은 명확히 구분하세요.
 
-[2단계: 정보 활용]
-- 제공된 참고 자료가 있다면 반드시 활용하세요
-- 참고 자료에 없는 내용은 명확히 구분하세요
+[답변 형식 — 반드시 마크다운으로 작성]
+- 제목(##)과 소제목(###)으로 구조화하세요
+- 핵심 정보는 **볼드** 또는 *이탤릭*으로 강조하세요
+- 나열이 필요하면 리스트(- 또는 1.)를 사용하세요
+- 비교가 필요하면 표(| 헤더 | 값 |)를 적극 활용하세요
+- 답변 마지막에 📝 **요약** 섹션을 반드시 추가하세요
 
-[3단계: 논리적 추론]
+[답변 품질]
 - 단계별로 사고하여 정확한 답변을 도출하세요
 - 데이터나 근거가 있다면 반드시 포함하세요
-
-[4단계: 답변 구성]
-- 명확한 구조로 답변을 구성하세요 (제목, 본문, 요약)
-- 가독성 높은 마크다운 형식을 사용하세요
-- 중요 정보는 강조하세요
-
-[5단계: 자체 검증]
-- 답변의 논리적 일관성을 확인하세요
-- 요청사항을 빠짐없이 충족했는지 검증하세요
-- 사실 정확성에 문제가 없는지 확인하세요
-
-규칙:
-- 민감한 개인정보(전화번호, 주민등록번호 등)가 포함된 경우 마스킹하세요
 - 확실하지 않은 정보는 추측임을 명시하세요
+- 민감한 개인정보(전화번호, 주민등록번호 등)가 포함된 경우 마스킹하세요
 - 한국어로 답변하세요"""
 
 class ComplexityLevel(Enum):
@@ -689,9 +680,10 @@ class Researcher:
         intent = routing_result["intent"]
         complexity = routing_result["complexity"]
         
-        # 검색이 필요한 경우에만 실행
-        # - SEARCH, ANALYSIS 의도
-        # - COMPLEX, BULK 복잡도
+        # 1. 웹 검색 (Perplexity) - 모든 질문에 대해 실시간 정보 수집
+        web_context = self._web_search(user_input)
+        
+        # 2. 문서 검색 (RAG) - 분석/검색 의도 또는 복잡한 질문일 때
         should_search = (
             intent in ["search", "analysis"] or
             complexity in ["complex", "bulk"]
@@ -706,8 +698,25 @@ class Researcher:
         
         return {
             **routing_result,
-            "retrieved_documents": documents
+            "retrieved_documents": documents,
+            "web_context": web_context,
         }
+    
+    def _web_search(self, query: str) -> str:
+        """Perplexity API를 통한 실시간 웹 검색"""
+        try:
+            print(f"  → 웹 검색 실행: {query[:30]}...")
+            response = litellm.completion(
+                model="perplexity/sonar",
+                messages=[{"role": "user", "content": query}],
+                max_tokens=500,
+            )
+            result = response.choices[0].message.content or ""
+            print(f"  → 웹 검색 완료 ({len(result)}자)")
+            return result
+        except Exception as e:
+            print(f"  → 웹 검색 실패 (Fallback: 웹 검색 없이 진행): {e}")
+            return ""
 
 
 
@@ -747,9 +756,14 @@ class Reasoner:
             for i, doc in enumerate(documents[:3], 1):
                 rag_context += f"{i}. {doc.get('content', '')[:200]}...\n"
         
-        # 프롬프트 구성 (기존과 동일)
+        # 웹 검색 컨텍스트 구성
+        web_context = ""
+        if context.get("web_context"):
+            web_context = f"\n\n웹 검색 결과:\n{context['web_context']}"
+        
+        # 프롬프트 구성
         prompt = f"""{user_input}
-
+{web_context}
 {rag_context}
 
 위 정보를 바탕으로 정확하고 유용한 답변을 제공해주세요."""
@@ -1150,14 +1164,35 @@ class Pipeline:
             try:
                 print(f"  [call_llm] task={task}, 모델 시도: {model}")
                 
-                response = litellm.completion(
-                    model=model,
-                    messages=messages,
-                    temperature=temperature,
-                    max_tokens=max_tokens,
-                )
+                # 모델별 특성을 고려한 파라미터 세팅
+                completion_kwargs = {
+                    "model": model,
+                    "messages": messages,
+                }
                 
-                content = response.choices[0].message.content
+                # 프롬프트 max_tokens 적용 (특정 모델 제외 시 여기에 조건 추가 가능)
+                if max_tokens:
+                    completion_kwargs["max_tokens"] = max_tokens
+                    
+                # GPT-5, o1 등 temperature를 미지원하는 모델의 대체 로직
+                if "gpt-5" in model or "o1" in model or "o3" in model:
+                    # 분석/판단 태스크: reasoning_effort로 정밀도 제어
+                    REASONING_TASKS = {"chat_routing", "chat_guardrail", "chat_complex", "chat_reasoning"}
+                    if task in REASONING_TASKS:
+                        if temperature <= 0.2:
+                            completion_kwargs["reasoning_effort"] = "high"
+                        elif temperature >= 0.7:
+                            completion_kwargs["reasoning_effort"] = "low"
+                        else:
+                            completion_kwargs["reasoning_effort"] = "medium"
+                    # 텍스트 생성 태스크(synthesis, simple 등): 파라미터 없이 기본 모드로 호출
+                    # → reasoning_effort를 보내면 content가 빈 문자열로 오는 GPT-5 이슈 방지
+                else:
+                    completion_kwargs["temperature"] = temperature
+                
+                response = litellm.completion(**completion_kwargs)
+                
+                content = response.choices[0].message.content or ""
                 
                 # 5. 토큰 추출
                 input_tokens = 0
@@ -1515,8 +1550,25 @@ class Pipeline:
                     
                     print(f"  → RAG 결과: {len(documents)}개 문서")
             
+            # 2-1. 웹 검색 (Perplexity 모델이 아닌 경우에만 — Perplexity는 자체 검색 내장)
+            web_context = ""
+            if model_type != "PERPLEXITY":
+                try:
+                    print(f"  → 웹 검색 실행: {user_input[:30]}...")
+                    web_response = litellm.completion(
+                        model="perplexity/sonar",
+                        messages=[{"role": "user", "content": user_input}],
+                        max_tokens=500,
+                    )
+                    web_context = web_response.choices[0].message.content or ""
+                    print(f"  → 웹 검색 완료 ({len(web_context)}자)")
+                except Exception as e:
+                    print(f"  → 웹 검색 실패 (스킵): {e}")
+            
             # 3. 프롬프트 조립
             user_prompt = user_input
+            if web_context:
+                user_prompt += f"\n\n[웹 검색 결과]\n{web_context}"
             if rag_context:
                 user_prompt += rag_context
             
@@ -1535,14 +1587,22 @@ class Pipeline:
                 {"role": "user", "content": user_prompt}
             ]
             
-            response = litellm.completion(
-                model=model_name,
-                messages=messages,
-                temperature=model_config["temperature"],
-                max_tokens=model_config["max_tokens"],
-            )
+            # GPT-5, o1 등 temperature 미지원 모델 대응
+            completion_kwargs = {
+                "model": model_name,
+                "messages": messages,
+                "max_tokens": model_config["max_tokens"],
+            }
             
-            content = response.choices[0].message.content
+            if "gpt-5" in model_name or "o1" in model_name or "o3" in model_name:
+                # GPT-5 계열: temperature 대신 파라미터 없이 기본 모드로 호출
+                pass
+            else:
+                completion_kwargs["temperature"] = model_config["temperature"]
+            
+            response = litellm.completion(**completion_kwargs)
+            
+            content = response.choices[0].message.content or ""
             
             # 5. 토큰 추출
             input_tokens = 0

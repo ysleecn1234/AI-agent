@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { api } from '@/lib/api';
 
 interface Message {
@@ -299,7 +300,7 @@ export default function DocumentDetailPage() {
                         수정
                     </Button>
 
-                        {/* User Menu */}
+                    {/* User Menu */}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <button className="p-2 hover:bg-gray-100 rounded-lg">
@@ -380,8 +381,18 @@ export default function DocumentDetailPage() {
                                         {msg.role === 'user' ? (
                                             <p className="whitespace-pre-wrap">{msg.content}</p>
                                         ) : (
-                                            <div className="prose prose-sm max-w-none">
-                                                <ReactMarkdown>{msg.content}</ReactMarkdown>
+                                            <div className="prose prose-sm max-w-none
+                                            prose-headings:font-semibold prose-headings:mb-2 prose-headings:mt-3
+                                            prose-p:my-1.5 prose-p:leading-relaxed
+                                            prose-ul:my-1.5 prose-ul:list-disc prose-ul:pl-5
+                                            prose-ol:my-1.5 prose-ol:list-decimal prose-ol:pl-5
+                                            prose-li:my-0.5
+                                            prose-strong:font-semibold
+                                            prose-code:bg-gray-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-code:font-mono
+                                            prose-pre:bg-gray-900 prose-pre:text-gray-100 prose-pre:p-3 prose-pre:rounded prose-pre:my-2 prose-pre:overflow-x-auto
+                                            prose-blockquote:border-l-2 prose-blockquote:border-gray-300 prose-blockquote:pl-3 prose-blockquote:italic prose-blockquote:text-gray-700
+                                            prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline">
+                                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
                                             </div>
                                         )}
                                     </div>
@@ -471,7 +482,7 @@ export default function DocumentDetailPage() {
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="private">🔒 나만 보기</SelectItem>
+
                                     <SelectItem value="team">👥 팀 공유</SelectItem>
                                     <SelectItem value="public">🌐 전체 공개</SelectItem>
                                 </SelectContent>
@@ -497,7 +508,7 @@ export default function DocumentDetailPage() {
                         <Button variant="outline" onClick={() => setEditModalOpen(false)}>
                             취소
                         </Button>
-                        <Button 
+                        <Button
                             onClick={handleSaveMetadata}
                             className="bg-blue-600 hover:bg-blue-700"
                         >

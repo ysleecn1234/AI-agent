@@ -51,6 +51,7 @@ export default function RegisterPage() {
             localStorage.setItem('access_token', data.access_token);
             localStorage.setItem('user_id', data.user_id);
             localStorage.setItem('user_name', data.user_name);
+            localStorage.setItem('user_email', formData.email);
             localStorage.setItem('department', data.department);
 
             // 채팅 페이지로 이동

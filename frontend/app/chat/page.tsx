@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -61,8 +62,8 @@ export default function ChatPage() {
             // session_id 저장 (대화 이어가기)
             setSessionId(response.session_id);
 
-            setMessages(prev => [...prev, { 
-                role: 'assistant', 
+            setMessages(prev => [...prev, {
+                role: 'assistant',
                 content: response.response,
                 sources: response.sources || [],
                 liked: false
@@ -88,7 +89,7 @@ export default function ChatPage() {
     };
 
     const handleLikeMessage = (index: number) => {
-        setMessages(prev => prev.map((msg, idx) => 
+        setMessages(prev => prev.map((msg, idx) =>
             idx === index ? { ...msg, liked: !msg.liked } : msg
         ));
     };
@@ -119,7 +120,7 @@ export default function ChatPage() {
                         // Fallback to client-side filtering if API not available
                         console.warn('Agent recommendation API not available, using fallback');
                         const agents = await api.getAgents();
-                        const filtered = agents.filter(agent => 
+                        const filtered = agents.filter(agent =>
                             agent.name.toLowerCase().includes(message.toLowerCase()) ||
                             agent.description.toLowerCase().includes(message.toLowerCase()) ||
                             agent.category?.toLowerCase().includes(message.toLowerCase())
@@ -382,7 +383,7 @@ export default function ChatPage() {
                                             prose-pre:bg-gray-900 prose-pre:text-gray-100 prose-pre:p-3 prose-pre:rounded prose-pre:my-2 prose-pre:overflow-x-auto
                                             prose-blockquote:border-l-2 prose-blockquote:border-gray-300 prose-blockquote:pl-3 prose-blockquote:italic prose-blockquote:text-gray-700
                                             prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline">
-                                            <ReactMarkdown>{msg.content}</ReactMarkdown>
+                                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
                                         </div>
                                     ) : (
                                         <p className="whitespace-pre-wrap">{msg.content}</p>
@@ -517,11 +518,10 @@ export default function ChatPage() {
                                 <button
                                     key={agent.id}
                                     onClick={() => handleSelectAgent(agent)}
-                                    className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
-                                        agentId === agent.id
-                                            ? 'bg-blue-600 text-white border-blue-600'
-                                            : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
-                                    }`}
+                                    className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${agentId === agent.id
+                                        ? 'bg-blue-600 text-white border-blue-600'
+                                        : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                                        }`}
                                 >
                                     {agent.name}
                                 </button>
@@ -563,13 +563,10 @@ export default function ChatPage() {
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="AUTO">⚡ Auto (자동 선택)</SelectItem>
-                            <SelectItem value="GPT_5_2">💎 GPT 5.2 (Thinking)</SelectItem>
-                            <SelectItem value="GEMINI_3_PRO">💎 Gemini 3 Pro</SelectItem>
-                            <SelectItem value="PERPLEXITY">💎 Perplexity Sonar Pro</SelectItem>
-                            <SelectItem value="OPUS_4_6">💎 Claude Opus 4.6</SelectItem>
-                            <SelectItem value="gpt-4o-mini">GPT-4o-mini</SelectItem>
-                            <SelectItem value="claude-sonnet">Claude Sonnet 3.5</SelectItem>
-                            <SelectItem value="gemini-flash">Gemini 1.5 Flash</SelectItem>
+                            <SelectItem value="GPT_5_2">GPT 5.2 (Thinking)</SelectItem>
+                            <SelectItem value="GEMINI_3_PRO">Gemini 3.1 Pro</SelectItem>
+                            <SelectItem value="PERPLEXITY">Perplexity Sonar Pro</SelectItem>
+                            <SelectItem value="OPUS_4_6">Claude Opus 4.6</SelectItem>
                         </SelectContent>
                     </Select>
 
@@ -580,8 +577,8 @@ export default function ChatPage() {
                             checked={agentEnabled}
                             onCheckedChange={(checked) => setAgentEnabled(checked as boolean)}
                         />
-                        <label 
-                            htmlFor="agent-enabled" 
+                        <label
+                            htmlFor="agent-enabled"
                             className="text-gray-700 cursor-pointer select-none"
                         >
                             Agent 활성화
