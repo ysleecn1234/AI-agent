@@ -125,8 +125,8 @@ export default function AgentsPage() {
                         <SheetContent side="left" className="w-[300px]">
                             <SheetHeader>
                                 <SheetTitle className="flex items-center gap-2">
-                                    <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
-                                        <span className="text-white text-lg font-bold">ISOR</span>
+                                    <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center shrink-0">
+                                        <span className="text-white text-base font-bold tracking-tight">ISOR</span>
                                     </div>
                                     <span>AI 플랫폼</span>
                                 </SheetTitle>
@@ -297,7 +297,7 @@ export default function AgentsPage() {
                                                             <DropdownMenuItem onClick={() => router.push(`/agents/edit/${agent.id}`)}>
                                                                 <Edit className="w-4 h-4 mr-2" /> 수정
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem 
+                                                            <DropdownMenuItem
                                                                 onClick={(e) => handleDeleteAgent(agent.id, e)}
                                                                 className="text-red-600 focus:text-red-600"
                                                             >
@@ -321,10 +321,10 @@ export default function AgentsPage() {
                                                 </div>
                                             </CardContent>
                                             <CardFooter className="pt-3 border-t bg-gray-50/50">
-                                                <Button 
-                                                    size="sm" 
+                                                <Button
+                                                    size="sm"
                                                     variant="default"
-                                                    className="w-full bg-blue-600 hover:bg-blue-700" 
+                                                    className="w-full bg-blue-600 hover:bg-blue-700"
                                                     onClick={() => handleRunAgent(agent.id)}
                                                 >
                                                     <Play className="w-3 h-3 mr-1" />

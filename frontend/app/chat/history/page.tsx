@@ -101,8 +101,8 @@ export default function ChatHistoryPage() {
                     <SheetContent side="left" className="w-[300px] sm:w-[400px]">
                         <SheetHeader>
                             <SheetTitle className="flex items-center gap-2">
-                                <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
-                                    <span className="text-white text-lg font-bold">ISOR</span>
+                                <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center shrink-0">
+                                    <span className="text-white text-base font-bold tracking-tight">ISOR</span>
                                 </div>
                                 <span>AI 플랫폼</span>
                             </SheetTitle>
@@ -206,9 +206,8 @@ export default function ChatHistoryPage() {
                                 <button
                                     key={session.session_id}
                                     onClick={() => loadMessages(session.session_id)}
-                                    className={`w-full text-left px-4 py-3 border-b border-gray-100 hover:bg-blue-50 transition-colors flex items-start gap-3 ${
-                                        selectedSession === session.session_id ? 'bg-blue-50 border-l-2 border-l-blue-600' : ''
-                                    }`}
+                                    className={`w-full text-left px-4 py-3 border-b border-gray-100 hover:bg-blue-50 transition-colors flex items-start gap-3 ${selectedSession === session.session_id ? 'bg-blue-50 border-l-2 border-l-blue-600' : ''
+                                        }`}
                                 >
                                     <MessageSquare className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
                                     <div className="flex-1 min-w-0">
@@ -261,11 +260,10 @@ export default function ChatHistoryPage() {
                                     messages.map((msg, i) => (
                                         <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                                             <div
-                                                className={`max-w-[70%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
-                                                    msg.role === 'user'
+                                                className={`max-w-[70%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${msg.role === 'user'
                                                         ? 'bg-blue-600 text-white'
                                                         : 'bg-white border border-gray-200 text-gray-800'
-                                                }`}
+                                                    }`}
                                             >
                                                 <p className="whitespace-pre-wrap">{msg.content}</p>
                                                 <p className={`text-xs mt-1 ${msg.role === 'user' ? 'text-blue-200' : 'text-gray-400'}`}>
