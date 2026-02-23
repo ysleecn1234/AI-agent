@@ -4,13 +4,14 @@ FROM python:3.11-slim
 # Set Working Directory
 WORKDIR /app
 
-# System Dependencies (Postgres Client, Curl for Healthcheck, Libmagic for file type detection, LibreOffice for PDF conversion)
+# System Dependencies (Postgres Client, Curl for Healthcheck, Libmagic for file type detection, LibreOffice for PDF conversion, fonts-nanum for CJK text)
 RUN apt-get update && apt-get install -y \
     libpq-dev \
     gcc \
     curl \
     libmagic1 \
     libreoffice \
+    fonts-nanum \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python Dependencies
