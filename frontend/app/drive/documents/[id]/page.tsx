@@ -14,6 +14,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { api } from '@/lib/api';
+import dynamic from 'next/dynamic';
+import { DocViewerRenderers } from '@cyntler/react-doc-viewer';
+import '@cyntler/react-doc-viewer/dist/index.css';
+
+const DocViewer = dynamic(() => import('@cyntler/react-doc-viewer'), { ssr: false });
 
 interface Message {
     role: 'user' | 'assistant';
@@ -335,11 +340,13 @@ export default function DocumentDetailPage() {
                     <div className="max-w-3xl mx-auto">
                         <div className="prose prose-sm max-w-none">
                             {fileUrl ? (
-                                <iframe
-                                    src={fileUrl}
-                                    className="w-full h-[800px] border border-gray-200 rounded-lg"
-                                    title={document.title}
-                                />
+                                <div className="w-full h-[800px] border border-gray-200 rounded-lg overflow-hidden">
+                                    <DocViewer
+                                        documents={[{ uri: fileUrl, fileName: document.filename }]}
+                                        pluginRenderers={DocViewerRenderers}
+                                        style={{ height: '100%' }}
+                                    />
+                                </div>
                             ) : (
                                 <div className="flex items-center justify-center h-[800px] border border-gray-200 rounded-lg bg-gray-50">
                                     <p className="text-gray-500">문서를 불러오는 중...</p>

@@ -102,7 +102,7 @@ class DocumentChat:
         
         # Step 1: Researcher - 해당 문서에서 관련 청크 찾기
         print("\n[Step 1/2] 관련 청크 검색")
-        relevant_chunks = self._search_chunks(doc_id, question)
+        relevant_chunks = self._search_chunks(doc_id, question, user_id)
         print(f"  → 관련 청크: {len(relevant_chunks)}개")
         
         if not relevant_chunks:
@@ -142,7 +142,7 @@ class DocumentChat:
     
     # ==================== Step 1: 청크 검색 ====================
     
-    def _search_chunks(self, doc_id: str, question: str) -> List[str]:
+    def _search_chunks(self, doc_id: str, question: str, user_id: str) -> List[str]:
         """해당 문서에서 관련 청크 검색"""
         try:
             from services.ai_drive.core.embedding import EmbeddingGenerator
@@ -156,7 +156,7 @@ class DocumentChat:
                 embed_cost = self.cost_calculator.calculate_cost("text-embedding-3-small", actual_tokens, 0)
 
                 self.cost_logger.log_embedding_cost(
-                    user_id="system",
+                    user_id=user_id,
                     tokens=actual_tokens,
                     cost_usd=embed_cost["cost_usd"]["total"],
                     cost_krw=embed_cost["cost_krw"]["total"],

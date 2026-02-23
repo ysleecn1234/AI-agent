@@ -116,7 +116,7 @@ class RAGSearcher:
                 embed_cost = self.cost_calculator.calculate_cost("text-embedding-3-small", actual_tokens, 0)
 
                 self.cost_logger.log_embedding_cost(
-                    user_id="system",
+                    user_id=None,
                     tokens=actual_tokens,
                     cost_usd=embed_cost["cost_usd"]["total"],
                     cost_krw=embed_cost["cost_krw"]["total"],

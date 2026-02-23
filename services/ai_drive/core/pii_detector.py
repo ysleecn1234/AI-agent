@@ -178,7 +178,7 @@ class PIIDetector:
         
         masked_text = text
         for pii_type, pattern in active_patterns.items():
-            masked_text = re.sub(pattern, '***', masked_text)
+            masked_text = re.sub(pattern, f'[{pii_type} 마스킹됨]', masked_text)
         
         return masked_text
 
