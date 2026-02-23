@@ -403,6 +403,13 @@ async def get_document_file(doc_id: str, download: bool = Query(False), user_id:
                 content=body,
                 media_type="text/plain; charset=utf-8",
             )
+            
+        # 오피스 파일 미리보기 분기 (다운로드가 아닌 뷰어 요청일 때 PDF 변환본 제공)
+        if not download and ext in (".docx", ".pptx", ".xlsx"):
+            pdf_path = file_path + ".pdf"
+            if os.path.exists(pdf_path):
+                return FileResponse(path=pdf_path, filename=filename.replace(ext, ".pdf"))
+                
         return FileResponse(path=file_path, filename=filename)
     
     except HTTPException:

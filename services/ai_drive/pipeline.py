@@ -166,6 +166,29 @@ class DocumentPipeline:
                 shutil.copy2(file_path, perm_file_path)
                 print(f"[Storage] 원본 파일 저장 완료: {perm_file_path}")
                 db_file_path = perm_file_path # DB에는 영구 저장 경로 기록
+
+                # [New] PDF 자동 변환 (오피스 파일의 경우 미리보기용)
+                ext = os.path.splitext(original_filename)[1].lower()
+                if ext in [".docx", ".pptx", ".xlsx"]:
+                    print(f"  → 오피스 파일 감지됨. PDF 변환 시작...")
+                    import subprocess
+                    try:
+                        outdir = os.path.dirname(perm_file_path)
+                        subprocess.run([
+                            "libreoffice", "--headless", "--convert-to", "pdf",
+                            perm_file_path, "--outdir", outdir
+                        ], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                        
+                        generated_pdf_name = os.path.splitext(os.path.basename(perm_file_path))[0] + ".pdf"
+                        generated_pdf_path = os.path.join(outdir, generated_pdf_name)
+                        target_pdf_path = perm_file_path + ".pdf"
+                        
+                        if os.path.exists(generated_pdf_path):
+                            shutil.move(generated_pdf_path, target_pdf_path)
+                            print(f"  → 미리보기용 PDF 변환 완료: {target_pdf_path}")
+                    except Exception as pdf_err:
+                        print(f"  ⚠️ PDF 변환 실패 (미리보기 불가): {pdf_err}")
+
             except Exception as e:
                 print(f"[Storage] 파일 저장 실패 (무시): {e}")
                 # 실패 시 임시 경로 유지 (주의: 곧 삭제될 수 있음)
