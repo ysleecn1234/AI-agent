@@ -5,7 +5,7 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # System Dependencies (Postgres Client, Curl for Healthcheck, Libmagic for file type detection, LibreOffice for PDF conversion)
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get install -y \
     libpq-dev \
     gcc \
     curl \
