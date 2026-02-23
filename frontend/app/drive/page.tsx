@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Menu, User, Search, Upload, FileText, File, FileSpreadsheet, Presentation, LogOut, Settings, MessageSquare, FolderOpen, Bot, Archive, ChevronUp, ChevronDown, MoreVertical, Trash2, Download, RotateCcw, Clock } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import UploadModal from '@/components/upload-modal';
 import { api } from '@/lib/api';
 import type { Document } from '@/types/api';
@@ -33,6 +34,7 @@ export default function DrivePage() {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [isLoadingArchive, setIsLoadingArchive] = useState(false);
+    const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
 
     const userName = typeof window !== 'undefined' ? localStorage.getItem('user_name') || '사용자' : '사용자';
 
@@ -41,11 +43,13 @@ export default function DrivePage() {
     }, []);
 
     useEffect(() => {
+        setSelectedDocs([]);
         if (mainTab === 'archive') fetchArchivedDocuments();
     }, [mainTab]);
 
     const fetchDocuments = async () => {
         setIsLoading(true);
+        setSelectedDocs([]);
         try {
             const docs = await api.getDocuments();
             setDocuments(Array.isArray(docs) ? docs : []);
@@ -59,6 +63,7 @@ export default function DrivePage() {
 
     const fetchArchivedDocuments = async () => {
         setIsLoadingArchive(true);
+        setSelectedDocs([]);
         try {
             const docs = await api.getDocuments({ status: 'archived', limit: 100 });
             setArchivedDocuments(Array.isArray(docs) ? docs : []);
@@ -92,6 +97,63 @@ export default function DrivePage() {
             fetchArchivedDocuments();
         } catch (error) {
             alert('문서 삭제에 실패했습니다.');
+        }
+    };
+
+    const handleSelectAll = (isDriveTab: boolean, checked: boolean) => {
+        if (checked) {
+            const docsToSelect = isDriveTab ? filteredDocuments : filteredArchived;
+            setSelectedDocs(docsToSelect.map(d => d.doc_id));
+        } else {
+            setSelectedDocs([]);
+        }
+    };
+
+    const handleSelectOne = (docId: string, checked: boolean) => {
+        if (checked) {
+            setSelectedDocs(prev => [...prev, docId]);
+        } else {
+            setSelectedDocs(prev => prev.filter(id => id !== docId));
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        if (!confirm(`선택한 ${selectedDocs.length}개의 문서를 아카이브로 이동하시겠습니까?`)) return;
+        try {
+            const token = localStorage.getItem('access_token');
+            await Promise.all(
+                selectedDocs.map(docId =>
+                    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://223.130.142.76:8000'}/drive/documents/${docId}`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${token}` },
+                    })
+                )
+            );
+            fetchDocuments();
+        } catch (error) {
+            console.error('Error deleting documents:', error);
+            alert('일괄 삭제에 실패했습니다.');
+        }
+    };
+
+    const handleBulkRestore = async () => {
+        try {
+            await Promise.all(selectedDocs.map(docId => api.restoreDocument(docId)));
+            fetchArchivedDocuments();
+        } catch (error) {
+            console.error('Error restoring documents:', error);
+            alert('일괄 복원에 실패했습니다.');
+        }
+    };
+
+    const handleBulkPermanentDelete = async () => {
+        if (!confirm(`선택한 ${selectedDocs.length}개의 문서를 정말로 영구 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`)) return;
+        try {
+            await Promise.all(selectedDocs.map(docId => api.permanentDeleteDocument(docId)));
+            fetchArchivedDocuments();
+        } catch (error) {
+            console.error('Error permanently deleting documents:', error);
+            alert('일괄 영구 삭제에 실패했습니다.');
         }
     };
 
@@ -381,9 +443,24 @@ export default function DrivePage() {
                     {/* Drive Tab: Documents Table */}
                     {mainTab === 'drive' && (
                         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                            {selectedDocs.length > 0 && (
+                                <div className="bg-blue-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+                                    <span className="text-sm font-medium text-blue-700">{selectedDocs.length}개 선택됨</span>
+                                    <Button size="sm" variant="destructive" onClick={handleBulkDelete}>
+                                        <Trash2 className="w-4 h-4 mr-2" />
+                                        선택 삭제
+                                    </Button>
+                                </div>
+                            )}
                             <Table>
                                 <TableHeader>
                                     <TableRow>
+                                        <TableHead className="w-[50px] text-center">
+                                            <Checkbox
+                                                checked={selectedDocs.length > 0 && filteredDocuments.length > 0 && selectedDocs.length === filteredDocuments.length}
+                                                onCheckedChange={(checked) => handleSelectAll(true, checked as boolean)}
+                                            />
+                                        </TableHead>
                                         <TableHead className="w-[50px]">
                                             <button onClick={() => handleSort('file_type')} className="flex items-center gap-1 hover:text-blue-600">
                                                 유형
@@ -419,12 +496,18 @@ export default function DrivePage() {
                                 </TableHeader>
                                 <TableBody>
                                     {isLoading ? (
-                                        <TableRow><TableCell colSpan={6} className="text-center py-8 text-gray-500">로딩 중...</TableCell></TableRow>
+                                        <TableRow><TableCell colSpan={7} className="text-center py-8 text-gray-500">로딩 중...</TableCell></TableRow>
                                     ) : filteredDocuments.length === 0 ? (
-                                        <TableRow><TableCell colSpan={6} className="text-center py-8 text-gray-500">문서가 없습니다</TableCell></TableRow>
+                                        <TableRow><TableCell colSpan={7} className="text-center py-8 text-gray-500">문서가 없습니다</TableCell></TableRow>
                                     ) : (
                                         filteredDocuments.map((doc) => (
                                             <TableRow key={doc.doc_id} className="hover:bg-gray-50">
+                                                <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+                                                    <Checkbox
+                                                        checked={selectedDocs.includes(doc.doc_id)}
+                                                        onCheckedChange={(checked) => handleSelectOne(doc.doc_id, checked as boolean)}
+                                                    />
+                                                </TableCell>
                                                 <TableCell onClick={() => router.push(`/drive/documents/${doc.doc_id}`)} className="cursor-pointer">{getFileIcon(doc.file_type)}</TableCell>
                                                 <TableCell onClick={() => router.push(`/drive/documents/${doc.doc_id}`)} className="font-medium cursor-pointer">{doc.title}</TableCell>
                                                 <TableCell onClick={() => router.push(`/drive/documents/${doc.doc_id}`)} className="cursor-pointer">{doc.creator_department}</TableCell>
@@ -466,9 +549,30 @@ export default function DrivePage() {
                                     삭제된 문서는 <strong>{ARCHIVE_DAYS}일</strong> 후 자동으로 영구 삭제됩니다.
                                 </p>
                             </div>
+                            {selectedDocs.length > 0 && (
+                                <div className="bg-blue-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+                                    <span className="text-sm font-medium text-blue-700">{selectedDocs.length}개 선택됨</span>
+                                    <div className="flex items-center gap-2">
+                                        <Button size="sm" variant="outline" onClick={handleBulkRestore}>
+                                            <RotateCcw className="w-4 h-4 mr-2" />
+                                            선택 복원
+                                        </Button>
+                                        <Button size="sm" variant="destructive" onClick={handleBulkPermanentDelete}>
+                                            <Trash2 className="w-4 h-4 mr-2" />
+                                            선택 영구 삭제
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
                             <Table>
                                 <TableHeader>
                                     <TableRow>
+                                        <TableHead className="w-[50px] text-center">
+                                            <Checkbox
+                                                checked={selectedDocs.length > 0 && filteredArchived.length > 0 && selectedDocs.length === filteredArchived.length}
+                                                onCheckedChange={(checked) => handleSelectAll(false, checked as boolean)}
+                                            />
+                                        </TableHead>
                                         <TableHead className="w-[50px]">유형</TableHead>
                                         <TableHead>파일명</TableHead>
                                         <TableHead>삭제일</TableHead>
@@ -478,14 +582,20 @@ export default function DrivePage() {
                                 </TableHeader>
                                 <TableBody>
                                     {isLoadingArchive ? (
-                                        <TableRow><TableCell colSpan={5} className="text-center py-8 text-gray-500">로딩 중...</TableCell></TableRow>
+                                        <TableRow><TableCell colSpan={6} className="text-center py-8 text-gray-500">로딩 중...</TableCell></TableRow>
                                     ) : filteredArchived.length === 0 ? (
-                                        <TableRow><TableCell colSpan={5} className="text-center py-8 text-gray-500">휴지통이 비어 있습니다</TableCell></TableRow>
+                                        <TableRow><TableCell colSpan={6} className="text-center py-8 text-gray-500">휴지통이 비어 있습니다</TableCell></TableRow>
                                     ) : (
                                         filteredArchived.map((doc) => {
                                             const daysLeft = getDaysRemaining(doc.modified_at);
                                             return (
                                                 <TableRow key={doc.doc_id} className="hover:bg-gray-50">
+                                                    <TableCell className="text-center">
+                                                        <Checkbox
+                                                            checked={selectedDocs.includes(doc.doc_id)}
+                                                            onCheckedChange={(checked) => handleSelectOne(doc.doc_id, checked as boolean)}
+                                                        />
+                                                    </TableCell>
                                                     <TableCell>{getFileIcon(doc.file_type)}</TableCell>
                                                     <TableCell className="font-medium">{doc.title}</TableCell>
                                                     <TableCell className="text-gray-500">{formatDate(doc.modified_at)}</TableCell>
