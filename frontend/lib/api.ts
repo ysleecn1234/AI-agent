@@ -231,8 +231,11 @@ class ApiClient {
     }
 
     // Agent
-    public async getAgents(): Promise<Agent[]> {
-        return this.request<Agent[]>('/agents');
+    public async getAgents(params?: { department?: string }): Promise<Agent[]> {
+        const q = new URLSearchParams();
+        if (params?.department) q.set('department', params.department);
+        const query = q.toString() ? `?${q.toString()}` : '';
+        return this.request<Agent[]>(`/agents${query}`);
     }
 
     public async getAgent(id: string): Promise<AgentDetail> {
@@ -279,9 +282,14 @@ class ApiClient {
      */
     public async recommendAgents(
         query: string,
-        conversationHistory?: Array<{ role: string; content: string }>
+        conversationHistory?: Array<{ role: string; content: string }>,
+        department?: string
     ): Promise<Agent[]> {
-        const payload = { query, conversation_history: conversationHistory ?? undefined };
+        const payload = {
+            query,
+            conversation_history: conversationHistory ?? undefined,
+            department: department ?? undefined,
+        };
         const res = await this.request<{ status: string; recommendations: Agent[] }>(
             '/agents/recommend',
             { method: 'POST', body: JSON.stringify(payload) }

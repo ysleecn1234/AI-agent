@@ -46,9 +46,10 @@ class PublishRequest(BaseModel):
 
 
 class RecommendRequest(BaseModel):
-    """에이전트 추천 요청 (채팅 내용 + 대화 맥락)"""
+    """에이전트 추천 요청 (채팅 내용 + 대화 맥락 + 부서)"""
     query: str
     conversation_history: Optional[List[dict]] = None  # [{"role": "user"|"assistant", "content": "..."}]
+    department: Optional[str] = None  # 사용자 부서 (예: 마케팅팀)
 
 # --- Endpoints ---
 
@@ -98,12 +99,14 @@ from application.usecases.ai_hub.service import hub_service
 def list_agents(
     sort_by: str = "newest",
     category: str = None,
+    department: str = None,
     db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user_id)
 ):
-    """배포된 에이전트 목록 조회"""
+    """배포된 에이전트 목록 조회 (department 지정 시 해당 부서 관련 에이전트 우선)"""
     agents = hub_service.get_public_agents(db, sort_by=sort_by, category=category)
-    return [
+    
+    result = [
         {
             "id": str(a.id),
             "name": a.name,
@@ -111,10 +114,31 @@ def list_agents(
             "category": getattr(a, 'category', '기타'),
             "visibility": a.is_public,
             "creator_id": str(a.creator_id) if a.creator_id else None,
+            "creator_department": None,
+            "model_type": getattr(a, 'model_type', 'AUTO'),
+            "use_rag": getattr(a, 'use_rag', False),
+            "system_prompt": getattr(a, 'system_prompt', ''),
             "is_active": True,
         }
         for a in agents
     ]
+    
+    # 부서 기반 우선 정렬: 에이전트 카테고리가 사용자 부서와 관련 있으면 상위로
+    if department:
+        # "마케팅팀" → "마케팅" 으로 키워드 추출 (팀/부/실/센터 제거)
+        import re
+        dept_keyword = re.sub(r'(팀|부|실|센터|본부|파트)$', '', department)
+        
+        def dept_match_score(agent):
+            cat = (agent.get("category") or "").lower()
+            kw = dept_keyword.lower()
+            if kw and kw in cat:
+                return 0  # 카테고리가 부서 키워드 포함 → 최우선
+            return 1
+        
+        result.sort(key=dept_match_score)
+    
+    return result
 
 @router.get("/recommend")
 async def recommend_agents_get(
@@ -134,11 +158,12 @@ async def recommend_agents_post(
     req: RecommendRequest,
     user_id: str = Depends(get_current_user_id)
 ):
-    """채팅 입력 + 대화 히스토리 기반 에이전트 추천 (권장)"""
+    """채팅 입력 + 대화 히스토리 + 부서 기반 에이전트 추천 (권장)"""
     try:
         recommendations = await agent_service.recommend_agents_for_chat(
             req.query,
-            conversation_history=req.conversation_history
+            conversation_history=req.conversation_history,
+            department=req.department
         )
         return {"status": "success", "recommendations": recommendations}
     except Exception as e:

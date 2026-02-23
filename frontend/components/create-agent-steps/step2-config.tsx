@@ -110,14 +110,28 @@ export function Step2Config({ draft, setDraft, onBack, onComplete }: Step2Config
                                     <SelectValue placeholder="모델 선택" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="Gemini-1.5-Flash">Gemini 1.5 Flash (빠름/저렴)</SelectItem>
-                                    <SelectItem value="Gemini-1.5-Pro">Gemini 1.5 Pro (고성능)</SelectItem>
-                                    <SelectItem value="GPT-4o">GPT-4o (범용)</SelectItem>
-                                    <SelectItem value="Claude-3.5-Sonnet">Claude 3.5 Sonnet (논리적)</SelectItem>
+                                    <SelectItem value="AUTO">⚡ Auto (자동 선택)</SelectItem>
+                                    {/* Google */}
+                                    <SelectItem value="gemini/gemini-2.5-flash-lite">Gemini 2.5 Flash Lite</SelectItem>
+                                    <SelectItem value="gemini/gemini-2.5-flash">Gemini 2.5 Flash</SelectItem>
+                                    <SelectItem value="gemini/gemini-3-flash-preview">Gemini 3 Flash</SelectItem>
+                                    <SelectItem value="gemini/gemini-3.1-pro-preview">Gemini 3.1 Pro</SelectItem>
+                                    {/* OpenAI */}
+                                    <SelectItem value="gpt-5-nano">GPT-5 Nano</SelectItem>
+                                    <SelectItem value="gpt-5-mini">GPT-5 Mini</SelectItem>
+                                    <SelectItem value="gpt-5.2">GPT-5.2</SelectItem>
+                                    <SelectItem value="gpt-5.2-pro">GPT-5.2 Pro</SelectItem>
+                                    {/* Anthropic */}
+                                    <SelectItem value="claude-haiku-4.5">Claude Haiku 4.5</SelectItem>
+                                    <SelectItem value="claude-sonnet-4-6">Claude Sonnet 4.6</SelectItem>
+                                    <SelectItem value="claude-opus-4-6">Claude Opus 4.6</SelectItem>
+                                    {/* Perplexity */}
+                                    <SelectItem value="perplexity/sonar">Perplexity Sonar</SelectItem>
+                                    <SelectItem value="perplexity/sonar-pro">Perplexity Sonar Pro</SelectItem>
                                 </SelectContent>
                             </Select>
                             <p className="text-xs text-gray-500">
-                                * 복잡한 추론이 필요하면 Pro/GPT-4o, 단순 작업은 Flash를 추천합니다.
+                                * Auto를 선택하면 질문에 맞는 최적 모델이 자동 선택됩니다.
                             </p>
                         </div>
                     </div>

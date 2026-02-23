@@ -134,6 +134,9 @@ export interface Agent {
     created_at: string;
     visibility: 'private' | 'team' | 'public';
     is_active: boolean;
+    model_type?: string;
+    use_rag?: boolean;
+    system_prompt?: string;
 }
 
 export interface AgentDetail extends Agent {

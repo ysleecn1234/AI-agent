@@ -46,12 +46,13 @@ class AgentManager:
 
     # --- 1. Recommendation (Hub-Centric Pattern) ---
 
-    async def recommend_agents(self, user_msg: str, conversation_history: list = None) -> List[Dict]:
+    async def recommend_agents(self, user_msg: str, conversation_history: list = None, department: str = None) -> List[Dict]:
         """
         사용자 질문을 분석하여 그에 맞는 에이전트를 추천합니다.
         (Hub가 Orchestration 및 Search 로직을 직접 수행)
         1. Orchestrator에게 의도 분석 요청
         2. Vector Search (의미 기반) + DB Search (키워드 기반) 결합
+        3. 사용자 부서 기반 가중치 반영
         """
         # 1. Orchestrator 호출
         from application.usecases.orchestrator.service import orchestrator
@@ -62,7 +63,23 @@ class AgentManager:
         # 2. 검색 수행 (DB 세션은 상위에서 주입받아야 함 - 현재는 None으로 호출될 수 있음)
         db = SessionLocal()
         try:
-            return self.search_agents_by_analysis(analysis, db=db)
+            results = self.search_agents_by_analysis(analysis, db=db)
+            
+            # 3. 부서 기반 가중치: 동점 시 부서 관련 에이전트 우선 (tiebreaker)
+            if department and results:
+                import re
+                dept_boost = float(os.getenv("DEPT_BOOST_WEIGHT", "0.05"))
+                dept_keyword = re.sub(r'(팀|부|실|센터|본부|파트)$', '', department).lower()
+                if dept_keyword:
+                    for item in results:
+                        cat = (item.get("category") or "").lower()
+                        if dept_keyword in cat:
+                            # 의도 점수를 뒤집지 않을 정도의 미세 가중치
+                            item["match_score"] = item.get("match_score", 0) + dept_boost
+                    # 부스트 반영 후 재정렬
+                    results.sort(key=lambda x: x.get("match_score", 0), reverse=True)
+            
+            return results
         finally:
             db.close()
 

@@ -80,13 +80,13 @@ class AgentService:
         
         return result
 
-    async def recommend_agents_for_chat(self, user_msg: str, conversation_history: list = None) -> list:
+    async def recommend_agents_for_chat(self, user_msg: str, conversation_history: list = None, department: str = None) -> list:
         """
         Agent 추천 (RAG 기반)
         (Logic: Hub에게 전적으로 위임 / Pass-through)
         """
         # Hub Layer에 추천 로직 위임 (Orchestration 포함)
-        return await agent_manager.recommend_agents(user_msg, conversation_history)
+        return await agent_manager.recommend_agents(user_msg, conversation_history, department=department)
 
 # 싱글톤 내보내기
 agent_service = AgentService()

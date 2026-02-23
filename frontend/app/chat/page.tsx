@@ -105,16 +105,18 @@ export default function ChatPage() {
             setIsLoadingAgents(true);
             try {
                 if (!message.trim()) {
-                    // 입력 없을 때 상위 5개
-                    const agents = await api.getAgents();
+                    // 입력 없을 때 상위 5개 (같은 부서 우선)
+                    const dept = typeof window !== 'undefined' ? localStorage.getItem('department') || undefined : undefined;
+                    const agents = await api.getAgents({ department: dept });
                     setRecommendedAgents(agents.slice(0, 5));
                 } else if (message.trim().length >= 3) {
-                    // 채팅 맥락 포함 추천 (최근 10개 메시지)
+                    // 채팅 맥락 + 부서 포함 추천 (최근 10개 메시지)
                     const conversationHistory = messages
                         .slice(-10)
                         .map((m) => ({ role: m.role, content: m.content }));
+                    const dept = typeof window !== 'undefined' ? localStorage.getItem('department') || undefined : undefined;
                     try {
-                        const recommended = await api.recommendAgents(message, conversationHistory);
+                        const recommended = await api.recommendAgents(message, conversationHistory, dept);
                         setRecommendedAgents(recommended.slice(0, 5));
                     } catch (error) {
                         // Fallback to client-side filtering if API not available
@@ -143,10 +145,17 @@ export default function ChatPage() {
 
     const handleSelectAgent = (agent: Agent) => {
         setAgentId(agent.id);
+
+        // 에이전트 설정에 따라 Drive 참조 자동 전환
+        if (agent.use_rag) {
+            setDriveEnabled(true);
+        }
     };
 
     const handleDeselectAgent = () => {
         setAgentId(undefined);
+        setSelectedModel('AUTO');
+        setDriveEnabled(false);
     };
 
     const handleLogout = () => {
@@ -346,17 +355,37 @@ export default function ChatPage() {
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {messages.length === 0 ? (
                     <div className="flex items-center justify-center h-full">
-                        <div className="text-center">
-                            <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <span className="text-white text-3xl font-bold">ISOR</span>
+                        {agentId ? (() => {
+                            const agent = recommendedAgents.find(a => a.id === agentId);
+                            return (
+                                <div className="text-center">
+                                    <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <span className="text-white text-xl font-bold">ISOR</span>
+                                    </div>
+                                    <h2 className="text-2xl font-bold text-gray-800 mb-2">
+                                        {agent?.name || '에이전트'}
+                                    </h2>
+                                    <p className="text-gray-600 max-w-md">
+                                        {agent?.description || '에이전트가 활성화되었습니다'}
+                                    </p>
+                                    <p className="text-gray-400 text-sm mt-3">
+                                        무엇을 도와드릴까요?
+                                    </p>
+                                </div>
+                            );
+                        })() : (
+                            <div className="text-center">
+                                <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <span className="text-white text-3xl font-bold">ISOR</span>
+                                </div>
+                                <h2 className="text-2xl font-bold text-gray-800 mb-2">
+                                    무엇을 도와드릴까요?
+                                </h2>
+                                <p className="text-gray-600">
+                                    질문을 입력하시면 AI가 답변해드립니다
+                                </p>
                             </div>
-                            <h2 className="text-2xl font-bold text-gray-800 mb-2">
-                                무엇을 도와드릴까요?
-                            </h2>
-                            <p className="text-gray-600">
-                                질문을 입력하시면 AI가 답변해드립니다
-                            </p>
-                        </div>
+                        )}
                     </div>
                 ) : (
                     messages.map((msg, idx) => (
@@ -484,23 +513,8 @@ export default function ChatPage() {
 
             {/* Input Area */}
             <div className="bg-white border-t border-gray-200 p-4 space-y-3">
-                {/* Selected Agent Badge */}
-                {agentId && (
-                    <div className="flex items-center gap-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
-                        <Bot className="w-4 h-4 text-blue-600" />
-                        <span className="text-sm text-blue-900 flex-1">
-                            {recommendedAgents.find(a => a.id === agentId)?.name || 'Agent 선택됨'}
-                        </span>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={handleDeselectAgent}
-                            className="h-6 w-6 p-0"
-                        >
-                            <X className="w-3 h-3" />
-                        </Button>
-                    </div>
-                )}
+
+
 
                 {/* Agent Recommendations */}
                 {agentEnabled && recommendedAgents.length > 0 && (
@@ -557,25 +571,59 @@ export default function ChatPage() {
                 {/* Bottom Controls */}
                 <div className="flex items-center gap-4 text-sm flex-wrap">
                     {/* Model Selector */}
-                    <Select value={selectedModel} onValueChange={setSelectedModel}>
-                        <SelectTrigger className="w-[220px]">
-                            <SelectValue placeholder="모델 선택" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="AUTO">⚡ Auto (자동 선택)</SelectItem>
-                            <SelectItem value="GPT_5_2">GPT 5.2 (Thinking)</SelectItem>
-                            <SelectItem value="GEMINI_3_PRO">Gemini 3.1 Pro</SelectItem>
-                            <SelectItem value="PERPLEXITY">Perplexity Sonar Pro</SelectItem>
-                            <SelectItem value="OPUS_4_6">Claude Opus 4.6</SelectItem>
-                        </SelectContent>
-                    </Select>
+                    {agentId ? (
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 border border-gray-300 rounded-md text-gray-600 text-sm w-[220px]">
+                            <span>🔒</span>
+                            <span className="truncate">
+                                {(() => {
+                                    const agent = recommendedAgents.find(a => a.id === agentId);
+                                    const modelName = agent?.model_type || 'AUTO';
+                                    const displayNames: Record<string, string> = {
+                                        'AUTO': 'Auto (자동)',
+                                        'gemini/gemini-2.5-flash-lite': 'Gemini 2.5 Flash Lite',
+                                        'gemini/gemini-2.5-flash': 'Gemini 2.5 Flash',
+                                        'gemini/gemini-3-flash-preview': 'Gemini 3 Flash',
+                                        'gemini/gemini-3.1-pro-preview': 'Gemini 3.1 Pro',
+                                        'gpt-5-nano': 'GPT-5 Nano',
+                                        'gpt-5-mini': 'GPT-5 Mini',
+                                        'gpt-5.2': 'GPT-5.2',
+                                        'gpt-5.2-pro': 'GPT-5.2 Pro',
+                                        'claude-haiku-4.5': 'Claude Haiku 4.5',
+                                        'claude-sonnet-4-6': 'Claude Sonnet 4.6',
+                                        'claude-opus-4-6': 'Claude Opus 4.6',
+                                        'perplexity/sonar': 'Perplexity Sonar',
+                                        'perplexity/sonar-pro': 'Perplexity Sonar Pro',
+                                    };
+                                    return displayNames[modelName] || modelName;
+                                })()}
+                            </span>
+                        </div>
+                    ) : (
+                        <Select value={selectedModel} onValueChange={setSelectedModel}>
+                            <SelectTrigger className="w-[220px]">
+                                <SelectValue placeholder="모델 선택" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="AUTO">⚡ Auto (자동 선택)</SelectItem>
+                                <SelectItem value="GPT_5_2">GPT 5.2 (Thinking)</SelectItem>
+                                <SelectItem value="GEMINI_3_PRO">Gemini 3.1 Pro</SelectItem>
+                                <SelectItem value="PERPLEXITY">Perplexity Sonar Pro</SelectItem>
+                                <SelectItem value="OPUS_4_6">Claude Opus 4.6</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    )}
 
                     {/* Agent Activation Checkbox */}
                     <div className="flex items-center gap-2">
                         <Checkbox
                             id="agent-enabled"
                             checked={agentEnabled}
-                            onCheckedChange={(checked) => setAgentEnabled(checked as boolean)}
+                            onCheckedChange={(checked) => {
+                                setAgentEnabled(checked as boolean);
+                                if (!checked) {
+                                    handleDeselectAgent();
+                                }
+                            }}
                         />
                         <label
                             htmlFor="agent-enabled"
