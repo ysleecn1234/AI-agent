@@ -7,8 +7,9 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { FileText, MessageSquare, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
+import { FileText, MessageSquare, ChevronDown, ChevronUp, Loader2, Sparkles } from 'lucide-react';
 import { api } from '@/lib/api';
 
 interface SaveToDriveModalProps {
@@ -198,17 +199,23 @@ interface CreateAgentModalProps {
         description: string;
         category: string;
         visibility: 'team' | 'public';
+        use_rag: boolean;
+        input_example: string;
+        output_example: string;
     }) => void;
     content: string;
 }
 
 export function CreateAgentModal({ isOpen, onClose, onCreate, content }: CreateAgentModalProps) {
+    const [step, setStep] = useState(1);
     const [scope, setScope] = useState<'single' | 'all'>('single');
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [category, setCategory] = useState('기타');
     const [visibility, setVisibility] = useState<'team' | 'public'>('team');
-    const [showPreview, setShowPreview] = useState(false);
+    const [useRag, setUseRag] = useState(false);
+    const [inputExample, setInputExample] = useState('');
+    const [outputExample, setOutputExample] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
 
     // Auto-generate agent info when modal opens
@@ -221,7 +228,6 @@ export function CreateAgentModal({ isOpen, onClose, onCreate, content }: CreateA
     const generateAgentInfo = async () => {
         setIsGenerating(true);
         try {
-            // /agents/draft 로 LLM 기반 메타데이터 생성
             const result = await api.createAgentDraft({
                 selected_messages: [{ role: 'user', content }],
             });
@@ -230,10 +236,11 @@ export function CreateAgentModal({ isOpen, onClose, onCreate, content }: CreateA
                 setName(filled.name || '');
                 setDescription(filled.description || '');
                 setCategory(filled.category || '기타');
+                setInputExample(filled.input_example || '');
+                setOutputExample(filled.output_example || '');
             }
         } catch (error) {
             console.error('Failed to generate agent metadata:', error);
-            // Fallback
             const contentLower = content.toLowerCase();
             let detectedCategory = '기타';
             if (contentLower.includes('마케팅') || contentLower.includes('광고')) {
@@ -252,151 +259,255 @@ export function CreateAgentModal({ isOpen, onClose, onCreate, content }: CreateA
     };
 
     const handleCreate = () => {
-        onCreate({ scope, name, description, category, visibility });
+        onCreate({ scope, name, description, category, visibility, use_rag: useRag, input_example: inputExample, output_example: outputExample });
+        handleClose();
+    };
+
+    const handleClose = () => {
         onClose();
         // Reset
+        setStep(1);
         setScope('single');
         setName('');
         setDescription('');
         setCategory('기타');
         setVisibility('team');
-        setShowPreview(false);
+        setUseRag(false);
+        setInputExample('');
+        setOutputExample('');
     };
 
     return (
-        <Dialog open={isOpen} onOpenChange={onClose}>
+        <Dialog open={isOpen} onOpenChange={handleClose}>
             <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+                {/* Header with Step indicator */}
                 <DialogHeader>
-                    <DialogTitle>Agent 생성</DialogTitle>
+                    <div className="flex items-center justify-between">
+                        <DialogTitle className="flex items-center gap-2">
+                            <Sparkles className="w-5 h-5 text-blue-600" />
+                            에이전트 편집
+                        </DialogTitle>
+                        <div className="flex items-center gap-1 text-sm">
+                            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${step === 1 ? 'bg-blue-600 text-white' : 'bg-green-500 text-white'}`}>
+                                {step === 1 ? '1' : '✓'}
+                            </span>
+                            <span className="text-gray-300">—</span>
+                            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${step === 2 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500'}`}>
+                                2
+                            </span>
+                        </div>
+                    </div>
                     <DialogDescription>
-                        Agent 정보를 입력하고 생성하세요
+                        {step === 1
+                            ? 'AI가 에이전트 명과 필요한 내용을 미리 작성했어요.'
+                            : 'AI가 에이전트 명과 필요한 내용을 미리 작성했어요.'}
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="space-y-4 py-4">
-                    {/* Scope Selection */}
-                    <div>
-                        <Label className="text-sm font-medium mb-2 block">학습 범위</Label>
-                        <RadioGroup value={scope} onValueChange={(value) => setScope(value as 'single' | 'all')} className="grid grid-cols-2 gap-3">
-                            <div className="flex items-center space-x-2 p-3 border rounded-lg cursor-pointer hover:bg-gray-50"
-                                onClick={() => setScope('single')}>
-                                <RadioGroupItem value="single" id="agent-single" />
-                                <Label htmlFor="agent-single" className="cursor-pointer text-sm">
-                                    이 답변 기반
+                {step === 1 ? (
+                    /* ===== Step 1: 학습 범위 + 제목 + 입력/출력 예시 ===== */
+                    <div className="space-y-5 py-4">
+                        {/* Step Label */}
+                        <p className="text-sm font-semibold text-blue-600">Step 1</p>
+                        <div>
+                            <h3 className="text-lg font-bold text-gray-900">AI가 에이전트 명과 필요한 내용을 미리 작성했어요.</h3>
+                            <p className="text-sm text-gray-500 mt-1">자동으로 채워진 내용을 확인하고 필요 시 수정하세요.</p>
+                        </div>
+
+                        {/* 학습 범위 */}
+                        <div>
+                            <Label className="text-sm font-medium mb-2 block">학습 범위</Label>
+                            <RadioGroup value={scope} onValueChange={(value) => setScope(value as 'single' | 'all')} className="grid grid-cols-2 gap-3">
+                                <div className={`flex items-center space-x-2 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 ${scope === 'single' ? 'border-blue-500 bg-blue-50' : ''}`}
+                                    onClick={() => setScope('single')}>
+                                    <RadioGroupItem value="single" id="agent-single" />
+                                    <Label htmlFor="agent-single" className="cursor-pointer text-sm">
+                                        이 답변 기반
+                                    </Label>
+                                </div>
+                                <div className={`flex items-center space-x-2 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 ${scope === 'all' ? 'border-blue-500 bg-blue-50' : ''}`}
+                                    onClick={() => setScope('all')}>
+                                    <RadioGroupItem value="all" id="agent-all" />
+                                    <Label htmlFor="agent-all" className="cursor-pointer text-sm">
+                                        전체 대화 기반
+                                    </Label>
+                                </div>
+                            </RadioGroup>
+                        </div>
+
+                        {/* 제목 */}
+                        <div>
+                            <div className="flex items-center justify-between mb-2">
+                                <Label htmlFor="agent-name" className="text-sm font-medium flex items-center gap-2">
+                                    제목 <span className="text-red-500">*</span>
+                                    {isGenerating && <Loader2 className="w-3 h-3 animate-spin text-blue-600" />}
                                 </Label>
+                                <span className="text-xs text-gray-400">{name.length}/100</span>
                             </div>
-                            <div className="flex items-center space-x-2 p-3 border rounded-lg cursor-pointer hover:bg-gray-50"
-                                onClick={() => setScope('all')}>
-                                <RadioGroupItem value="all" id="agent-all" />
-                                <Label htmlFor="agent-all" className="cursor-pointer text-sm">
-                                    전체 대화 기반
+                            <Input
+                                id="agent-name"
+                                value={name}
+                                onChange={(e) => setName(e.target.value.slice(0, 100))}
+                                placeholder="에이전트 제목을 입력하세요"
+                                disabled={isGenerating}
+                            />
+                        </div>
+
+                        {/* 입력 예시 */}
+                        <div>
+                            <Label htmlFor="input-example" className="text-sm font-medium mb-2 flex items-center gap-1">
+                                입력 예시 <span className="text-red-500">*</span>
+                            </Label>
+                            <Textarea
+                                id="input-example"
+                                value={inputExample}
+                                onChange={(e) => setInputExample(e.target.value)}
+                                placeholder="에이전트에 입력할 예시를 작성하세요"
+                                className="min-h-[120px]"
+                                disabled={isGenerating}
+                            />
+                        </div>
+
+                        {/* 출력 예시 */}
+                        <div>
+                            <Label htmlFor="output-example" className="text-sm font-medium mb-2 flex items-center gap-1">
+                                출력 예시 <span className="text-red-500">*</span>
+                            </Label>
+                            <Textarea
+                                id="output-example"
+                                value={outputExample}
+                                onChange={(e) => setOutputExample(e.target.value)}
+                                placeholder="에이전트가 출력할 예시를 작성하세요"
+                                className="min-h-[120px]"
+                                disabled={isGenerating}
+                            />
+                        </div>
+                    </div>
+                ) : (
+                    /* ===== Step 2: 카테고리 + 설명 + 문서 참조 + 공개 범위 ===== */
+                    <div className="space-y-5 py-4">
+                        <p className="text-sm font-semibold text-blue-600">Step2</p>
+                        <div>
+                            <h3 className="text-lg font-bold text-gray-900">AI가 에이전트 명과 필요한 내용을 미리 작성했어요.</h3>
+                            <p className="text-sm text-gray-500 mt-1">자동으로 채워진 내용을 확인하고 필요 시 수정하세요.</p>
+                        </div>
+
+                        {/* 카테고리 */}
+                        <div>
+                            <Label className="text-sm font-medium flex items-center gap-1 mb-1">
+                                카테고리 <span className="text-red-500">*</span>
+                            </Label>
+                            <p className="text-xs text-gray-500 mb-2">에이전트가 분류되는 카테고리를 선택해주세요</p>
+                            <Select value={category} onValueChange={setCategory}>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="생산성">생산성</SelectItem>
+                                    <SelectItem value="마케팅">마케팅</SelectItem>
+                                    <SelectItem value="개발">개발</SelectItem>
+                                    <SelectItem value="기획">기획</SelectItem>
+                                    <SelectItem value="영업">영업</SelectItem>
+                                    <SelectItem value="인사">인사</SelectItem>
+                                    <SelectItem value="재무">재무</SelectItem>
+                                    <SelectItem value="기타">기타</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        {/* 에이전트 설명 */}
+                        <div>
+                            <div className="flex items-center justify-between mb-2">
+                                <Label htmlFor="agent-description" className="text-sm font-medium flex items-center gap-1">
+                                    에이전트 설명 <span className="text-red-500">*</span>
                                 </Label>
+                                <span className="text-xs text-gray-400">{description.length}/100</span>
                             </div>
-                        </RadioGroup>
-                    </div>
+                            <Input
+                                id="agent-description"
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value.slice(0, 100))}
+                                placeholder="에이전트 설명을 입력하세요"
+                                disabled={isGenerating}
+                            />
+                        </div>
 
-                    {/* Name */}
-                    <div>
-                        <Label htmlFor="agent-name" className="text-sm font-medium mb-2 flex items-center gap-2">
-                            Agent 이름
-                            {isGenerating && <Loader2 className="w-3 h-3 animate-spin text-blue-600" />}
-                        </Label>
-                        <Input
-                            id="agent-name"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            placeholder="Agent 이름을 입력하세요"
-                            disabled={isGenerating}
-                        />
-                    </div>
-
-                    {/* Description */}
-                    <div>
-                        <Label htmlFor="agent-description" className="text-sm font-medium mb-2 block">
-                            설명
-                        </Label>
-                        <Textarea
-                            id="agent-description"
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                            placeholder="Agent 설명을 입력하세요"
-                            className="min-h-[80px]"
-                            disabled={isGenerating}
-                        />
-                    </div>
-
-                    {/* Category */}
-                    <div>
-                        <Label htmlFor="agent-category" className="text-sm font-medium mb-2 block">
-                            카테고리
-                        </Label>
-                        <Select value={category} onValueChange={setCategory}>
-                            <SelectTrigger>
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="생산성">생산성</SelectItem>
-                                <SelectItem value="마케팅">마케팅</SelectItem>
-                                <SelectItem value="개발">개발</SelectItem>
-                                <SelectItem value="기획">기획</SelectItem>
-                                <SelectItem value="영업">영업</SelectItem>
-                                <SelectItem value="인사">인사</SelectItem>
-                                <SelectItem value="재무">재무</SelectItem>
-                                <SelectItem value="기타">기타</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    {/* Visibility */}
-                    <div>
-                        <Label htmlFor="agent-visibility" className="text-sm font-medium mb-2 block">
-                            공개 범위
-                        </Label>
-                        <Select value={visibility} onValueChange={(value: any) => setVisibility(value)}>
-                            <SelectTrigger>
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-
-                                <SelectItem value="team">👥 팀 공유</SelectItem>
-                                <SelectItem value="public">🌐 전체 공개</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    {/* Preview Toggle */}
-                    <div>
-                        <Button
-                            variant="outline"
-                            onClick={() => setShowPreview(!showPreview)}
-                            className="w-full justify-between"
-                            type="button"
-                        >
-                            <span>학습 데이터 미리보기</span>
-                            {showPreview ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                        </Button>
-
-                        {showPreview && (
-                            <div className="mt-3 p-4 bg-gray-50 border rounded-lg max-h-[200px] overflow-y-auto">
-                                <pre className="text-sm whitespace-pre-wrap text-gray-700">
-                                    {content}
-                                </pre>
+                        {/* 문서 참조 (RAG) */}
+                        <div>
+                            <Label className="text-sm font-bold mb-1 block">에이전트가 내부 문서를 참조하게 할까요?</Label>
+                            <p className="text-xs text-gray-500 mb-3">활성화 됐을 경우, AI 드라이브에 공유된 문서를 참조하여 답변합니다.</p>
+                            <div className="flex items-center gap-3">
+                                <Switch
+                                    checked={useRag}
+                                    onCheckedChange={setUseRag}
+                                />
+                                <span className="text-sm text-gray-700">{useRag ? '참조합니다' : '참조하지 않습니다'}</span>
                             </div>
-                        )}
-                    </div>
-                </div>
+                        </div>
 
-                <DialogFooter>
-                    <Button variant="outline" onClick={onClose}>
-                        취소
-                    </Button>
-                    <Button
-                        onClick={handleCreate}
-                        className="bg-blue-600 hover:bg-blue-700"
-                        disabled={!name.trim() || !description.trim() || isGenerating}
-                    >
-                        생성
-                    </Button>
+                        {/* 공개 범위 */}
+                        <div>
+                            <Label className="text-sm font-bold mb-1 block">에이전트의 공개 범위를 선택해주 세요.</Label>
+                            <p className="text-xs text-gray-500 mb-3">저장 후에도 언제든지 변경하실 수 있습니다.</p>
+                            <RadioGroup value={visibility} onValueChange={(value) => setVisibility(value as 'team' | 'public')} className="space-y-3">
+                                <div className={`p-4 border rounded-lg cursor-pointer hover:bg-gray-50 ${visibility === 'public' ? 'border-blue-500 bg-blue-50' : ''}`}
+                                    onClick={() => setVisibility('public')}>
+                                    <div className="flex items-center gap-2">
+                                        <RadioGroupItem value="public" id="vis-public" />
+                                        <Label htmlFor="vis-public" className="cursor-pointer font-medium text-sm">전체 공개</Label>
+                                    </div>
+                                    <p className="text-xs text-gray-500 ml-6 mt-1">에이전트 허브에 공개로 등록되며, 조직 내 팀원들이 함께 사용할 수 있어요.</p>
+                                </div>
+                                <div className={`p-4 border rounded-lg cursor-pointer hover:bg-gray-50 ${visibility === 'team' ? 'border-blue-500 bg-blue-50' : ''}`}
+                                    onClick={() => setVisibility('team')}>
+                                    <div className="flex items-center gap-2">
+                                        <RadioGroupItem value="team" id="vis-team" />
+                                        <Label htmlFor="vis-team" className="cursor-pointer font-medium text-sm">나만 보기</Label>
+                                    </div>
+                                    <p className="text-xs text-gray-500 ml-6 mt-1">에이전트 허브에 비공개로 등록되며, 본인만 활용할 수 있어요.</p>
+                                </div>
+                            </RadioGroup>
+                        </div>
+                    </div>
+                )}
+
+                {/* Footer */}
+                <DialogFooter className="flex justify-between">
+                    {step === 1 ? (
+                        <>
+                            <Button variant="outline" onClick={handleClose}>
+                                취소
+                            </Button>
+                            <Button
+                                onClick={() => setStep(2)}
+                                className="bg-white border border-blue-600 text-blue-600 hover:bg-blue-50 min-w-[100px]"
+                                disabled={!name.trim() || isGenerating}
+                            >
+                                다음
+                            </Button>
+                        </>
+                    ) : (
+                        <>
+                            <Button variant="outline" onClick={handleClose}>
+                                취소
+                            </Button>
+                            <div className="flex gap-2">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setStep(1)}
+                                >
+                                    이전
+                                </Button>
+                                <Button
+                                    onClick={handleCreate}
+                                    className="bg-blue-600 hover:bg-blue-700 min-w-[100px]"
+                                    disabled={!name.trim() || !description.trim() || isGenerating}
+                                >
+                                    저장하기
+                                </Button>
+                            </div>
+                        </>
+                    )}
                 </DialogFooter>
             </DialogContent>
         </Dialog>

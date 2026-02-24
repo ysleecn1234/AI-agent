@@ -147,9 +147,7 @@ export default function ChatPage() {
         setAgentId(agent.id);
 
         // 에이전트 설정에 따라 Drive 참조 자동 전환
-        if (agent.use_rag) {
-            setDriveEnabled(true);
-        }
+        setDriveEnabled(!!agent.use_rag);
     };
 
     const handleDeselectAgent = () => {
@@ -211,6 +209,9 @@ export default function ChatPage() {
         description: string;
         category: string;
         visibility: 'private' | 'team' | 'public';
+        use_rag?: boolean;
+        input_example?: string;
+        output_example?: string;
     }) => {
         try {
             // 1. 선택된 메시지 준비
@@ -223,22 +224,22 @@ export default function ChatPage() {
                 selected_messages: selectedMessages
             });
 
-            // 3. Step1 업데이트 (이름, 설명 등)
+            // 3. Step1 업데이트 (이름, 입력/출력 예시)
             await api.updateAgentStep1({
                 draft_id: draftResponse.draft_id,
                 name: data.name,
                 description: data.description,
-                input_example: selectedMessages[0]?.content || '',
-                output_example: selectedMessages[1]?.content || ''
+                input_example: data.input_example || selectedMessages[0]?.content || '',
+                output_example: data.output_example || selectedMessages[1]?.content || ''
             });
 
-            // 4. Step2 업데이트 (카테고리, 공개범위 등, 백엔드: PRIVATE | TEAM | PUBLIC)
+            // 4. Step2 업데이트 (카테고리, 공개범위, 문서참조)
             await api.updateAgentStep2({
                 draft_id: draftResponse.draft_id,
                 category: data.category,
                 visibility: data.visibility.toUpperCase() as 'PRIVATE' | 'TEAM' | 'PUBLIC',
                 model_type: 'gpt-4o-mini',
-                use_rag: false,
+                use_rag: data.use_rag ?? false,
                 linked_doc_ids: []
             });
 
