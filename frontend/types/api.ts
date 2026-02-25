@@ -170,7 +170,13 @@ export interface PublishAgentRequest {
     draft_id: string;
 }
 
-// Chat
+export interface ChatSession {
+    session_id: string;
+    title: string;
+    last_at: string;
+    first_at: string;
+}
+
 export interface ChatRequest {
     message: string;
     model_type?: string;      // "AUTO" | "GPT-5" | "CLAUDE" | "GEMINI" | "DEEPSEEK"

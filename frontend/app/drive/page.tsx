@@ -12,6 +12,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Menu, User, Search, Upload, FileText, File, FileSpreadsheet, Presentation, LogOut, Settings, MessageSquare, FolderOpen, Bot, Archive, ChevronUp, ChevronDown, MoreVertical, Trash2, Download, RotateCcw, Clock } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import UploadModal from '@/components/upload-modal';
+import { AppSidebar } from '@/components/app-sidebar';
 import { api } from '@/lib/api';
 import type { Document } from '@/types/api';
 
@@ -312,52 +313,13 @@ export default function DrivePage() {
                             <Menu className="w-6 h-6 text-gray-700" />
                         </button>
                     </SheetTrigger>
-                    <SheetContent side="left" className="w-[300px] sm:w-[400px]">
-                        <SheetHeader>
-                            <SheetTitle className="flex items-center gap-2">
-                                <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center shrink-0">
-                                    <span className="text-white text-base font-bold tracking-tight">ISOR</span>
-                                </div>
-                                <span>AI 플랫폼</span>
-                            </SheetTitle>
-                        </SheetHeader>
-                        <nav className="mt-8 space-y-2">
-                            <button
-                                onClick={() => { router.push('/chat'); setSidebarOpen(false); }}
-                                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-100 rounded-lg transition-colors"
-                            >
-                                <MessageSquare className="w-5 h-5 text-blue-600" />
-                                <span className="font-medium">채팅</span>
-                            </button>
-                            <button
-                                onClick={() => { router.push('/chat/history'); setSidebarOpen(false); }}
-                                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-100 rounded-lg transition-colors"
-                            >
-                                <Clock className="w-5 h-5 text-blue-600" />
-                                <span className="font-medium">채팅 기록</span>
-                            </button>
-                            <button
-                                onClick={() => { router.push('/drive'); setSidebarOpen(false); }}
-                                className="w-full flex items-center gap-3 px-4 py-3 text-left bg-blue-50 rounded-lg transition-colors"
-                            >
-                                <FolderOpen className="w-5 h-5 text-blue-600" />
-                                <span className="font-medium text-blue-600">AI Drive</span>
-                            </button>
-                            <button
-                                onClick={() => { router.push('/agents'); setSidebarOpen(false); }}
-                                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-100 rounded-lg transition-colors"
-                            >
-                                <Bot className="w-5 h-5 text-blue-600" />
-                                <span className="font-medium">Agent Hub</span>
-                            </button>
-                            <button
-                                onClick={() => { router.push('/settings'); setSidebarOpen(false); }}
-                                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-100 rounded-lg transition-colors"
-                            >
-                                <Settings className="w-5 h-5 text-blue-600" />
-                                <span className="font-medium">설정</span>
-                            </button>
-                        </nav>
+                    <SheetContent side="left" className="p-0 w-[280px]">
+                        <AppSidebar
+                            onNavigate={(path) => router.push(path)}
+                            isMobile
+                            onClose={() => setSidebarOpen(false)}
+                            currentPath="/drive"
+                        />
                     </SheetContent>
                 </Sheet>
 

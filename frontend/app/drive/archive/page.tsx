@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Menu, User, RotateCcw, Trash2, MessageSquare, FolderOpen, Bot, Settings, LogOut, Clock, Archive, FileText, File, FileSpreadsheet, Presentation } from 'lucide-react';
+import { Menu, User, Search, FileText, File, FileSpreadsheet, Presentation, LogOut, Settings, MessageSquare, FolderOpen, Bot, ArrowLeft, RotateCcw, Trash2, Clock, Archive } from 'lucide-react';
+import { AppSidebar } from '@/components/app-sidebar';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import type { Document, ArchivedDocument } from '@/types/api';
@@ -139,52 +140,13 @@ export default function ArchivePage() {
                             <Menu className="w-6 h-6 text-gray-700" />
                         </button>
                     </SheetTrigger>
-                    <SheetContent side="left" className="w-[300px] sm:w-[400px]">
-                        <SheetHeader>
-                            <SheetTitle className="flex items-center gap-2">
-                                <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center shrink-0">
-                                    <span className="text-white text-base font-bold tracking-tight">ISOR</span>
-                                </div>
-                                <span>AI 플랫폼</span>
-                            </SheetTitle>
-                        </SheetHeader>
-                        <nav className="mt-8 space-y-2">
-                            <button
-                                onClick={() => { router.push('/chat'); setSidebarOpen(false); }}
-                                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-100 rounded-lg transition-colors"
-                            >
-                                <MessageSquare className="w-5 h-5 text-blue-600" />
-                                <span className="font-medium">채팅</span>
-                            </button>
-                            <button
-                                onClick={() => { router.push('/chat/history'); setSidebarOpen(false); }}
-                                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-100 rounded-lg transition-colors"
-                            >
-                                <Clock className="w-5 h-5 text-blue-600" />
-                                <span className="font-medium">채팅 기록</span>
-                            </button>
-                            <button
-                                onClick={() => { router.push('/drive'); setSidebarOpen(false); }}
-                                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-100 rounded-lg transition-colors"
-                            >
-                                <FolderOpen className="w-5 h-5 text-blue-600" />
-                                <span className="font-medium">AI Drive</span>
-                            </button>
-                            <button
-                                onClick={() => { router.push('/agents'); setSidebarOpen(false); }}
-                                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-100 rounded-lg transition-colors"
-                            >
-                                <Bot className="w-5 h-5 text-blue-600" />
-                                <span className="font-medium">Agent Hub</span>
-                            </button>
-                            <button
-                                onClick={() => { router.push('/settings'); setSidebarOpen(false); }}
-                                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-100 rounded-lg transition-colors"
-                            >
-                                <Settings className="w-5 h-5 text-blue-600" />
-                                <span className="font-medium">설정</span>
-                            </button>
-                        </nav>
+                    <SheetContent side="left" className="p-0 w-[280px]">
+                        <AppSidebar
+                            onNavigate={(path) => router.push(path)}
+                            isMobile
+                            onClose={() => setSidebarOpen(false)}
+                            currentPath="/drive/archive"
+                        />
                     </SheetContent>
                 </Sheet>
 
