@@ -349,72 +349,53 @@ function ChatContent() {
 
                 {/* Header */}
                 <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
-                    {/* Left side: Mobile Sidebar Trigger & Title */}
-                    <div className="flex items-center gap-3">
-                        {/* Sidebar Trigger (All screens) */}
-                        <div>
-                            <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-                                <SheetTrigger asChild>
-                                    <button className="p-2 hover:bg-gray-100 rounded-lg">
-                                        <Menu className="w-6 h-6 text-gray-700" />
-                                    </button>
-                                </SheetTrigger>
-                                <SheetContent side="left" className="p-0 w-[280px]">
-                                    <AppSidebar
-                                        sessions={sessions}
-                                        currentSessionId={currentSessionId}
-                                        onSelectSession={handleSelectSession}
-                                        onNewChat={handleNewChat}
-                                        onNavigate={handleNavigate}
-                                        isLoadingSessions={sessionsLoading}
-                                        isMobile
-                                        onClose={() => setSidebarOpen(false)}
-                                        currentPath="/chat"
-                                    />
-                                </SheetContent>
-                            </Sheet>
-                        </div>
+                    {/* Sidebar Trigger */}
+                    <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+                        <SheetTrigger asChild>
+                            <button className="p-2 hover:bg-gray-100 rounded-lg">
+                                <Menu className="w-6 h-6 text-gray-700" />
+                            </button>
+                        </SheetTrigger>
+                        <SheetContent side="left" className="p-0 w-[280px]">
+                            <AppSidebar
+                                sessions={sessions}
+                                currentSessionId={currentSessionId}
+                                onSelectSession={handleSelectSession}
+                                onNewChat={handleNewChat}
+                                onNavigate={handleNavigate}
+                                isLoadingSessions={sessionsLoading}
+                                isMobile
+                                onClose={() => setSidebarOpen(false)}
+                                currentPath="/chat"
+                            />
+                        </SheetContent>
+                    </Sheet>
 
-                        {/* Title */}
-                        <div className="font-semibold text-gray-700">
-                            {currentSessionId ? sessions.find(s => s.session_id === currentSessionId)?.title || '대화 중' : '새 채팅'}
-                        </div>
-                    </div>
-
-                    {/* Right side: New Chat (Mobile) & User Menu */}
-                    <div className="flex items-center gap-2">
-                        {/* Mobile New Chat Button */}
-                        <button
-                            onClick={handleNewChat}
-                            className="md:hidden p-2 hover:bg-gray-100 rounded-lg"
-                        >
-                            <Plus className="w-5 h-5 text-gray-700" />
-                        </button>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <button className="p-2 hover:bg-gray-100 rounded-lg">
-                                    <User className="w-6 h-6 text-gray-700" />
-                                </button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-56">
-                                <DropdownMenuLabel>
-                                    <div className="flex flex-col">
-                                        <span className="font-medium">{userName}</span>
-                                        <span className="text-sm text-gray-500">{typeof window !== 'undefined' ? localStorage.getItem('department') || '' : ''}</span>
-                                    </div>
-                                </DropdownMenuLabel>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => router.push('/settings')}>
-                                    <Settings className="w-4 h-4 mr-2" />
-                                    설정
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={handleLogout} className="text-red-600">
-                                    <LogOut className="w-4 h-4 mr-2" />
-                                    로그아웃
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </div>
+                    {/* User Menu */}
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <button className="p-2 hover:bg-gray-100 rounded-lg">
+                                <User className="w-6 h-6 text-gray-700" />
+                            </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-56">
+                            <DropdownMenuLabel>
+                                <div className="flex flex-col">
+                                    <span className="font-medium">{userName}</span>
+                                    <span className="text-sm text-gray-500">{typeof window !== 'undefined' ? localStorage.getItem('department') || '' : ''}</span>
+                                </div>
+                            </DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => router.push('/settings')}>
+                                <Settings className="w-4 h-4 mr-2" />
+                                설정
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+                                <LogOut className="w-4 h-4 mr-2" />
+                                로그아웃
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </header>
 
                 {/* Chat Messages Area */}

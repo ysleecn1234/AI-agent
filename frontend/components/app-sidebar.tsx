@@ -92,8 +92,8 @@ export function AppSidebar({
             {/* 네비게이션 메뉴 */}
             <nav className="px-3 py-3 space-y-1 border-b border-gray-100">
                 <button
-                    onClick={() => handleClick(() => onNavigate('/chat'))}
-                    className={`w-full flex items-center gap-3 px-3 py-2 text-left text-sm font-medium rounded-lg transition-colors ${currentPath === '/chat' || currentPath.startsWith('/chat')
+                    onClick={() => handleClick(handleNewChat)}
+                    className={`w-full flex items-center gap-3 px-3 py-2 text-left text-sm font-medium rounded-lg transition-colors ${(currentPath === '/chat' || currentPath.startsWith('/chat')) && !currentSessionId
                         ? 'bg-blue-50 text-blue-700'
                         : 'text-gray-700 hover:bg-gray-100'
                         }`}
