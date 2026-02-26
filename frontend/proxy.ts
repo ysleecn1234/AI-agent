@@ -4,7 +4,7 @@ import type { NextRequest } from 'next/server';
 // 로그인 없이 접근 가능한 경로
 const PUBLIC_PATHS = ['/auth/login', '/auth/register'];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
     // 공개 경로는 통과
