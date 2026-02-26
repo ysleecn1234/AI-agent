@@ -1533,7 +1533,21 @@ class Pipeline:
             process()와 동일한 형식의 결과 dict
         '''
         print(f"[Pipeline] 프리미엄 모드: {model_type}")
-        
+
+        # 구버전 모델명 → 새 모델명 매핑 (하위 호환)
+        LEGACY_MODEL_MAP = {
+            "Gemini-1.5-Pro": "GEMINI_3_PRO",
+            "gemini-1.5-pro": "GEMINI_3_PRO",
+            "GPT-4o": "GPT_5_2",
+            "gpt-4o": "GPT_5_2",
+            "Claude-3.5-Sonnet": "OPUS_4_6",
+            "claude-3.5-sonnet": "OPUS_4_6",
+            "Claude-3-Sonnet": "OPUS_4_6",
+        }
+        if model_type not in PREMIUM_MODELS:
+            model_type = LEGACY_MODEL_MAP.get(model_type, "GEMINI_3_PRO")
+            print(f"[Pipeline] 구버전 모델명 감지 → {model_type} 로 대체")
+
         # 1. 모델 설정 가져오기
         if model_type not in PREMIUM_MODELS:
             raise ValueError(f"알 수 없는 프리미엄 모델: '{model_type}'. 가능한 모델: {list(PREMIUM_MODELS.keys())}")
