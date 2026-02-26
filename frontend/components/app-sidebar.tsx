@@ -41,7 +41,6 @@ export function AppSidebar({
 }: AppSidebarProps) {
     const [fetchedSessions, setFetchedSessions] = useState<ChatSession[]>([]);
     const [isFetching, setIsFetching] = useState(false);
-    const [hoveredSessionId, setHoveredSessionId] = useState<string | null>(null);
     const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
     const [editingTitle, setEditingTitle] = useState('');
     const [menuOpenSessionId, setMenuOpenSessionId] = useState<string | null>(null);
@@ -68,7 +67,6 @@ export function AppSidebar({
         }
     }, [isControlled]);
 
-    // Focus input when editing starts
     useEffect(() => {
         if (editingSessionId && editInputRef.current) {
             editInputRef.current.focus();
@@ -113,7 +111,6 @@ export function AppSidebar({
                 onRenameSession(editingSessionId, editingTitle.trim());
             } else {
                 await api.renameChatSession(editingSessionId, editingTitle.trim());
-                // If uncontrolled, refresh sessions
                 if (!isControlled) {
                     const data = await api.getChatSessions();
                     setFetchedSessions(data);
@@ -134,12 +131,10 @@ export function AppSidebar({
                 onDeleteSession(sessionId);
             } else {
                 await api.deleteChatSession(sessionId);
-                // If uncontrolled, refresh sessions
                 if (!isControlled) {
                     const data = await api.getChatSessions();
                     setFetchedSessions(data);
                 }
-                // If the deleted session is the current one, navigate to new chat
                 if (currentSessionId === sessionId) {
                     handleNewChat();
                 }
@@ -160,7 +155,7 @@ export function AppSidebar({
 
     return (
         <div className="flex flex-col h-full bg-gray-50 border-r border-gray-200">
-            {/* 로고 + 새 채팅 버튼 */}
+            {/* 로고 */}
             <div className="p-4 border-b border-gray-200">
                 <div className="flex items-center gap-2 mb-4">
                     <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center shrink-0">
@@ -235,16 +230,9 @@ export function AppSidebar({
                         {sessions && sessions.map((session) => (
                             <div
                                 key={session.session_id}
-                                className="relative group overflow-hidden"
-                                onMouseEnter={() => setHoveredSessionId(session.session_id)}
-                                onMouseLeave={() => {
-                                    if (menuOpenSessionId !== session.session_id) {
-                                        setHoveredSessionId(null);
-                                    }
-                                }}
+                                className="relative group"
                             >
                                 {editingSessionId === session.session_id ? (
-                                    /* 이름 편집 모드 */
                                     <input
                                         ref={editInputRef}
                                         type="text"
@@ -255,7 +243,6 @@ export function AppSidebar({
                                         className="w-full px-3 py-2 rounded-lg text-sm border-2 border-blue-500 outline-none bg-white"
                                     />
                                 ) : (
-                                    /* 일반 표시 모드 */
                                     <button
                                         onClick={() => handleClick(() => handleSelectSession(session.session_id))}
                                         className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center ${currentSessionId === session.session_id
@@ -268,22 +255,22 @@ export function AppSidebar({
                                     </button>
                                 )}
 
-                                {/* ... 더보기 버튼 (hover 또는 메뉴 열림 시 표시) */}
-                                {editingSessionId !== session.session_id && (hoveredSessionId === session.session_id || menuOpenSessionId === session.session_id) && (
-                                    <div className="absolute right-1 top-1/2 -translate-y-1/2">
+                                {/* ... 더보기 버튼 — 순수 CSS group-hover로 표시 */}
+                                {editingSessionId !== session.session_id && (
+                                    <div
+                                        className={`absolute right-1 top-1/2 -translate-y-1/2 z-10 transition-opacity ${menuOpenSessionId === session.session_id
+                                                ? 'opacity-100'
+                                                : 'opacity-0 group-hover:opacity-100'
+                                            }`}
+                                    >
                                         <DropdownMenu
                                             onOpenChange={(open) => {
-                                                if (open) {
-                                                    setMenuOpenSessionId(session.session_id);
-                                                } else {
-                                                    setMenuOpenSessionId(null);
-                                                    setHoveredSessionId(null);
-                                                }
+                                                setMenuOpenSessionId(open ? session.session_id : null);
                                             }}
                                         >
                                             <DropdownMenuTrigger asChild>
                                                 <button
-                                                    className="p-1 rounded hover:bg-gray-200 transition-colors"
+                                                    className="p-1 rounded hover:bg-gray-200 transition-colors bg-gray-50"
                                                     onClick={(e) => e.stopPropagation()}
                                                 >
                                                     <MoreHorizontal className="w-4 h-4 text-gray-500" />
