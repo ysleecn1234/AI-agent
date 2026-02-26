@@ -236,7 +236,7 @@ class ApiClient {
         const q = new URLSearchParams();
         if (params?.department) q.set('department', params.department);
         const query = q.toString() ? `?${q.toString()}` : '';
-        return this.request<Agent[]>(`/agents${query}`);
+        return this.request<Agent[]>(`/agents/${query}`);
     }
 
     public async getAgent(id: string): Promise<AgentDetail> {
