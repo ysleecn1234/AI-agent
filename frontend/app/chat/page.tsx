@@ -89,6 +89,17 @@ function ChatContent() {
         if (sessionParam) {
             loadSession(sessionParam);
         }
+        // Agent Hub에서 에이전트 실행 시 자동 활성화
+        const agentParam = searchParams.get('agent');
+        if (agentParam) {
+            setAgentId(agentParam);
+            setAgentEnabled(true);
+            // 해당 에이전트 정보 불러와서 모델/RAG 설정 적용
+            api.getAgent(agentParam).then((agent) => {
+                if (agent.model_type) setSelectedModel(agent.model_type);
+                if (agent.use_rag) setDriveEnabled(true);
+            }).catch(() => {});
+        }
     }, [loadSessions, searchParams, loadSession]);
 
     useEffect(() => {
