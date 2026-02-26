@@ -6,7 +6,7 @@ import {
     DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import {
-    MessageSquare, FolderOpen, Bot, Settings, Plus,
+    MessageSquare, FolderOpen, Bot, Settings,
     LogOut, Clock, MoreHorizontal, Pencil, Trash2
 } from 'lucide-react';
 import type { ChatSession } from '@/types/api';
@@ -105,7 +105,6 @@ export function AppSidebar({
             setEditingSessionId(null);
             return;
         }
-
         try {
             if (onRenameSession) {
                 onRenameSession(editingSessionId, editingTitle.trim());
@@ -125,7 +124,6 @@ export function AppSidebar({
 
     const handleDeleteSession = async (sessionId: string) => {
         if (!confirm('이 채팅을 삭제하시겠습니까?')) return;
-
         try {
             if (onDeleteSession) {
                 onDeleteSession(sessionId);
@@ -165,13 +163,13 @@ export function AppSidebar({
                 </div>
             </div>
 
-            {/* 네비게이션 메뉴 */}
+            {/* 네비게이션 */}
             <nav className="px-3 py-3 space-y-1 border-b border-gray-100">
                 <button
                     onClick={() => handleClick(handleNewChat)}
                     className={`w-full flex items-center gap-3 px-3 py-2 text-left text-sm font-medium rounded-lg transition-colors ${(currentPath === '/chat' || currentPath.startsWith('/chat')) && !currentSessionId
-                        ? 'bg-blue-50 text-blue-700'
-                        : 'text-gray-700 hover:bg-gray-100'
+                            ? 'bg-blue-50 text-blue-700'
+                            : 'text-gray-700 hover:bg-gray-100'
                         }`}
                 >
                     <MessageSquare className="w-4 h-4" />
@@ -179,9 +177,7 @@ export function AppSidebar({
                 </button>
                 <button
                     onClick={() => handleClick(() => onNavigate('/drive'))}
-                    className={`w-full flex items-center gap-3 px-3 py-2 text-left text-sm font-medium rounded-lg transition-colors ${currentPath.startsWith('/drive')
-                        ? 'bg-blue-50 text-blue-700'
-                        : 'text-gray-700 hover:bg-gray-100'
+                    className={`w-full flex items-center gap-3 px-3 py-2 text-left text-sm font-medium rounded-lg transition-colors ${currentPath.startsWith('/drive') ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-100'
                         }`}
                 >
                     <FolderOpen className="w-4 h-4" />
@@ -189,9 +185,7 @@ export function AppSidebar({
                 </button>
                 <button
                     onClick={() => handleClick(() => onNavigate('/agents'))}
-                    className={`w-full flex items-center gap-3 px-3 py-2 text-left text-sm font-medium rounded-lg transition-colors ${currentPath.startsWith('/agents')
-                        ? 'bg-blue-50 text-blue-700'
-                        : 'text-gray-700 hover:bg-gray-100'
+                    className={`w-full flex items-center gap-3 px-3 py-2 text-left text-sm font-medium rounded-lg transition-colors ${currentPath.startsWith('/agents') ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-100'
                         }`}
                 >
                     <Bot className="w-4 h-4" />
@@ -199,9 +193,7 @@ export function AppSidebar({
                 </button>
                 <button
                     onClick={() => handleClick(() => onNavigate('/settings'))}
-                    className={`w-full flex items-center gap-3 px-3 py-2 text-left text-sm font-medium rounded-lg transition-colors ${currentPath.startsWith('/settings')
-                        ? 'bg-blue-50 text-blue-700'
-                        : 'text-gray-700 hover:bg-gray-100'
+                    className={`w-full flex items-center gap-3 px-3 py-2 text-left text-sm font-medium rounded-lg transition-colors ${currentPath.startsWith('/settings') ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-100'
                         }`}
                 >
                     <Settings className="w-4 h-4" />
@@ -209,7 +201,7 @@ export function AppSidebar({
                 </button>
             </nav>
 
-            {/* 내 채팅 기록 */}
+            {/* 내 채팅 */}
             <div className="px-4 pt-4 pb-2 border-t border-gray-100">
                 <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
                     <Clock className="w-3.5 h-3.5" /> 내 채팅
@@ -218,19 +210,15 @@ export function AppSidebar({
 
             <ScrollArea className="flex-1 px-2">
                 {isLoadingSessions ? (
-                    <div className="px-3 py-4 text-sm text-gray-400 text-center">
-                        불러오는 중...
-                    </div>
+                    <div className="px-3 py-4 text-sm text-gray-400 text-center">불러오는 중...</div>
                 ) : sessions && sessions.length === 0 ? (
-                    <div className="px-3 py-4 text-sm text-gray-400 text-center">
-                        채팅 기록이 없습니다
-                    </div>
+                    <div className="px-3 py-4 text-sm text-gray-400 text-center">채팅 기록이 없습니다</div>
                 ) : (
                     <div className="space-y-0.5 pb-4">
                         {sessions && sessions.map((session) => (
                             <div
                                 key={session.session_id}
-                                className="relative group"
+                                className="group flex items-center w-full overflow-hidden rounded-lg"
                             >
                                 {editingSessionId === session.session_id ? (
                                     <input
@@ -243,63 +231,64 @@ export function AppSidebar({
                                         className="w-full px-3 py-2 rounded-lg text-sm border-2 border-blue-500 outline-none bg-white"
                                     />
                                 ) : (
-                                    <button
-                                        onClick={() => handleClick(() => handleSelectSession(session.session_id))}
-                                        className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center ${currentSessionId === session.session_id
-                                            ? 'bg-gray-200 text-gray-900 font-medium'
-                                            : 'text-gray-600 hover:bg-gray-100'
-                                            }`}
-                                        title={session.title}
-                                    >
-                                        <span className="truncate flex-1 pr-6">{session.title}</span>
-                                    </button>
-                                )}
-
-                                {/* ... 더보기 버튼 — 순수 CSS group-hover로 표시 */}
-                                {editingSessionId !== session.session_id && (
-                                    <div
-                                        className={`absolute right-1 top-1/2 -translate-y-1/2 z-10 transition-opacity ${menuOpenSessionId === session.session_id
-                                                ? 'opacity-100'
-                                                : 'opacity-0 group-hover:opacity-100'
-                                            }`}
-                                    >
-                                        <DropdownMenu
-                                            onOpenChange={(open) => {
-                                                setMenuOpenSessionId(open ? session.session_id : null);
-                                            }}
+                                    <>
+                                        {/* 세션 제목 버튼 - flex-1 min-w-0으로 너비 제한 */}
+                                        <button
+                                            onClick={() => handleClick(() => handleSelectSession(session.session_id))}
+                                            className={`flex-1 min-w-0 text-left px-3 py-2 text-sm transition-colors rounded-lg ${currentSessionId === session.session_id
+                                                    ? 'bg-gray-200 text-gray-900 font-medium'
+                                                    : 'text-gray-600 hover:bg-gray-100'
+                                                }`}
+                                            title={session.title}
                                         >
-                                            <DropdownMenuTrigger asChild>
-                                                <button
-                                                    className="p-1 rounded hover:bg-gray-200 transition-colors bg-gray-50"
-                                                    onClick={(e) => e.stopPropagation()}
-                                                >
-                                                    <MoreHorizontal className="w-4 h-4 text-gray-500" />
-                                                </button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" className="w-40">
-                                                <DropdownMenuItem
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleStartRename(session);
-                                                    }}
-                                                    className="cursor-pointer"
-                                                >
-                                                    <Pencil className="w-4 h-4 mr-2" />
-                                                    이름 바꾸기
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleDeleteSession(session.session_id);
-                                                    }}
-                                                    className="cursor-pointer text-red-600 focus:text-red-600"
-                                                >
-                                                    <Trash2 className="w-4 h-4 mr-2" />
-                                                    삭제
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </div>
+                                            <span className="block truncate">{session.title}</span>
+                                        </button>
+
+                                        {/* ... 더보기 버튼 - shrink-0으로 항상 오른쪽 고정 */}
+                                        <div
+                                            className={`shrink-0 pr-1 transition-opacity ${menuOpenSessionId === session.session_id
+                                                    ? 'opacity-100'
+                                                    : 'opacity-0 group-hover:opacity-100'
+                                                }`}
+                                        >
+                                            <DropdownMenu
+                                                onOpenChange={(open) => {
+                                                    setMenuOpenSessionId(open ? session.session_id : null);
+                                                }}
+                                            >
+                                                <DropdownMenuTrigger asChild>
+                                                    <button
+                                                        className="p-1 rounded hover:bg-gray-200 transition-colors"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    >
+                                                        <MoreHorizontal className="w-4 h-4 text-gray-500" />
+                                                    </button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="w-40">
+                                                    <DropdownMenuItem
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleStartRename(session);
+                                                        }}
+                                                        className="cursor-pointer"
+                                                    >
+                                                        <Pencil className="w-4 h-4 mr-2" />
+                                                        이름 바꾸기
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleDeleteSession(session.session_id);
+                                                        }}
+                                                        className="cursor-pointer text-red-600 focus:text-red-600"
+                                                    >
+                                                        <Trash2 className="w-4 h-4 mr-2" />
+                                                        삭제
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
+                                    </>
                                 )}
                             </div>
                         ))}
@@ -307,7 +296,7 @@ export function AppSidebar({
                 )}
             </ScrollArea>
 
-            {/* 하단: 로그아웃 */}
+            {/* 로그아웃 */}
             <div className="p-3 border-t border-gray-200 mt-auto">
                 <button
                     onClick={() => handleClick(() => {
