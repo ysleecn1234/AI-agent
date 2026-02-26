@@ -56,6 +56,7 @@ function ChatContent() {
     const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
     const [recommendedAgents, setRecommendedAgents] = useState<Agent[]>([]);
     const [isLoadingAgents, setIsLoadingAgents] = useState(false);
+    const [activeAgent, setActiveAgent] = useState<Agent | null>(null);
 
 
     const loadSessions = useCallback(async () => {
@@ -94,8 +95,8 @@ function ChatContent() {
         if (agentParam) {
             setAgentId(agentParam);
             setAgentEnabled(true);
-            // 해당 에이전트 정보 불러와서 모델/RAG 설정 적용
             api.getAgent(agentParam).then((agent) => {
+                setActiveAgent(agent);
                 if (agent.model_type) setSelectedModel(agent.model_type);
                 if (agent.use_rag) setDriveEnabled(true);
             }).catch(() => {});
@@ -414,7 +415,7 @@ function ChatContent() {
                     {messages.length === 0 ? (
                         <div className="flex items-center justify-center h-full">
                             {agentId ? (() => {
-                                const agent = recommendedAgents.find(a => a.id === agentId);
+                                const agent = activeAgent || recommendedAgents.find(a => a.id === agentId);
                                 return (
                                     <div className="text-center">
                                         <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
