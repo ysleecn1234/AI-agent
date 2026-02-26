@@ -94,11 +94,8 @@ class ApiClient {
             body: JSON.stringify(data),
         });
 
-        if (typeof window !== 'undefined') {
-            localStorage.setItem('access_token', response.access_token);
-            // Optional: Store other user info if needed for API client internal use
-            // But main app logic should handle storage for UI 
-        }
+        // setToken을 통해 localStorage + 쿠키 동시 저장
+        this.setToken(response.access_token);
         return response;
     }
 
