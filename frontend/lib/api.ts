@@ -122,6 +122,19 @@ class ApiClient {
         return this.request(`/chat/sessions/${sessionId}`);
     }
 
+    public async renameChatSession(sessionId: string, title: string): Promise<void> {
+        return this.request(`/chat/sessions/${sessionId}/title`, {
+            method: 'PUT',
+            body: JSON.stringify({ title }),
+        });
+    }
+
+    public async deleteChatSession(sessionId: string): Promise<void> {
+        return this.request(`/chat/sessions/${sessionId}`, {
+            method: 'DELETE',
+        });
+    }
+
     // Drive
     public async getDocuments(params?: { status?: string; limit?: number }): Promise<Document[]> {
         const q = new URLSearchParams();

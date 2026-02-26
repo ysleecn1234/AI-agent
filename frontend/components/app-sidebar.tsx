@@ -1,10 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
+    DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
+import {
     MessageSquare, FolderOpen, Bot, Settings, Plus,
-    LogOut, Clock
+    LogOut, Clock, MoreHorizontal, Pencil, Trash2
 } from 'lucide-react';
 import type { ChatSession } from '@/types/api';
 import { api } from '@/lib/api';
@@ -15,6 +18,8 @@ interface AppSidebarProps {
     onSelectSession?: (sessionId: string) => void;
     onNewChat?: () => void;
     onNavigate: (path: string) => void;
+    onRenameSession?: (sessionId: string, newTitle: string) => void;
+    onDeleteSession?: (sessionId: string) => void;
     isLoadingSessions?: boolean;
     isMobile?: boolean;
     onClose?: () => void;
@@ -27,6 +32,8 @@ export function AppSidebar({
     onSelectSession: propOnSelectSession,
     onNewChat: propOnNewChat,
     onNavigate,
+    onRenameSession,
+    onDeleteSession,
     isLoadingSessions: propIsLoadingSessions,
     isMobile = false,
     onClose,
@@ -34,6 +41,11 @@ export function AppSidebar({
 }: AppSidebarProps) {
     const [fetchedSessions, setFetchedSessions] = useState<ChatSession[]>([]);
     const [isFetching, setIsFetching] = useState(false);
+    const [hoveredSessionId, setHoveredSessionId] = useState<string | null>(null);
+    const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
+    const [editingTitle, setEditingTitle] = useState('');
+    const [menuOpenSessionId, setMenuOpenSessionId] = useState<string | null>(null);
+    const editInputRef = useRef<HTMLInputElement>(null);
 
     const isControlled = propSessions !== undefined;
     const sessions = isControlled ? propSessions : fetchedSessions;
@@ -56,6 +68,14 @@ export function AppSidebar({
         }
     }, [isControlled]);
 
+    // Focus input when editing starts
+    useEffect(() => {
+        if (editingSessionId && editInputRef.current) {
+            editInputRef.current.focus();
+            editInputRef.current.select();
+        }
+    }, [editingSessionId]);
+
     const handleClick = (action: () => void) => {
         action();
         if (isMobile && onClose) onClose();
@@ -74,6 +94,67 @@ export function AppSidebar({
             propOnNewChat();
         } else {
             onNavigate('/chat');
+        }
+    };
+
+    const handleStartRename = (session: ChatSession) => {
+        setEditingSessionId(session.session_id);
+        setEditingTitle(session.title);
+    };
+
+    const handleConfirmRename = async () => {
+        if (!editingSessionId || !editingTitle.trim()) {
+            setEditingSessionId(null);
+            return;
+        }
+
+        try {
+            if (onRenameSession) {
+                onRenameSession(editingSessionId, editingTitle.trim());
+            } else {
+                await api.renameChatSession(editingSessionId, editingTitle.trim());
+                // If uncontrolled, refresh sessions
+                if (!isControlled) {
+                    const data = await api.getChatSessions();
+                    setFetchedSessions(data);
+                }
+            }
+        } catch (error) {
+            console.error('Failed to rename session:', error);
+        } finally {
+            setEditingSessionId(null);
+        }
+    };
+
+    const handleDeleteSession = async (sessionId: string) => {
+        if (!confirm('이 채팅을 삭제하시겠습니까?')) return;
+
+        try {
+            if (onDeleteSession) {
+                onDeleteSession(sessionId);
+            } else {
+                await api.deleteChatSession(sessionId);
+                // If uncontrolled, refresh sessions
+                if (!isControlled) {
+                    const data = await api.getChatSessions();
+                    setFetchedSessions(data);
+                }
+                // If the deleted session is the current one, navigate to new chat
+                if (currentSessionId === sessionId) {
+                    handleNewChat();
+                }
+            }
+        } catch (error) {
+            console.error('Failed to delete session:', error);
+        }
+    };
+
+    const handleRenameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            handleConfirmRename();
+        } else if (e.key === 'Escape') {
+            setEditingSessionId(null);
         }
     };
 
@@ -152,17 +233,88 @@ export function AppSidebar({
                 ) : (
                     <div className="space-y-0.5 pb-4">
                         {sessions && sessions.map((session) => (
-                            <button
+                            <div
                                 key={session.session_id}
-                                onClick={() => handleClick(() => handleSelectSession(session.session_id))}
-                                className={`w-full text-left px-3 py-2 rounded-lg text-sm truncate transition-colors ${currentSessionId === session.session_id
-                                    ? 'bg-gray-200 text-gray-900 font-medium'
-                                    : 'text-gray-600 hover:bg-gray-100'
-                                    }`}
-                                title={session.title}
+                                className="relative group"
+                                onMouseEnter={() => setHoveredSessionId(session.session_id)}
+                                onMouseLeave={() => {
+                                    if (menuOpenSessionId !== session.session_id) {
+                                        setHoveredSessionId(null);
+                                    }
+                                }}
                             >
-                                {session.title}
-                            </button>
+                                {editingSessionId === session.session_id ? (
+                                    /* 이름 편집 모드 */
+                                    <input
+                                        ref={editInputRef}
+                                        type="text"
+                                        value={editingTitle}
+                                        onChange={(e) => setEditingTitle(e.target.value)}
+                                        onBlur={handleConfirmRename}
+                                        onKeyDown={handleRenameKeyDown}
+                                        className="w-full px-3 py-2 rounded-lg text-sm border-2 border-blue-500 outline-none bg-white"
+                                    />
+                                ) : (
+                                    /* 일반 표시 모드 */
+                                    <button
+                                        onClick={() => handleClick(() => handleSelectSession(session.session_id))}
+                                        className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center ${currentSessionId === session.session_id
+                                            ? 'bg-gray-200 text-gray-900 font-medium'
+                                            : 'text-gray-600 hover:bg-gray-100'
+                                            }`}
+                                        title={session.title}
+                                    >
+                                        <span className="truncate flex-1 pr-6">{session.title}</span>
+                                    </button>
+                                )}
+
+                                {/* ... 더보기 버튼 (hover 또는 메뉴 열림 시 표시) */}
+                                {editingSessionId !== session.session_id && (hoveredSessionId === session.session_id || menuOpenSessionId === session.session_id) && (
+                                    <div className="absolute right-1 top-1/2 -translate-y-1/2">
+                                        <DropdownMenu
+                                            onOpenChange={(open) => {
+                                                if (open) {
+                                                    setMenuOpenSessionId(session.session_id);
+                                                } else {
+                                                    setMenuOpenSessionId(null);
+                                                    setHoveredSessionId(null);
+                                                }
+                                            }}
+                                        >
+                                            <DropdownMenuTrigger asChild>
+                                                <button
+                                                    className="p-1 rounded hover:bg-gray-200 transition-colors"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    <MoreHorizontal className="w-4 h-4 text-gray-500" />
+                                                </button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end" className="w-40">
+                                                <DropdownMenuItem
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleStartRename(session);
+                                                    }}
+                                                    className="cursor-pointer"
+                                                >
+                                                    <Pencil className="w-4 h-4 mr-2" />
+                                                    이름 바꾸기
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleDeleteSession(session.session_id);
+                                                    }}
+                                                    className="cursor-pointer text-red-600 focus:text-red-600"
+                                                >
+                                                    <Trash2 className="w-4 h-4 mr-2" />
+                                                    삭제
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </div>
+                                )}
+                            </div>
                         ))}
                     </div>
                 )}

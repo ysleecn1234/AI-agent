@@ -22,3 +22,15 @@ class ChatLog(Base):
 
     # Relationships
     # user = relationship("application.database.User", back_populates="chat_logs")  # TODO: User.chat_logs 복원 후 활성화
+
+
+# ==========================================
+# Chat Session Meta (Custom Title)
+# ==========================================
+class ChatSessionMeta(Base):
+    __tablename__ = "chat_session_meta"
+
+    session_id = Column(String, primary_key=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    custom_title = Column(String(200), nullable=True)
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())

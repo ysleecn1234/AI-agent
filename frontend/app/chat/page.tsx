@@ -99,7 +99,7 @@ function ChatContent() {
                 setActiveAgent(agent);
                 if (agent.model_type) setSelectedModel(agent.model_type);
                 if (agent.use_rag) setDriveEnabled(true);
-            }).catch(() => {});
+            }).catch(() => { });
         }
     }, [loadSessions, searchParams, loadSession]);
 
@@ -123,6 +123,32 @@ function ChatContent() {
 
     const handleNavigate = (path: string) => {
         router.push(path);
+    };
+
+    const handleRenameSession = async (sessionId: string, newTitle: string) => {
+        try {
+            await api.renameChatSession(sessionId, newTitle);
+            // Update local state immediately
+            setSessions(prev => prev.map(s =>
+                s.session_id === sessionId ? { ...s, title: newTitle } : s
+            ));
+        } catch (error) {
+            console.error('Failed to rename session:', error);
+        }
+    };
+
+    const handleDeleteSession = async (sessionId: string) => {
+        try {
+            await api.deleteChatSession(sessionId);
+            // Remove from local state
+            setSessions(prev => prev.filter(s => s.session_id !== sessionId));
+            // If deleted session is the current one, navigate to new chat
+            if (currentSessionId === sessionId) {
+                handleNewChat();
+            }
+        } catch (error) {
+            console.error('Failed to delete session:', error);
+        }
     };
 
     const handleSend = async () => {
@@ -375,6 +401,8 @@ function ChatContent() {
                                 onSelectSession={handleSelectSession}
                                 onNewChat={handleNewChat}
                                 onNavigate={handleNavigate}
+                                onRenameSession={handleRenameSession}
+                                onDeleteSession={handleDeleteSession}
                                 isLoadingSessions={sessionsLoading}
                                 isMobile
                                 onClose={() => setSidebarOpen(false)}
