@@ -1,15 +1,16 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { api } from '@/lib/api';
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -23,14 +24,14 @@ export default function LoginPage() {
     try {
       const data = await api.login({ email, password });
 
-      // 토큰 저장 (api.login에서 이미 access_token 저장)
       localStorage.setItem('user_id', data.user_id);
       localStorage.setItem('user_name', data.user_name);
       localStorage.setItem('user_email', email);
       localStorage.setItem('department', data.department);
 
-      // 채팅 페이지로 이동
-      router.push('/chat');
+      // 로그인 전 접근하려던 페이지로 리다이렉트, 없으면 채팅으로
+      const redirect = searchParams.get('redirect') || '/chat';
+      router.push(redirect);
     } catch (err) {
       setError(err instanceof Error ? err.message : '로그인에 실패했습니다.');
     } finally {
@@ -103,5 +104,13 @@ export default function LoginPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   );
 }

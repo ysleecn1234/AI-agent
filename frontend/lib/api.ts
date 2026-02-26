@@ -36,6 +36,8 @@ class ApiClient {
         this.token = token;
         if (typeof window !== 'undefined') {
             localStorage.setItem('access_token', token);
+            // middleware에서 인증 체크를 위해 쿠키에도 저장
+            document.cookie = `access_token=${token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
         }
     }
 
@@ -43,6 +45,8 @@ class ApiClient {
         this.token = null;
         if (typeof window !== 'undefined') {
             localStorage.removeItem('access_token');
+            // 쿠키도 함께 제거
+            document.cookie = 'access_token=; path=/; max-age=0; SameSite=Lax';
         }
     }
 
