@@ -168,8 +168,8 @@ export function AppSidebar({
                 <button
                     onClick={() => handleClick(handleNewChat)}
                     className={`w-full flex items-center gap-3 px-3 py-2 text-left text-sm font-medium rounded-lg transition-colors ${(currentPath === '/chat' || currentPath.startsWith('/chat')) && !currentSessionId
-                            ? 'bg-blue-50 text-blue-700'
-                            : 'text-gray-700 hover:bg-gray-100'
+                        ? 'bg-blue-50 text-blue-700'
+                        : 'text-gray-700 hover:bg-gray-100'
                         }`}
                 >
                     <MessageSquare className="w-4 h-4" />
@@ -208,7 +208,7 @@ export function AppSidebar({
                 </span>
             </div>
 
-            <ScrollArea className="flex-1 px-2">
+            <div className="flex-1 px-2 overflow-y-auto">
                 {isLoadingSessions ? (
                     <div className="px-3 py-4 text-sm text-gray-400 text-center">불러오는 중...</div>
                 ) : sessions && sessions.length === 0 ? (
@@ -236,8 +236,8 @@ export function AppSidebar({
                                         <button
                                             onClick={() => handleClick(() => handleSelectSession(session.session_id))}
                                             className={`flex-1 min-w-0 text-left px-3 py-2 text-sm transition-colors rounded-lg ${currentSessionId === session.session_id
-                                                    ? 'bg-gray-200 text-gray-900 font-medium'
-                                                    : 'text-gray-600 hover:bg-gray-100'
+                                                ? 'bg-gray-200 text-gray-900 font-medium'
+                                                : 'text-gray-600 hover:bg-gray-100'
                                                 }`}
                                             title={session.title}
                                         >
@@ -247,8 +247,8 @@ export function AppSidebar({
                                         {/* ... 더보기 버튼 - shrink-0으로 항상 오른쪽 고정 */}
                                         <div
                                             className={`shrink-0 pr-1 transition-opacity ${menuOpenSessionId === session.session_id
-                                                    ? 'opacity-100'
-                                                    : 'opacity-0 group-hover:opacity-100'
+                                                ? 'opacity-100'
+                                                : 'opacity-0 group-hover:opacity-100'
                                                 }`}
                                         >
                                             <DropdownMenu
@@ -294,7 +294,7 @@ export function AppSidebar({
                         ))}
                     </div>
                 )}
-            </ScrollArea>
+            </div>
 
             {/* 로그아웃 */}
             <div className="p-3 border-t border-gray-200 mt-auto">
