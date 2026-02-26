@@ -235,7 +235,7 @@ export function AppSidebar({
                         {sessions && sessions.map((session) => (
                             <div
                                 key={session.session_id}
-                                className="relative group"
+                                className="relative group overflow-hidden"
                                 onMouseEnter={() => setHoveredSessionId(session.session_id)}
                                 onMouseLeave={() => {
                                     if (menuOpenSessionId !== session.session_id) {
