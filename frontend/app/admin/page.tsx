@@ -18,20 +18,18 @@ import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend
 } from 'recharts';
 
-// 차트 색상
+// 차트 색상 — 사용자 관점 3개 카테고리
 const CATEGORY_COLORS: Record<string, string> = {
-    chat: '#3B82F6',      // blue-500
-    embedding: '#10B981',  // emerald-500
-    tagging: '#F59E0B',    // amber-500
-    doc_chat: '#8B5CF6',   // purple-500
-    other: '#6B7280',      // gray-500
+    ai_chat: '#3B82F6',        // blue-500
+    doc_qa: '#8B5CF6',         // purple-500
+    doc_processing: '#10B981', // emerald-500
+    other: '#6B7280',          // gray-500
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
-    chat: '채팅',
-    embedding: '임베딩',
-    tagging: '태깅',
-    doc_chat: '문서 채팅',
+    ai_chat: 'AI 채팅',
+    doc_qa: '문서 Q&A',
+    doc_processing: '문서 처리',
     other: '기타',
 };
 
@@ -102,15 +100,17 @@ export default function AdminPage() {
         fetchData();
     }, [selectedMonth]);
 
-    // 도넛 차트 데이터
+    // 도넛 차트 데이터 (other는 비용이 있을 때만 표시)
     const pieData = useMemo(() => {
         if (!summary?.cost_by_category) return [];
-        return Object.entries(summary.cost_by_category).map(([key, val]: [string, any]) => ({
-            name: CATEGORY_LABELS[key] || key,
-            value: val.cost_krw,
-            count: val.count,
-            color: CATEGORY_COLORS[key] || CATEGORY_COLORS.other,
-        }));
+        return Object.entries(summary.cost_by_category)
+            .filter(([key, val]: [string, any]) => key !== 'other' || val.cost_krw > 0)
+            .map(([key, val]: [string, any]) => ({
+                name: CATEGORY_LABELS[key] || key,
+                value: val.cost_krw,
+                count: val.activity_count ?? 0,   // activity_logs 기반 건수
+                color: CATEGORY_COLORS[key] || CATEGORY_COLORS.other,
+            }));
     }, [summary]);
 
     // 바 차트 데이터

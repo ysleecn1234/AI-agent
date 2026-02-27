@@ -26,15 +26,17 @@ def get_current_user_id(token: str = Depends(oauth2_scheme)):
 
 
 def _categorize_operation(operation: str) -> str:
-    """operation 필드 → 카테고리 매핑"""
-    if operation.startswith("llm:chat"):
-        return "chat"
-    elif operation == "embedding":
-        return "embedding"
-    elif operation == "llm:tagging":
-        return "tagging"
-    elif operation == "llm:doc_chat":
-        return "doc_chat"
+    """operation 필드 → 사용자 관점 3개 카테고리 매핑"""
+    op = operation or ""
+    # AI 채팅: chat 관련 LLM 호출 전체
+    if op.startswith("llm:chat"):
+        return "ai_chat"
+    # 문서 Q&A: 문서 채팅
+    elif op == "llm:doc_chat":
+        return "doc_qa"
+    # 문서 처리: 임베딩 + 태깅 + 제목생성 + 스토리지
+    elif op in ("embedding", "storage", "llm:tagging", "llm:title_gen", "llm:doc_format"):
+        return "doc_processing"
     else:
         return "other"
 
@@ -90,14 +92,13 @@ def get_usage_summary(user_id: str = Depends(get_current_user_id)):
             prev_year, prev_mon = today.year, today.month - 1
         prev_first, prev_last = _parse_month(f"{prev_year}-{prev_mon:02d}")
 
-        # 이번 달 집계
+        # 이번 달 cost_logs 집계
         cur_rows = (
             db.query(
                 CostLog.operation,
                 func.sum(CostLog.cost_krw).label("sum_krw"),
                 func.sum(CostLog.cost_usd).label("sum_usd"),
                 func.sum(CostLog.tokens_used).label("sum_tokens"),
-                func.count().label("cnt"),
             )
             .filter(
                 cast(CostLog.timestamp, Date) >= cur_first,
@@ -107,7 +108,7 @@ def get_usage_summary(user_id: str = Depends(get_current_user_id)):
             .all()
         )
 
-        # 카테고리별 집계
+        # 카테고리별 비용 집계 (cost_logs 기준)
         cost_by_category: dict = {}
         total_krw = Decimal("0")
         total_usd = Decimal("0")
@@ -116,16 +117,44 @@ def get_usage_summary(user_id: str = Depends(get_current_user_id)):
         for row in cur_rows:
             cat = _categorize_operation(row.operation)
             if cat not in cost_by_category:
-                cost_by_category[cat] = {"cost_krw": Decimal("0"), "count": 0}
+                cost_by_category[cat] = {"cost_krw": Decimal("0")}
             cost_by_category[cat]["cost_krw"] += row.sum_krw or Decimal("0")
-            cost_by_category[cat]["count"] += row.cnt or 0
             total_krw += row.sum_krw or Decimal("0")
             total_usd += row.sum_usd or Decimal("0")
             total_tokens += row.sum_tokens or 0
 
-        # 카테고리 값을 float로 변환
         for cat in cost_by_category:
             cost_by_category[cat]["cost_krw"] = float(cost_by_category[cat]["cost_krw"])
+
+        # activity_logs 기반 건수 조회 (사용자 행위 기준)
+        from services.ai_drive.db.postgres_client import ActivityLog
+        activity_counts_raw = (
+            db.query(
+                ActivityLog.action,
+                func.count().label("cnt"),
+            )
+            .filter(
+                ActivityLog.action.in_(["chat", "doc_chat", "upload"]),
+                cast(ActivityLog.timestamp, Date) >= cur_first,
+                cast(ActivityLog.timestamp, Date) <= cur_last,
+            )
+            .group_by(ActivityLog.action)
+            .all()
+        )
+        action_to_cat = {"chat": "ai_chat", "doc_chat": "doc_qa", "upload": "doc_processing"}
+        activity_counts: dict = {"ai_chat": 0, "doc_qa": 0, "doc_processing": 0}
+        for row in activity_counts_raw:
+            cat_key = action_to_cat.get(row.action)
+            if cat_key:
+                activity_counts[cat_key] = row.cnt
+
+        # activity_count를 cost_by_category에 병합
+        for cat in cost_by_category:
+            cost_by_category[cat]["activity_count"] = activity_counts.get(cat, 0)
+        # cost_by_category에 없는 카테고리도 activity_count가 있으면 추가
+        for cat, cnt in activity_counts.items():
+            if cat not in cost_by_category and cnt > 0:
+                cost_by_category[cat] = {"cost_krw": 0.0, "activity_count": cnt}
 
         # 전월 집계
         prev_rows = (
@@ -142,12 +171,10 @@ def get_usage_summary(user_id: str = Depends(get_current_user_id)):
         prev_krw = float(prev_rows.sum_krw or 0)
         prev_tokens = int(prev_rows.sum_tokens or 0)
 
-        # 증감율 계산
         total_krw_f = float(total_krw)
         cost_change = round(((total_krw_f - prev_krw) / prev_krw * 100), 1) if prev_krw > 0 else 0.0
         token_change = round(((total_tokens - prev_tokens) / prev_tokens * 100), 1) if prev_tokens > 0 else 0.0
 
-        # 월 예산
         monthly_budget = _get_monthly_budget(db, user_id)
         budget_pct = round(total_krw_f / monthly_budget * 100, 1) if monthly_budget > 0 else 0.0
 
