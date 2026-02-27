@@ -408,6 +408,7 @@ class Router:
             llm_result = self.pipeline.call_llm(
                 task="chat_routing",
                 prompt=prompt,
+                user_id=getattr(self, "current_user_id", None)  # 파이프라인 컨텍스트에서 주입된 user_id 사용
             )
             result = llm_result["content"].strip().upper()
             
@@ -551,16 +552,22 @@ class Router:
         else:
             return ComplexityLevel.SIMPLE
     
-    def route(self, user_input: str) -> Dict[str, Any]:
+    def route(self, user_input: str, user_id: Optional[str] = None) -> Dict[str, Any]:
         """라우팅 실행"""
-        intent = self.classify_intent(user_input)
-        complexity = self.determine_complexity(user_input, intent)
-        
-        return {
-            "intent": intent.value,
-            "complexity": complexity.value,
-            "user_input": user_input
-        }
+        # 임시 주입 (동기식 호출 스택이므로 가능하지만 context var가 더 좋음)
+        self.current_user_id = user_id
+        try:
+            intent = self.classify_intent(user_input)
+            complexity = self.determine_complexity(user_input, intent)
+            
+            return {
+                "intent": intent.value,
+                "complexity": complexity.value,
+                "user_input": user_input,
+                "user_id": user_id
+            }
+        finally:
+            self.current_user_id = None
 
 
 # ==================== Step 2: Researcher ====================
@@ -799,7 +806,7 @@ class Reasoner:
             options["system_prompt"] = context.get("system_prompt")
             
         # call_llm이 Fallback + 토큰 추출 + 비용 로깅 전부 처리
-        llm_result = self.pipeline.call_llm(task=task, prompt=prompt, options=options)
+        llm_result = self.pipeline.call_llm(task=task, prompt=prompt, options=options, user_id=context.get("user_id"))
         
         return (
             llm_result["content"],
@@ -871,6 +878,7 @@ class Synthesizer:
             llm_result = self.pipeline.call_llm(
                 task="chat_synthesis",
                 prompt=prompt,
+                user_id=reasoning_result.get("user_id")
             )
             return llm_result["content"]
             
@@ -980,6 +988,7 @@ AI 답변:
             llm_result = self.pipeline.call_llm(
                 task="chat_guardrail",
                 prompt=prompt,
+                user_id=synthesis_result.get("user_id")
             )
             response_text = llm_result["content"]
             
@@ -1134,7 +1143,7 @@ class Pipeline:
         self.cost_calculator = get_cost_calculator()
         self.cost_logger = get_cost_logger()
 
-    def call_llm(self, task: str, prompt: str, options: dict = None) -> dict:
+    def call_llm(self, task: str, prompt: str, options: dict = None, user_id: Optional[str] = None) -> dict:
         """
         중앙 LLM 호출 메서드 (모든 LLM 호출의 단일 진입점)
         
@@ -1248,6 +1257,7 @@ class Pipeline:
                     output_tokens=output_tokens,
                     cost_usd=cost_info.get("cost_usd", {}).get("total", 0),
                     cost_krw=cost_info.get("cost_krw", {}).get("total", 0),
+                    user_id=user_id
                 )
                 
                 print(f"  [call_llm] ✓ {model} 성공 (입력: {input_tokens}, 출력: {output_tokens} 토큰)")
@@ -1317,6 +1327,7 @@ class Pipeline:
             llm_result = self.call_llm(
                 task="agent_draft",
                 prompt=prompt,
+                user_id=messages[-1].get("user_id") if messages else None
             )
             result_text = llm_result["content"].strip()
             
@@ -1387,6 +1398,8 @@ class Pipeline:
         keywords = []
         
         try:
+            # recommend_agents에서는 user_id를 알 수 없는 경우가 많으나,
+            # Hub를 거치므로 일단 기본 호출 (agent_recommend)
             llm_result = self.call_llm(
                 task="agent_recommend",
                 prompt=prompt,
@@ -1425,7 +1438,7 @@ class Pipeline:
             # Step 1: Router
             print("[Step 1/5] Router - 의도 분류 및 복잡도 판단")
             step_start = time.time()
-            routing_result = self.router.route(user_input)
+            routing_result = self.router.route(user_input, user_id=user_id)
             step_duration = (time.time() - step_start) * 1000
             self.logger.log_step("Router", routing_result, step_duration)
             
@@ -1658,6 +1671,7 @@ class Pipeline:
                 output_tokens=output_tokens,
                 cost_usd=cost_info.get("cost_usd", {}).get("total", 0),
                 cost_krw=cost_info.get("cost_krw", {}).get("total", 0),
+                user_id=user_id
             )
             
             print(f"  → 완료 (입력: {input_tokens}, 출력: {output_tokens} 토큰)")

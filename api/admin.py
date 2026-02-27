@@ -326,20 +326,7 @@ def get_usage_by_user(
                 "chat_count": chat_map.get(uid, 0),
             })
 
-        # activity_logs에만 있는 사용자 (cost_logs에 없는 경우) 추가
-        for uid, cnt in chat_map.items():
-            if uid not in seen_uids:
-                # users 테이블에서 이름 조회 시도
-                user_obj = db.query(User).filter(User.id == uid).first()
-                users.append({
-                    "user_id": uid,
-                    "user_name": user_obj.name if user_obj else "알 수 없음",
-                    "total_cost_krw": 0.0,
-                    "total_tokens": 0,
-                    "chat_count": cnt,
-                })
-
-        # 비용 순 정렬
+        # 비용 내림차순 정렬
         users.sort(key=lambda x: x["total_cost_krw"], reverse=True)
 
         return {"users": users}
