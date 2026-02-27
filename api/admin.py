@@ -175,6 +175,10 @@ def get_usage_summary(user_id: str = Depends(get_current_user_id)):
             .scalar() or 0
         )
 
+        # 문서 Q&A 사용 시에도 activity_logs에 'chat'으로 기록되므로, 
+        # 순수 AI 채팅 건수를 구하기 위해 문서 Q&A 건수를 차감합니다.
+        ai_chat_cnt = max(0, ai_chat_cnt - doc_qa_cnt)
+
         # 문서 처리: upload + chat_save
         doc_proc_cnt = (
             db.query(func.count())
