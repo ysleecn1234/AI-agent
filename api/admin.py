@@ -25,20 +25,19 @@ def get_current_user_id(token: str = Depends(oauth2_scheme)):
     return payload.get("user_id")
 
 
-def _categorize_operation(operation: str) -> str:
+def _categorize_operation(op: str) -> str:
     """operation 필드 → 사용자 관점 3개 카테고리 매핑"""
-    op = operation or ""
-    # AI 채팅: chat 관련 LLM 호출 전체
-    if op.startswith("llm:chat"):
-        return "ai_chat"
-    # 문서 Q&A: 문서 채팅
-    elif op == "llm:doc_chat":
-        return "doc_qa"
-    # 문서 처리: 임베딩 + 태깅 + 제목생성 + 스토리지
-    elif op in ("embedding", "storage", "llm:tagging", "llm:title_gen", "llm:doc_format"):
-        return "doc_processing"
-    else:
+    if not op:
         return "other"
+    if op.startswith("llm:chat_") or op == "llm:chat_simple":
+        return "ai_chat"
+    if op == "llm:doc_chat":
+        return "doc_qa"
+    if op == "embedding" or op == "llm:tagging" or op == "llm:title_gen":
+        return "doc_processing"
+    if op.startswith("llm:agent_"):
+        return "agent"
+    return "other"
 
 
 def _parse_month(month_str: str | None) -> tuple[date, date]:
@@ -140,6 +139,17 @@ def get_usage_summary(user_id: str = Depends(get_current_user_id)):
             .scalar() or 0
         )
 
+        # AI 에이전트: activity_logs action='create_draft' (또는 관련 액션)
+        agent_cnt = (
+            db.query(func.count())
+            .filter(
+                ActivityLog.action == "create_draft",
+                cast(ActivityLog.timestamp, Date) >= cur_first,
+                cast(ActivityLog.timestamp, Date) <= cur_last,
+            )
+            .scalar() or 0
+        )
+
         # 문서 Q&A: activity_logs에 doc_chat 미기록 → cost_logs llm:doc_chat 건수로 대체
         doc_qa_cnt = (
             db.query(func.count())
@@ -166,6 +176,7 @@ def get_usage_summary(user_id: str = Depends(get_current_user_id)):
             "ai_chat": ai_chat_cnt,
             "doc_qa": doc_qa_cnt,
             "doc_processing": doc_proc_cnt,
+            "agent": agent_cnt,
         }
 
         # activity_count를 cost_by_category에 병합

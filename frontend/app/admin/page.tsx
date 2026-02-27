@@ -18,11 +18,12 @@ import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend
 } from 'recharts';
 
-// 차트 색상 — 사용자 관점 3개 카테고리
+// 차트 색상 — 사용자 관점 4개 카테고리
 const CATEGORY_COLORS: Record<string, string> = {
     ai_chat: '#3B82F6',        // blue-500
     doc_qa: '#8B5CF6',         // purple-500
     doc_processing: '#10B981', // emerald-500
+    agent: '#F59E0B',          // amber-500
     other: '#6B7280',          // gray-500
 };
 
@@ -30,6 +31,7 @@ const CATEGORY_LABELS: Record<string, string> = {
     ai_chat: 'AI 채팅',
     doc_qa: '문서 Q&A',
     doc_processing: '문서 처리',
+    agent: 'AI 에이전트',
     other: '기타',
 };
 
