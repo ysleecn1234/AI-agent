@@ -246,8 +246,13 @@ export default function DocumentDetailPage() {
                         </SheetContent>
                     </Sheet>
 
-                    {/* Document Title */}
-                    <h1 className="text-lg font-semibold text-gray-900">{document.title}</h1>
+                    {/* Document Title + Description */}
+                    <div>
+                        <h1 className="text-lg font-semibold text-gray-900">{document.title}</h1>
+                        {document.description && (
+                            <p className="text-sm text-gray-500 mt-0.5 max-w-md truncate">{document.description}</p>
+                        )}
+                    </div>
                 </div>
 
                 <div className="flex items-center gap-2">

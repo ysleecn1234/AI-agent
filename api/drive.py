@@ -112,6 +112,7 @@ class DocumentListItem(BaseModel):
     """문서 목록 아이템"""
     doc_id: str
     title: str
+    description: Optional[str] = None
     creator_department: str
     visibility: str
     status: str

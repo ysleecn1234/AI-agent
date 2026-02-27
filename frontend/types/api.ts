@@ -34,6 +34,7 @@ export interface User {
 export interface Document {
     doc_id: string;
     title: string;
+    description?: string;
     creator_department: string;
     visibility: string;
     status: string;
