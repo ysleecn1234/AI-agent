@@ -126,27 +126,47 @@ def get_usage_summary(user_id: str = Depends(get_current_user_id)):
         for cat in cost_by_category:
             cost_by_category[cat]["cost_krw"] = float(cost_by_category[cat]["cost_krw"])
 
-        # activity_logs 기반 건수 조회 (사용자 행위 기준)
+        # 건수 조회 — 카테고리별로 최적 소스 사용
         from services.ai_drive.db.postgres_client import ActivityLog
-        activity_counts_raw = (
-            db.query(
-                ActivityLog.action,
-                func.count().label("cnt"),
-            )
+
+        # AI 채팅: activity_logs action='chat' (실제 사용자 채팅 메시지 수)
+        ai_chat_cnt = (
+            db.query(func.count())
             .filter(
-                ActivityLog.action.in_(["chat", "doc_chat", "upload"]),
+                ActivityLog.action == "chat",
                 cast(ActivityLog.timestamp, Date) >= cur_first,
                 cast(ActivityLog.timestamp, Date) <= cur_last,
             )
-            .group_by(ActivityLog.action)
-            .all()
+            .scalar() or 0
         )
-        action_to_cat = {"chat": "ai_chat", "doc_chat": "doc_qa", "upload": "doc_processing"}
-        activity_counts: dict = {"ai_chat": 0, "doc_qa": 0, "doc_processing": 0}
-        for row in activity_counts_raw:
-            cat_key = action_to_cat.get(row.action)
-            if cat_key:
-                activity_counts[cat_key] = row.cnt
+
+        # 문서 Q&A: activity_logs에 doc_chat 미기록 → cost_logs llm:doc_chat 건수로 대체
+        doc_qa_cnt = (
+            db.query(func.count())
+            .filter(
+                CostLog.operation == "llm:doc_chat",
+                cast(CostLog.timestamp, Date) >= cur_first,
+                cast(CostLog.timestamp, Date) <= cur_last,
+            )
+            .scalar() or 0
+        )
+
+        # 문서 처리: upload + chat_save
+        doc_proc_cnt = (
+            db.query(func.count())
+            .filter(
+                ActivityLog.action.in_(["upload", "chat_save"]),
+                cast(ActivityLog.timestamp, Date) >= cur_first,
+                cast(ActivityLog.timestamp, Date) <= cur_last,
+            )
+            .scalar() or 0
+        )
+
+        activity_counts = {
+            "ai_chat": ai_chat_cnt,
+            "doc_qa": doc_qa_cnt,
+            "doc_processing": doc_proc_cnt,
+        }
 
         # activity_count를 cost_by_category에 병합
         for cat in cost_by_category:
@@ -155,6 +175,7 @@ def get_usage_summary(user_id: str = Depends(get_current_user_id)):
         for cat, cnt in activity_counts.items():
             if cat not in cost_by_category and cnt > 0:
                 cost_by_category[cat] = {"cost_krw": 0.0, "activity_count": cnt}
+
 
         # 전월 집계
         prev_rows = (
@@ -293,8 +314,10 @@ def get_usage_by_user(
         chat_map = {str(r.user_id): r.chat_count for r in chat_rows}
 
         users = []
+        seen_uids = set()
         for row in cost_rows:
             uid = str(row.user_id)
+            seen_uids.add(uid)
             users.append({
                 "user_id": uid,
                 "user_name": row.user_name or "알 수 없음",
@@ -302,6 +325,19 @@ def get_usage_by_user(
                 "total_tokens": int(row.sum_tokens or 0),
                 "chat_count": chat_map.get(uid, 0),
             })
+
+        # activity_logs에만 있는 사용자 (cost_logs에 없는 경우) 추가
+        for uid, cnt in chat_map.items():
+            if uid not in seen_uids:
+                # users 테이블에서 이름 조회 시도
+                user_obj = db.query(User).filter(User.id == uid).first()
+                users.append({
+                    "user_id": uid,
+                    "user_name": user_obj.name if user_obj else "알 수 없음",
+                    "total_cost_krw": 0.0,
+                    "total_tokens": 0,
+                    "chat_count": cnt,
+                })
 
         # 비용 순 정렬
         users.sort(key=lambda x: x["total_cost_krw"], reverse=True)
