@@ -91,11 +91,25 @@ def get_usage_summary(user_id: str = Depends(get_current_user_id)):
             prev_year, prev_mon = today.year, today.month - 1
         prev_first, prev_last = _parse_month(f"{prev_year}-{prev_mon:02d}")
 
+        # 선택한 월 전체 비용/토큰 집계 (실시간 cost_logs 기준)
+        cur_summary = (
+            db.query(
+                func.round(func.sum(CostLog.cost_krw)).label("sum_krw"),
+                func.sum(CostLog.cost_usd).label("sum_usd"),
+                func.sum(CostLog.tokens_used).label("sum_tokens"),
+            )
+            .filter(
+                cast(CostLog.timestamp, Date) >= cur_first,
+                cast(CostLog.timestamp, Date) <= cur_last,
+            )
+            .first()
+        )
+
         # 이번 달 cost_logs 집계
         cur_rows = (
             db.query(
                 CostLog.operation,
-                func.sum(CostLog.cost_krw).label("sum_krw"),
+                func.round(func.sum(CostLog.cost_krw)).label("sum_krw"),
                 func.sum(CostLog.cost_usd).label("sum_usd"),
                 func.sum(CostLog.tokens_used).label("sum_tokens"),
             )
@@ -191,7 +205,7 @@ def get_usage_summary(user_id: str = Depends(get_current_user_id)):
         # 전월 집계
         prev_rows = (
             db.query(
-                func.sum(CostLog.cost_krw).label("sum_krw"),
+                func.round(func.sum(CostLog.cost_krw)).label("sum_krw"),
                 func.sum(CostLog.tokens_used).label("sum_tokens"),
             )
             .filter(
@@ -296,7 +310,7 @@ def get_usage_by_user(
             db.query(
                 CostLog.user_id,
                 User.name.label("user_name"),
-                func.sum(CostLog.cost_krw).label("sum_krw"),
+                func.round(func.sum(CostLog.cost_krw)).label("sum_krw"),
                 func.sum(CostLog.tokens_used).label("sum_tokens"),
             )
             .outerjoin(User, CostLog.user_id == User.id)
@@ -362,7 +376,7 @@ def get_usage_by_department(
         rows = (
             db.query(
                 User.department,
-                func.sum(CostLog.cost_krw).label("sum_krw"),
+                func.round(func.sum(CostLog.cost_krw)).label("sum_krw"),
                 func.sum(CostLog.tokens_used).label("sum_tokens"),
                 func.count(func.distinct(CostLog.user_id)).label("user_count"),
             )
