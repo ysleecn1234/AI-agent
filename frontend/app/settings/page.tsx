@@ -31,6 +31,7 @@ interface SettingsData {
         email: string;
         department: string;
     };
+    monthly_budget: number;
 }
 
 export default function SettingsPage() {
@@ -56,6 +57,7 @@ export default function SettingsPage() {
             email: '',
             department: '',
         },
+        monthly_budget: 1000000,
     });
 
     const userName = typeof window !== 'undefined' ? localStorage.getItem('user_name') || '사용자' : '사용자';
@@ -68,7 +70,10 @@ export default function SettingsPage() {
         setIsLoading(true);
         try {
             const data = await api.getSettings();
-            setSettings(data);
+            setSettings({
+                ...data,
+                monthly_budget: data.monthly_budget ?? 1000000,
+            });
         } catch (error) {
             console.error('Error fetching settings:', error);
             // API 실패 시 기본값
@@ -89,6 +94,7 @@ export default function SettingsPage() {
                     email: localStorage.getItem('user_email') || '',
                     department: localStorage.getItem('department') || '',
                 },
+                monthly_budget: 1000000,
             });
         } finally {
             setIsLoading(false);
@@ -359,6 +365,38 @@ export default function SettingsPage() {
                                         </Label>
                                     </div>
                                 </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Budget Settings */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>예산 관리</CardTitle>
+                            <CardDescription>
+                                월 예산 한도를 설정하여 비용을 관리합니다
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="monthly_budget">월 예산 한도 (원)</Label>
+                                <Input
+                                    id="monthly_budget"
+                                    type="number"
+                                    value={settings.monthly_budget}
+                                    onChange={(e) =>
+                                        setSettings({
+                                            ...settings,
+                                            monthly_budget: parseInt(e.target.value) || 0,
+                                        })
+                                    }
+                                    placeholder="1000000"
+                                    min={0}
+                                    step={100000}
+                                />
+                                <p className="text-sm text-gray-500">
+                                    기본값: ₩1,000,000 · 관리 대시보드에서 이 한도를 기준으로 사용률을 표시합니다
+                                </p>
                             </div>
                         </CardContent>
                     </Card>

@@ -341,6 +341,23 @@ class ApiClient {
             body: JSON.stringify(data),
         });
     }
+
+    // Admin / Usage Statistics
+    public async getUsageSummary(): Promise<any> {
+        return this.request('/admin/usage/summary');
+    }
+
+    public async getUsageDaily(month: string): Promise<any> {
+        return this.request(`/admin/usage/daily?month=${month}`);
+    }
+
+    public async getUsageByUser(month: string): Promise<any> {
+        return this.request(`/admin/usage/by-user?month=${month}`);
+    }
+
+    public async getUsageByDepartment(month: string): Promise<any> {
+        return this.request(`/admin/usage/by-department?month=${month}`);
+    }
 }
 
 export const api = ApiClient.getInstance();

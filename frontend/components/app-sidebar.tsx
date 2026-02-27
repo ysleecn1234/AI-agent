@@ -7,7 +7,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import {
     MessageSquare, FolderOpen, Bot, Settings,
-    LogOut, Clock, MoreHorizontal, Pencil, Trash2
+    LogOut, Clock, MoreHorizontal, Pencil, Trash2, BarChart3
 } from 'lucide-react';
 import type { ChatSession } from '@/types/api';
 import { api } from '@/lib/api';
@@ -190,6 +190,14 @@ export function AppSidebar({
                 >
                     <Bot className="w-4 h-4" />
                     Agent Hub
+                </button>
+                <button
+                    onClick={() => handleClick(() => onNavigate('/admin'))}
+                    className={`w-full flex items-center gap-3 px-3 py-2 text-left text-sm font-medium rounded-lg transition-colors ${currentPath.startsWith('/admin') ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-100'
+                        }`}
+                >
+                    <BarChart3 className="w-4 h-4" />
+                    관리
                 </button>
                 <button
                     onClick={() => handleClick(() => onNavigate('/settings'))}

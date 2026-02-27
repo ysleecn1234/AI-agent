@@ -32,7 +32,7 @@ def get_db():
 # ==========================================
 # 1. 사용자 테이블 (신원 및 프로필)
 # ==========================================
-from sqlalchemy import Column, String
+from sqlalchemy import Column, String, Integer
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 import uuid
@@ -68,4 +68,5 @@ class UserSettings(Base):
         "account": True,
         "address": True,
     })
+    monthly_budget = Column(Integer, default=1000000)  # 월 예산 한도 (KRW)
 

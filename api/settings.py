@@ -42,10 +42,12 @@ class AccountInfo(BaseModel):
 class SettingsRequest(BaseModel):
     privacy: PrivacySettings = PrivacySettings()
     account: Optional[AccountInfo] = None
+    monthly_budget: Optional[int] = None  # 월 예산 한도 (KRW)
 
 class SettingsResponse(BaseModel):
     privacy: PrivacySettings
     account: AccountInfo
+    monthly_budget: int = 1000000
 
 
 # ==================== 라우터 설정 ====================
@@ -79,9 +81,11 @@ async def get_settings(user_id: str = Depends(get_current_user_id)):
                 mode=settings.privacy_mode,
                 detectionItems=DetectionItems(**(settings.detection_items or DEFAULT_DETECTION))
             )
+            monthly_budget = settings.monthly_budget if settings.monthly_budget is not None else 1000000
         else:
             # 설정이 없으면 기본값 반환
             privacy = PrivacySettings()
+            monthly_budget = 1000000
 
         # 계정 정보는 User 테이블에서 조회
         from application.database import User
@@ -95,6 +99,7 @@ async def get_settings(user_id: str = Depends(get_current_user_id)):
         return {
             "privacy": privacy.model_dump(),
             "account": account.model_dump(),
+            "monthly_budget": monthly_budget,
         }
     finally:
         db.close()
@@ -115,12 +120,15 @@ async def update_settings(request: SettingsRequest, user_id: str = Depends(get_c
             # 기존 설정 업데이트
             settings.privacy_mode = request.privacy.mode
             settings.detection_items = detection_dict
+            if request.monthly_budget is not None:
+                settings.monthly_budget = request.monthly_budget
         else:
             # 새 설정 생성
             settings = UserSettings(
                 user_id=user_id,
                 privacy_mode=request.privacy.mode,
                 detection_items=detection_dict,
+                monthly_budget=request.monthly_budget if request.monthly_budget is not None else 1000000,
             )
             db.add(settings)
 
