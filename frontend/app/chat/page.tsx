@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { Menu, User, Send, MessageSquare, FolderOpen, Bot, Settings, LogOut, Save, Sparkles, Archive, Copy, ThumbsUp, FileText, X, Clock, Plus } from 'lucide-react';
+import { Menu, User, Send, MessageSquare, FolderOpen, Bot, Settings, LogOut, Save, Sparkles, Archive, Copy, ThumbsUp, FileText, X, Clock, Plus, Upload } from 'lucide-react';
 import { SaveToDriveModal, CreateAgentModal } from '@/components/chat-action-modals';
 import { api } from '@/lib/api';
 import type { Agent, ChatSource } from '@/types/api';
@@ -57,6 +57,8 @@ function ChatContent() {
     const [recommendedAgents, setRecommendedAgents] = useState<Agent[]>([]);
     const [isLoadingAgents, setIsLoadingAgents] = useState(false);
     const [activeAgent, setActiveAgent] = useState<Agent | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
+    const [saveProgress, setSaveProgress] = useState(0);
 
 
     const loadSessions = useCallback(async () => {
@@ -291,15 +293,18 @@ function ChatContent() {
         description: string;
         visibility: 'private' | 'team' | 'public';
     }) => {
+        setIsSaving(true);
+        setSaveProgress(10);
         try {
             const content = data.scope === 'single' && selectedMessageIndex !== null
                 ? messages[selectedMessageIndex].content
                 : messages.map(m => `${m.role}: ${m.content}`).join('\n\n');
 
-            // API 연동: 드라이브 저장
-            const creatorId = typeof window !== 'undefined' ? localStorage.getItem('user_name') || 'anonymous' : 'anonymous';
+            // creator_id는 user_id(UUID) 사용 — user_name(한글)이 아님
+            const creatorId = typeof window !== 'undefined' ? localStorage.getItem('user_id') || 'anonymous' : 'anonymous';
             const creatorDept = typeof window !== 'undefined' ? localStorage.getItem('department') || 'general' : 'general';
 
+            setSaveProgress(30);
             await api.saveChatToDrive({
                 content,
                 creator_id: creatorId,
@@ -308,12 +313,15 @@ function ChatContent() {
                 description: data.description,
                 visibility: data.visibility
             });
-
-            alert('드라이브에 저장되었습니다!');
+            setSaveProgress(100);
             setSaveModalOpen(false);
+            // 잠깐 100% 보여주고 닫기
+            setTimeout(() => { setIsSaving(false); setSaveProgress(0); }, 600);
         } catch (error) {
             console.error('Save failed:', error);
-            alert('저장에 실패했습니다.');
+            setIsSaving(false);
+            setSaveProgress(0);
+            alert('저장에 실패했습니다. 잠시 후 다시 시도해 주세요.');
         }
     };
 
@@ -382,6 +390,27 @@ function ChatContent() {
     return (
 
         <div className="flex h-screen bg-white">
+            {/* 업로드 진행 토스트 */}
+            {isSaving && (
+                <div className="fixed top-4 right-4 z-50 bg-white border border-gray-200 rounded-xl shadow-lg px-5 py-4 w-72">
+                    <div className="flex items-center gap-3 mb-2">
+                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                            <Upload className="w-4 h-4 text-blue-600 animate-pulse" />
+                        </div>
+                        <div>
+                            <p className="text-sm font-semibold text-gray-900">드라이브에 저장 중</p>
+                            <p className="text-xs text-gray-500">임베딩 생성 및 업로드 중입니다...</p>
+                        </div>
+                    </div>
+                    <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                        <div
+                            className="h-2 bg-blue-600 rounded-full transition-all duration-700 ease-in-out"
+                            style={{ width: `${saveProgress}%` }}
+                        />
+                    </div>
+                    <p className="text-right text-xs text-blue-600 mt-1 font-medium">{saveProgress}%</p>
+                </div>
+            )}
             {/* 전체 화면 사이드바 기능용 Sheet, 그리고 메인 컨텐츠 영역 */}
             <div className="flex-1 flex flex-col min-w-0 bg-gray-50">
 

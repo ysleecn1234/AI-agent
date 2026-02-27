@@ -159,7 +159,7 @@ export function SaveToDriveModal({ isOpen, onClose, onSave, content }: SaveToDri
                             className="w-full justify-between"
                             type="button"
                         >
-                            <span>미리보기</span>
+                            <span>문서 미리보기</span>
                             {showPreview ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                         </Button>
 
