@@ -20,10 +20,15 @@ class ChatRequest(BaseModel):
     agent_id: Optional[str] = None
     context_id: Optional[str] = None
 
+class ChatSourceOut(BaseModel):
+    id: str
+    title: str
+    score: float
+
 class ChatResponse(BaseModel):
     response: str
     used_model: str
-    sources: List[str]
+    sources: List[ChatSourceOut]
     session_id: str
 
 class RenameRequest(BaseModel):

@@ -262,6 +262,7 @@ _PREMIUM_SYSTEM_PROMPT_TEMPLATE = """당신은 세계 최고 수준의 AI 어시
 1. 항상 풍부하고 자세하게 답변하세요. 짧고 간결한 답변은 금지입니다.
 2. 웹 검색 결과가 제공되면 반드시 활용하여 최신 정보를 포함하세요.
 3. 제공된 참고 자료에 없는 내용은 명확히 구분하세요.
+4. **[매우 중요] 당신은 내부 시스템과 완벽히 연동되어 있습니다. 사용자가 내부 문서 파악을 요청하면, 하단에 제공된 [참고 문서/참고 자료]를 자신이 직접 읽은 것처럼 자연스럽게 답변하세요. "직접 접근할 수 없다", "제공된 정보에 따르면" 같은 불필요한 사과나 변명을 절대 포함하지 마세요.**
 
 [답변 형식 — 반드시 마크다운으로 작성]
 - 제목(##)과 소제목(###)으로 구조화하세요
@@ -769,12 +770,12 @@ class Reasoner:
         # 복잡도 → task명
         task = self.complexity_task_map.get(complexity, "chat_reasoning")
         
-        # RAG 컨텍스트 구성 (기존 프롬프트 로직 유지)
+        # RAG 컨텍스트 구성
         rag_context = ""
         if documents:
             rag_context = "\n\n참고 문서:\n"
-            for i, doc in enumerate(documents[:3], 1):
-                rag_context += f"{i}. {doc.get('content', '')[:200]}...\n"
+            for i, doc in enumerate(documents[:5], 1):
+                rag_context += f"출처: {doc.get('source', '알 수 없음')} (스코어: {doc.get('score', 0.0)})\n내용: {doc.get('content', '')}\n\n"
         
         # 웹 검색 컨텍스트 구성
         web_context = ""
@@ -795,7 +796,8 @@ class Reasoner:
 {web_context}
 {rag_context}
 
-위 정보를 바탕으로 정확하고 유용한 답변을 제공해주세요."""
+위 정보를 바탕으로 정확하고 유용한 답변을 제공해주세요.
+[주의사항] 당신은 사용자의 내부 드라이브 시스템과 연동되어 문서를 읽을 능력이 있습니다. "직접 접근할 수 없다", "권한이 없다", "제공된 정보에 따르면" 같은 변명이나 사과를 절대 하지 말고, 위 참고 문서를 기반으로 자신이 직접 문서를 열람하고 답변하는 것처럼 자연스럽게 대답하세요."""
         
         
         # [Agent] 시스템 프롬프트 적용
@@ -1494,10 +1496,21 @@ class Pipeline:
 
             # 출처 정보 추출 (RAG 검색 결과에서)
             sources = []
+            seen_docs = set()
             for doc in research_result.get("retrieved_documents", []):
-                source = doc.get("source", "")
-                if source and source not in sources:
-                    sources.append(source)
+                doc_id = doc.get("doc_id", "")
+                title = doc.get("source", "알 수 없음")
+                score = doc.get("score", 0.0)
+                
+                # 중복 제거 기준: doc_id가 있으면 doc_id, 없으면 title
+                dedup_key = doc_id if doc_id else title
+                if dedup_key and dedup_key not in seen_docs:
+                    sources.append({
+                        "id": doc_id,
+                        "title": title,
+                        "score": score
+                    })
+                    seen_docs.add(dedup_key)
             
             return {
                 "session_id": session_id,
@@ -1566,9 +1579,12 @@ class Pipeline:
                 
                 if documents:
                     rag_context = "\n\n[참고 자료]\n"
+                    seen_docs = set()
                     for i, doc in enumerate(documents, 1):
-                        content = doc.get("content", "")[:500]
-                        source = doc.get("source", "")
+                        content = doc.get("content", "")
+                        source = doc.get("source", "알 수 없음")
+                        doc_id = doc.get("doc_id", "")
+                        score = doc.get("score", 0.0)
                         author = doc.get("author", "")
                         date = doc.get("date", "")
                         
@@ -1580,8 +1596,14 @@ class Pipeline:
                             rag_context += f" | 날짜: {date}"
                         rag_context += f"\n{content}\n\n"
                         
-                        if source and source not in sources:
-                            sources.append(source)
+                        dedup_key = doc_id if doc_id else source
+                        if dedup_key and dedup_key not in seen_docs:
+                            sources.append({
+                                "id": doc_id,
+                                "title": source,
+                                "score": score
+                            })
+                            seen_docs.add(dedup_key)
                     
                     print(f"  → RAG 결과: {len(documents)}개 문서")
             
