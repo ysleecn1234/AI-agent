@@ -281,8 +281,11 @@ export default function DrivePage() {
 
     const filteredDocuments = documents
         .filter((doc) => {
-            if (searchQuery && !(doc.title || '').toLowerCase().includes(searchQuery.toLowerCase())) {
-                return false;
+            if (searchQuery) {
+                // Mac OS는 파일명 한글을 NFD(분리형)로 저장하므로, NFC(조합형)로 정규화 후 비교
+                const normalizedTitle = (doc.title || '').normalize('NFC').toLowerCase();
+                const normalizedQuery = searchQuery.normalize('NFC').toLowerCase();
+                if (!normalizedTitle.includes(normalizedQuery)) return false;
             }
             if (filterTab === 'public' && doc.visibility !== 'public') return false;
             if (filterTab === 'team' && doc.visibility !== 'team') return false;
@@ -298,9 +301,12 @@ export default function DrivePage() {
             return 0;
         });
 
-    const filteredArchived = archivedDocuments.filter((doc) =>
-        !searchQuery || (doc.title || '').toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredArchived = archivedDocuments.filter((doc) => {
+        if (!searchQuery) return true;
+        const normalizedTitle = (doc.title || '').normalize('NFC').toLowerCase();
+        const normalizedQuery = searchQuery.normalize('NFC').toLowerCase();
+        return normalizedTitle.includes(normalizedQuery);
+    });
 
     return (
         <div className="flex flex-col h-screen bg-gray-50">
