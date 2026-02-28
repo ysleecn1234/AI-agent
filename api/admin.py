@@ -228,7 +228,7 @@ def get_usage_summary(
         budget_pct = round(total_krw_f / monthly_budget * 100, 1) if monthly_budget > 0 else 0.0
 
         return {
-            "month": f"{today.year}-{today.month:02d}",
+            "month": f"{cur_first.year}-{cur_first.month:02d}",
             "total_cost_krw": total_krw_f,
             "total_cost_usd": float(total_usd),
             "total_tokens": total_tokens,
