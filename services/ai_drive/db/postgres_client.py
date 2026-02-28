@@ -385,6 +385,7 @@ class PostgresClient:
                 {
                     "doc_id": str(doc.doc_id),
                     "title": doc.title,
+                    "description": doc.description,
                     "creator_department": doc.creator_department,
                     "visibility": doc.visibility,
                     "status": doc.status,
