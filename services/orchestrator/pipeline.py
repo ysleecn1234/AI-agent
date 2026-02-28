@@ -584,24 +584,20 @@ class Researcher:
             use_rag: RAG 시스템 사용 여부 (개발 중에는 False, 배포 시 True)
         """
         self.use_rag = use_rag
+        self.rag_searcher = None
         
-        # RAG 사용 시에만 클라이언트 초기화
-        if self.use_rag:
-            try:
-                from services.ai_drive.core.rag_search import RAGSearcher
-                
-                self.rag_searcher = RAGSearcher()
-                print("  [RAG] AI Drive RAGSearcher 연동 활성화")
-            except ImportError as e:
-                print(f"  [RAG] AI Drive 모듈을 찾을 수 없습니다: {e}")
-                print("  [RAG] Mock 검색 모드로 전환")
-                self.use_rag = False
-            except Exception as e:
-                print(f"  [RAG] 초기화 실패: {e}")
-                print("  [RAG] Mock 검색 모드로 전환")
-                self.use_rag = False
-        else:
-            print("  [RAG] Mock 검색 모드 (use_rag=False)")
+        # RAGSearcher는 use_rag 초기값과 무관하게 일단 초기화 시도
+        try:
+            from services.ai_drive.core.rag_search import RAGSearcher
+            self.rag_searcher = RAGSearcher()
+            print("  [RAG] AI Drive RAGSearcher 연동 준비 완료")
+        except ImportError as e:
+            print(f"  [RAG] AI Drive 모듈을 찾을 수 없습니다: {e}")
+        except Exception as e:
+            print(f"  [RAG] 초기화 실패: {e}")
+            
+        if not self.use_rag:
+            print("  [RAG] 기본 Mock 검색 모드 (use_rag=False)")
 
     
     def search_documents(self, query: str, top_k: int = 5, department: str = "개발팀") -> list[Dict[str, Any]]:
@@ -616,9 +612,11 @@ class Researcher:
         Returns:
             검색된 문서 리스트
         """
-        if self.use_rag:
+        if self.use_rag and self.rag_searcher is not None:
             return self._search_with_rag(query, top_k, department)
         else:
+            if self.use_rag and self.rag_searcher is None:
+                print("  [RAG] use_rag=True 이지만 rag_searcher가 초기화되지 않아 Mock 검색으로 폴백합니다.")
             return self._search_mock(query, top_k)
     
     def _search_with_rag(self, query: str, top_k: int, department: str) -> list[Dict[str, Any]]:
