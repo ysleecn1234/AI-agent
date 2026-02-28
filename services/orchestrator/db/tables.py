@@ -1,5 +1,5 @@
 from sqlalchemy import Column, String, Text, TIMESTAMP, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import uuid
@@ -17,6 +17,7 @@ class ChatLog(Base):
     session_id = Column(String, nullable=False, index=True)
     user_input = Column(Text, nullable=False)
     ai_response = Column(Text, nullable=False)
+    sources = Column(JSONB, server_default='[]')
     
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
 

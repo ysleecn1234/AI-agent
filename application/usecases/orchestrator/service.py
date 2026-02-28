@@ -120,20 +120,31 @@ class Orchestrator:
         """
         return self.pipeline.call_llm(task=task, prompt=prompt, options=options)
 
-    def save_chat_log(self, user_id: str, session_id: str, user_input: str, ai_response: str):
-        """채팅 로그 DB 저장"""
-        db = next(get_db())
+    def save_chat_log(self, user_id: str, session_id: str, user_input: str, ai_response: str, sources: Optional[List[Dict]] = None):
+        """
+        채팅 로그를 DB에 저장합니다. (Fire-and-forget 방식)
+        """
+        db = None
         try:
-            new_log = ChatLog(
+            db_gen = get_db()
+            db = next(db_gen)
+            log_entry = ChatLog(
                 user_id=user_id,
                 session_id=session_id,
                 user_input=user_input,
-                ai_response=ai_response
+                ai_response=ai_response,
+                sources=sources if sources is not None else []
             )
-            db.add(new_log)
+            db.add(log_entry)
             db.commit()
+        except Exception as e:
+            # Log the error but don't re-raise, as it's fire-and-forget
+            print(f"Error saving chat log: {e}")
+            if db:
+                db.rollback() # Rollback in case of error
         finally:
-            db.close()
+            if db:
+                db.close()
 
 # Singleton Instance
 orchestrator = Orchestrator()

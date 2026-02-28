@@ -71,7 +71,8 @@ async def chat_endpoint(
         user_id=user_id,
         session_id=session_id,
         user_input=req.message,
-        ai_response=result["response"]
+        ai_response=result["response"],
+        sources=result.get("sources", [])
     )
 
     return {
@@ -152,7 +153,12 @@ def get_chat_session_messages(
     messages = []
     for log in logs:
         messages.append({"role": "user", "content": log.user_input, "created_at": log.created_at.isoformat()})
-        messages.append({"role": "assistant", "content": log.ai_response, "created_at": log.created_at.isoformat()})
+        messages.append({
+            "role": "assistant", 
+            "content": log.ai_response, 
+            "sources": log.sources if hasattr(log, "sources") and log.sources else [],
+            "created_at": log.created_at.isoformat()
+        })
 
     return {"session_id": session_id, "messages": messages}
 
