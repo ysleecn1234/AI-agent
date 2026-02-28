@@ -444,7 +444,12 @@ export default function AdminPage() {
                                                                     <TableCell className="font-medium">{u.user_name}</TableCell>
                                                                     <TableCell className="text-right">₩{Math.round(u.total_cost_krw).toLocaleString()}</TableCell>
                                                                     <TableCell className="text-right">{u.total_tokens.toLocaleString()}</TableCell>
-                                                                    <TableCell className="text-right">{u.chat_count}</TableCell>
+                                                                    <TableCell className="text-right">
+                                                                        {u.chat_count}건
+                                                                        {u.doc_chat_count > 0 && (
+                                                                            <span className="text-gray-400 text-xs ml-1">(문서 {u.doc_chat_count}건)</span>
+                                                                        )}
+                                                                    </TableCell>
                                                                 </TableRow>
                                                             ))
                                                         ) : (
