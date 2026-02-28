@@ -75,20 +75,22 @@ def _get_monthly_budget(db, user_id: str) -> int:
 # ==================== 1. 이번 달 비용 요약 ====================
 
 @router.get("/usage/summary")
-def get_usage_summary(user_id: str = Depends(get_current_user_id)):
-    """이번 달 비용 요약 (카테고리별 + 전월 대비)"""
+def get_usage_summary(
+    month: str = Query(None, description="조회할 연-월 (YYYY-MM). 지정하지 않으면 이번 달 기준"),
+    user_id: str = Depends(get_current_user_id)
+):
+    """이번 달 (또는 선택된 달) 비용 요약 (카테고리별 + 전월 대비)"""
     from services.ai_drive.db.postgres_client import CostLog
 
     db = SessionLocal()
     try:
-        today = date.today()
-        cur_first, cur_last = _parse_month(f"{today.year}-{today.month:02d}")
+        cur_first, cur_last = _parse_month(month)
 
         # 전월 계산
-        if today.month == 1:
-            prev_year, prev_mon = today.year - 1, 12
+        if cur_first.month == 1:
+            prev_year, prev_mon = cur_first.year - 1, 12
         else:
-            prev_year, prev_mon = today.year, today.month - 1
+            prev_year, prev_mon = cur_first.year, cur_first.month - 1
         prev_first, prev_last = _parse_month(f"{prev_year}-{prev_mon:02d}")
 
         # 선택한 월 전체 비용/토큰 집계 (실시간 cost_logs 기준)

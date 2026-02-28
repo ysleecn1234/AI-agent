@@ -343,8 +343,9 @@ class ApiClient {
     }
 
     // Admin / Usage Statistics
-    public async getUsageSummary(): Promise<any> {
-        return this.request('/admin/usage/summary');
+    public async getUsageSummary(month?: string): Promise<any> {
+        const query = month ? `?month=${month}` : '';
+        return this.request(`/admin/usage/summary${query}`);
     }
 
     public async getUsageDaily(month: string): Promise<any> {

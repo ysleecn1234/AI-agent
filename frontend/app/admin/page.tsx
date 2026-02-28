@@ -84,7 +84,7 @@ export default function AdminPage() {
             setIsLoading(true);
             try {
                 const [s, d, u, dept] = await Promise.all([
-                    api.getUsageSummary(),
+                    api.getUsageSummary(selectedMonth),
                     api.getUsageDaily(selectedMonth),
                     api.getUsageByUser(selectedMonth),
                     api.getUsageByDepartment(selectedMonth),
@@ -221,7 +221,7 @@ export default function AdminPage() {
                                     <CardHeader className="pb-2">
                                         <CardTitle className="text-lg font-semibold text-blue-700 flex items-center gap-2">
                                             <Coins className="w-5 h-5" />
-                                            이번 달 이용 내역
+                                            {selectedMonth === monthOptions[0]?.value ? '이번 달 이용 내역' : `${selectedMonth} 이용 내역`}
                                         </CardTitle>
                                     </CardHeader>
                                     <CardContent>
