@@ -167,11 +167,17 @@ class RAGSearcher:
         - is_latest = true
         - visibility 확인
         
-        (Milvus에서 기본 필터링되지만, 추가 검증)
+        (Milvus에서 기본 필터링되지만, 추가 검증 및 최소 유사도 필터링)
         """
         verified = []
         
+        # 최소 유사도 임계값 (Cosine Similarity 0.45 이상만 신뢰)
+        MIN_SCORE_THRESHOLD = 0.45
+        
         for result in results:
+            if result.get("score", 0) < MIN_SCORE_THRESHOLD:
+                continue
+                
             visibility = result.get("visibility", "team")
             doc_department = result.get("creator_department", "")
             
