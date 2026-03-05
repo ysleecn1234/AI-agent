@@ -691,32 +691,41 @@ class Researcher:
         """
         정보 검색 실행
         
-        Args:
-            routing_result: Router의 출력 결과
-            
-        Returns:
-            검색 결과가 추가된 딕셔너리
+        - Drive 참조 ON (use_rag=True): Drive 문서 검색 우선 → 웹 보조
+        - Drive 참조 OFF (use_rag=False): 웹 검색만 실행
         """
         user_input = routing_result["user_input"]
-        intent = routing_result["intent"]
-        complexity = routing_result["complexity"]
         
-        # 1. 웹 검색 (Perplexity) - 모든 질문에 대해 실시간 정보 수집
-        web_context, web_citations = self._web_search(user_input)
+        documents = []
+        web_context = ""
+        web_citations = []
         
-        # 2. 문서 검색 (RAG) - 분석/검색 의도 또는 복잡한 질문일 때
-        should_search = (
-            self.use_rag or
-            intent in ["search", "analysis"] or
-            complexity in ["complex", "bulk"]
-        )
-        
-        if should_search:
-            print(f"  → 문서 검색 필요 (의도: {intent}, 복잡도: {complexity})")
-            documents = self.search_documents(user_input, top_k=5)
+        if self.use_rag:
+            # ──── Drive 참조 ON: 문서 검색 우선 ────
+            print("  [Drive 참조] Drive 문서 검색 시작")
+            
+            # 사용자 부서 조회 (권한 필터링용)
+            user_department = "개발팀"
+            user_id = routing_result.get("user_id")
+            if user_id:
+                try:
+                    from application.database import SessionLocal, User
+                    db = SessionLocal()
+                    user = db.query(User).filter(User.id == user_id).first()
+                    if user and user.department:
+                        user_department = user.department
+                    db.close()
+                except Exception as e:
+                    print(f"  ⚠️ 부서 조회 실패 (기본값 사용): {e}")
+            
+            documents = self.search_documents(user_input, top_k=5, department=user_department)
+            print(f"  [Drive 참조] Drive 검색 완료: {len(documents)}개 문서")
+            
+            # 웹 검색 (보조 — Drive 결과가 부족할 때 보완)
+            web_context, web_citations = self._web_search(user_input)
         else:
-            print(f"  → 문서 검색 스킵 (의도: {intent}, 복잡도: {complexity})")
-            documents = []
+            # ──── Drive 참조 OFF: 웹 검색만 ────
+            web_context, web_citations = self._web_search(user_input)
         
         return {
             **routing_result,
@@ -795,7 +804,8 @@ class Reasoner:
         if documents:
             rag_context = "\n\n참고 문서:\n"
             for i, doc in enumerate(documents[:5], 1):
-                rag_context += f"출처: {doc.get('source', '알 수 없음')} (스코어: {doc.get('score', 0.0)})\n내용: {doc.get('content', '')}\n\n"
+                doc_id = doc.get('doc_id', f'doc-{i}')
+                rag_context += f"[DOC_ID:{doc_id}] 출처: {doc.get('source', '알 수 없음')}\n내용: {doc.get('content', '')}\n\n"
         
         # 웹 검색 컨텍스트 구성
         web_context = ""
@@ -809,6 +819,12 @@ class Reasoner:
         _weekdays = ['월', '화', '수', '목', '금', '토', '일']
         time_str = _now.strftime(f"%Y년 %m월 %d일 ({_weekdays[_now.weekday()]}) %H:%M KST")
         
+        # 참고 문서 ID 반환 지시 (LLM이 실제로 참고한 문서만 필터링)
+        used_docs_instruction = ""
+        if documents:
+            used_docs_instruction = '\n[중요] 답변 작성 후, 실제로 내용을 참고한 문서의 DOC_ID만 답변 맨 마지막 줄에 다음 형식으로 적어주세요: <!--USED_DOCS:["id1","id2"]-->' \
+                                   '\n참고하지 않은 문서는 절대 포함하지 마세요. 어떤 문서도 참고하지 않았다면: <!--USED_DOCS:[]-->'
+        
         # 프롬프트 구성
         prompt = f"""현재 시간: {time_str}
 
@@ -818,7 +834,7 @@ class Reasoner:
 
 위 정보를 바탕으로 정확하고 유용한 답변을 제공해주세요.
 [주의사항] 당신은 사용자의 내부 드라이브 시스템과 연동되어 문서를 읽을 능력이 있습니다. "직접 접근할 수 없다", "권한이 없다", "제공된 정보에 따르면" 같은 변명이나 사과를 절대 하지 말고, 위 참고 문서를 기반으로 자신이 직접 문서를 열람하고 답변하는 것처럼 자연스럽게 대답하세요.
-또한 내용이 길더라도 단순 나열을 피하고, 질문의 목적에 맞게 핵심 위주로 명확하게 요약 및 그룹화하여 시각적으로 읽기 편하게 정리해주세요."""
+또한 내용이 길더라도 단순 나열을 피하고, 질문의 목적에 맞게 핵심 위주로 명확하게 요약 및 그룹화하여 시각적으로 읽기 편하게 정리해주세요.{used_docs_instruction}"""
         
         
         # [Agent] 시스템 프롬프트 적용
@@ -1448,6 +1464,24 @@ class Pipeline:
             "intent": intent.value
         }
 
+    @staticmethod
+    def _extract_used_docs(response: str) -> list:
+        """LLM 응답에서 <!--USED_DOCS:[...]-->  태그를 파싱하여 doc_id 리스트 반환"""
+        import re, json
+        match = re.search(r'<!--USED_DOCS:(\[.*?\])-->', response)
+        if match:
+            try:
+                return json.loads(match.group(1))
+            except (json.JSONDecodeError, Exception):
+                pass
+        return []
+    
+    @staticmethod
+    def _strip_used_docs_tag(response: str) -> str:
+        """LLM 응답에서 <!--USED_DOCS:[...]-->  태그를 제거"""
+        import re
+        return re.sub(r'\s*<!--USED_DOCS:\[.*?\]-->\s*', '', response).strip()
+
     def process(self, user_input: str, user_id: Optional[str] = None, system_prompt: Optional[str] = None) -> Dict[str, Any]:
         """전체 파이프라인 실행"""
         print(f"[Pipeline] 처리 시작: {user_input[:50]}...")
@@ -1481,10 +1515,18 @@ class Pipeline:
             print("[Step 3/5] Reasoner - 논리적 답변 생성 및 검증")
             step_start = time.time()
             reasoning_result = self.reasoner.reason(research_result)
+            
+            # USED_DOCS 태그 추출 (Synthesizer 전에 파싱)
+            used_doc_ids = self._extract_used_docs(reasoning_result.get("response", ""))
+            # 태그를 응답에서 제거
+            if reasoning_result.get("response"):
+                reasoning_result["response"] = self._strip_used_docs_tag(reasoning_result["response"])
+            
             step_duration = (time.time() - step_start) * 1000
             self.logger.log_step("Reasoner", {
                 "model": reasoning_result.get("model_used"),
-                "verified": reasoning_result.get("verified")
+                "verified": reasoning_result.get("verified"),
+                "used_docs": len(used_doc_ids)
             }, step_duration)
             
             # Step 4: Synthesizer
@@ -1532,6 +1574,11 @@ class Pipeline:
                         "score": score
                     })
                     seen_docs.add(dedup_key)
+            
+            # LLM이 실제 참고한 문서만 필터링
+            if used_doc_ids:
+                sources = [s for s in sources if s["id"] in used_doc_ids]
+                print(f"  [Source Filter] LLM 참고 문서: {len(sources)}개 (전체 {len(research_result.get('retrieved_documents', []))}개 중)")
             
             # 웹 검색 정보 추출
             web_citations = research_result.get("web_citations", [])
@@ -1616,7 +1663,7 @@ class Pipeline:
                         date = doc.get("date", "")
                         
                         rag_context += f"--- 자료 {i} ---\n"
-                        rag_context += f"출처: {source}"
+                        rag_context += f"[DOC_ID:{doc_id}] 출처: {source}"
                         if author:
                             rag_context += f" | 작성자: {author}"
                         if date:
@@ -1668,6 +1715,8 @@ class Pipeline:
                 user_prompt += f"\n\n[웹 검색 결과]\n{web_context}"
             if rag_context:
                 user_prompt += rag_context
+                user_prompt += '\n[중요] 답변 작성 후, 실제로 내용을 참고한 문서의 DOC_ID만 답변 맨 마지막 줄에 다음 형식으로 적어주세요: <!--USED_DOCS:["id1","id2"]-->' \
+                              '\n참고하지 않은 문서는 절대 포함하지 마세요. 어떤 문서도 참고하지 않았다면: <!--USED_DOCS:[]-->'
             
             # 4. 프리미엄 모델 호출 (call_llm이 아닌 litellm 직접 호출)
             #    - TASK_MODEL_CONFIG에 없는 모델이므로 직접 호출
@@ -1738,6 +1787,13 @@ class Pipeline:
             
             # 7. 민감정보 마스킹
             safe_response = self.guardrail.mask_sensitive_info(content)
+            
+            # USED_DOCS 파싱 및 sources 필터링
+            used_doc_ids = self._extract_used_docs(safe_response)
+            safe_response = self._strip_used_docs_tag(safe_response)
+            if used_doc_ids:
+                sources = [s for s in sources if s["id"] in used_doc_ids]
+                print(f"  [Source Filter] LLM 참고 문서: {len(sources)}개")
             
             # 세션 종료
             self.logger.end_session(

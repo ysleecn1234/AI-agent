@@ -171,8 +171,8 @@ class RAGSearcher:
         """
         verified = []
         
-        # 최소 유사도 임계값 (Cosine Similarity 0.45 이상만 신뢰)
-        MIN_SCORE_THRESHOLD = 0.45
+        # 최소 유사도 임계값 (Cosine Similarity 0.30 이상만)
+        MIN_SCORE_THRESHOLD = 0.30
         
         for result in results:
             if result.get("score", 0) < MIN_SCORE_THRESHOLD:
