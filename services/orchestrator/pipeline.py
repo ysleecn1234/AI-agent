@@ -701,7 +701,7 @@ class Researcher:
         web_citations = []
         
         if self.use_rag:
-            # ──── Drive 참조 ON: 문서 검색 우선 ────
+            # ──── Drive 참조 ON: Drive 문서 검색만 실행 ────
             print("  [Drive 참조] Drive 문서 검색 시작")
             
             # 사용자 부서 조회 (권한 필터링용)
@@ -720,9 +720,6 @@ class Researcher:
             
             documents = self.search_documents(user_input, top_k=5, department=user_department)
             print(f"  [Drive 참조] Drive 검색 완료: {len(documents)}개 문서")
-            
-            # 웹 검색 (보조 — Drive 결과가 부족할 때 보완)
-            web_context, web_citations = self._web_search(user_input)
         else:
             # ──── Drive 참조 OFF: 웹 검색만 ────
             web_context, web_citations = self._web_search(user_input)
