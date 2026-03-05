@@ -691,7 +691,7 @@ class Researcher:
         """
         정보 검색 실행
         
-        - Drive 참조 ON (use_rag=True): Drive 문서 검색 우선 → 웹 보조
+        - Drive 참조 ON (use_rag=True): Drive 문서 검색 → 관련 문서 전체 텍스트 조회
         - Drive 참조 OFF (use_rag=False): 웹 검색만 실행
         """
         user_input = routing_result["user_input"]

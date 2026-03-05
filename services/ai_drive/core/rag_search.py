@@ -1,9 +1,9 @@
 """
 AI 드라이브 - RAG 4단계 검색
 Step 1: 질문 임베딩 생성
-Step 2: Milvus 유사도 검색 (Top-10)
+Step 2: Milvus 유사도 검색 (Top-30)
 Step 3: 권한 필터링 (status, is_latest, visibility, department)
-Step 4: Freshness Score 적용 → Top-5 반환
+Step 4: Freshness Score 적용 → Top-10 반환
 """
 
 import os
@@ -22,7 +22,7 @@ class RAGSearcher:
     
     오케스트레이터 Researcher 레이어와 연동
     - 입력: 질문, 사용자 부서
-    - 출력: 관련 문서 청크 (Top-5)
+    - 출력: 관련 문서 청크 (Top-10)
     """
     
     def __init__(self):
@@ -44,7 +44,7 @@ class RAGSearcher:
         Args:
             query: 사용자 질문
             user_department: 사용자 부서 (권한 필터링용)
-            top_k: 최종 반환 개수 (기본 5)
+            top_k: 최종 반환 개수 (기본 10)
             
         Returns:
             [
@@ -71,8 +71,8 @@ class RAGSearcher:
             print("  ⚠️ 임베딩 생성 실패")
             return []
         
-        # Step 2: Milvus 유사도 검색 (Top-10)
-        print("[Step 2/4] Milvus 유사도 검색 (Top-10)")
+        # Step 2: Milvus 유사도 검색 (Top-30)
+        print("[Step 2/4] Milvus 유사도 검색 (Top-30)")
         raw_results = self._search_similar_chunks(
             query_embedding=query_embedding,
             user_department=user_department,
@@ -91,7 +91,7 @@ class RAGSearcher:
         filtered_results = self._verify_permissions(raw_results, user_department)
         print(f"  → 필터링 후: {len(filtered_results)}개")
         
-        # Step 4: Freshness Score 적용 → Top-5 반환
+        # Step 4: Freshness Score 적용 → Top-10 반환
         print("[Step 4/4] Freshness Score 적용")
         final_results = self._apply_freshness_score(filtered_results, top_k)
         print(f"  → 최종 결과: {len(final_results)}개")
