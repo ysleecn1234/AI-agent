@@ -14,6 +14,16 @@ from pptx import Presentation
 import csv
 from pathlib import Path
 from openpyxl import load_workbook
+import base64
+from litellm import completion
+import sys
+import os
+# CostLogger 로드를 위해 상위 경로 추가
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+try:
+    from core.cost_logger import CostLogger
+except ImportError:
+    CostLogger = None
 
 class FileParser:
     """
@@ -86,14 +96,85 @@ class FileParser:
         return "\n\n".join(text_content)
     
     def _parse_pdf_fitz(self, file_path: str) -> str:
-        """PyMuPDF fallback"""
+        """
+        PyMuPDF fallback + Gemini OCR for Image-based PDFs
+        """
         text_content = []
         doc = fitz.open(file_path)
+        
+        ocr_page_limit = 50  # OCR 최대 페이지수 제한
+        ocr_count = 0
+        
+        # 비용 로거 초기화 (가능한 경우)
+        cost_logger = CostLogger() if CostLogger else None
+
         for page_num in range(len(doc)):
             page = doc[page_num]
             text = page.get_text()
-            if text.strip():
+            
+            # 텍스트 추출 결과가 50자 미만이면 이미지 스캔본 페이지로 간주 -> OCR Fallback
+            if len(text.strip()) < 50:
+                if ocr_count < ocr_page_limit:
+                    try:
+                        print(f"  🔍 [Page {page_num + 1}] 텍스트 추출 부족({len(text.strip())}자). 이미지 OCR 진행...")
+                        # 1. 200 DPI로 이미지 렌더링
+                        pix = page.get_pixmap(dpi=200)
+                        img_bytes = pix.tobytes("png")
+                        
+                        # 2. Base64 인코딩
+                        base64_img = base64.b64encode(img_bytes).decode("utf-8")
+                        
+                        # 3. Gemini Vision API 호출
+                        response = completion(
+                            model="gemini/gemini-3.0-flash-preview",
+                            messages=[
+                                {
+                                    "role": "user",
+                                    "content": [
+                                        {"type": "text", "text": "이 이미지에서 모든 텍스트를 정확하게 추출해주세요. 표가 있으면 구조를 유지해주세요. 한국어 텍스트에 주의해주세요."},
+                                        {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{base64_img}"}}
+                                    ]
+                                }
+                            ],
+                            max_tokens=2000,
+                            temperature=0.1
+                        )
+                        
+                        ocr_text = response.choices[0].message.content
+                        if ocr_text:
+                            text_content.append(f"[Page {page_num + 1} (OCR)]\n{ocr_text}")
+                            ocr_count += 1
+                            
+                            # 4. 비용 로깅 (llm:ocr)
+                            if cost_logger and response.usage:
+                                from utils.cost_calculator import APICostCalculator
+                                calc = APICostCalculator()
+                                cost_info = calc.calculate_cost("gemini-3.0-flash-preview", response.usage.prompt_tokens, response.usage.completion_tokens)
+                                
+                                cost_logger.log_embedding_cost(
+                                    user_id="system_ocr",
+                                    tokens=response.usage.total_tokens,
+                                    cost_usd=cost_info["cost_usd"]["total"],
+                                    cost_krw=cost_info["cost_krw"]["total"],
+                                    operation="llm:ocr"
+                                )
+                        else:
+                            # OCR 결과도 없으면 원래 추출된 텍스트라도 추가
+                            if text.strip():
+                                text_content.append(f"[Page {page_num + 1}]\n{text}")
+                            
+                    except Exception as ocr_err:
+                        print(f"  ⚠️ OCR 처리 실패 [Page {page_num + 1}]: {str(ocr_err)}")
+                        if text.strip():
+                            text_content.append(f"[Page {page_num + 1}]\n{text}")
+                else:
+                    print(f"  ⚠️ [Page {page_num + 1}] OCR 제한({ocr_page_limit}페이지) 초과로 스킵.")
+                    if text.strip():
+                        text_content.append(f"[Page {page_num + 1}]\n{text}")
+            else:
+                # 정상 텍스트 페이지
                 text_content.append(f"[Page {page_num + 1}]\n{text}")
+                
         doc.close()
         return "\n\n".join(text_content)
     
