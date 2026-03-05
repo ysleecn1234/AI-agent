@@ -36,7 +36,7 @@ class RAGSearcher:
         self,
         query: str,
         user_department: str,
-        top_k: int = 5
+        top_k: int = 10
     ) -> List[Dict[str, Any]]:
         """
         RAG 4단계 검색 실행
@@ -76,7 +76,7 @@ class RAGSearcher:
         raw_results = self._search_similar_chunks(
             query_embedding=query_embedding,
             user_department=user_department,
-            top_k=10  # 권한 필터링 전 여유있게
+            top_k=30  # 권한 필터링 전 여유있게
         )
         
         print(f"  → 검색 결과: {len(raw_results)}개")

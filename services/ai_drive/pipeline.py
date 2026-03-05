@@ -251,6 +251,10 @@ class DocumentPipeline:
             else:
                 print("  ✅ 개인정보 미감지")
             
+            # 전체 텍스트 DB 저장 (검색용 — PII 마스킹 후 텍스트 저장)
+            full_text_to_store = text if len(text) < 500000 else text[:500000]
+            self.postgres_client.update_full_text(doc_id, full_text_to_store)
+            
             # Step 3: 청킹
             print("[Step 3/6] 텍스트 청킹")
             chunks = self.chunker.chunk(text)

@@ -53,6 +53,7 @@ class Document(Base):
     source_type = Column(String(20)) # file/chat/agent
     chunk_count = Column(Integer, default=0)
     file_path = Column(String(500))  # 저장된 파일 경로
+    full_text = Column(Text, nullable=True)  # 전체 파싱된 텍스트 (검색용)
 
 
 
@@ -132,7 +133,8 @@ class PostgresClient:
         chunk_count: int = 0,
         version: int = 1,
         parent_doc_id: str = None,
-        file_path: str = ""
+        file_path: str = "",
+        full_text: str = None
     ) -> str:
         """
         문서 메타데이터 생성
@@ -165,7 +167,8 @@ class PostgresClient:
                 chunk_count=chunk_count,
                 version=version,
                 parent_doc_id=uuid.UUID(parent_doc_id) if parent_doc_id else None,
-                file_path=file_path
+                file_path=file_path,
+                full_text=full_text
             )
             
             session.add(doc)
@@ -212,9 +215,35 @@ class PostgresClient:
                 "filename": doc.filename,
                 "source_type": doc.source_type,
                 "chunk_count": doc.chunk_count,
-                "file_path": doc.file_path,  # [New] 파일 다운로드/서빙을 위해 필요
+                "file_path": doc.file_path,
+                "full_text": doc.full_text,
             }
             
+        finally:
+            session.close()
+    
+    def get_full_text(self, doc_id: str) -> Optional[str]:
+        """문서 전체 텍스트 조회 (검색용)"""
+        session = self.Session()
+        try:
+            doc = session.query(Document).filter(
+                Document.doc_id == uuid.UUID(doc_id)
+            ).first()
+            return doc.full_text if doc else None
+        finally:
+            session.close()
+    
+    def update_full_text(self, doc_id: str, full_text: str):
+        """문서 전체 텍스트 업데이트 (업로드 파싱 후 저장)"""
+        session = self.Session()
+        try:
+            doc = session.query(Document).filter(
+                Document.doc_id == uuid.UUID(doc_id)
+            ).first()
+            if doc:
+                doc.full_text = full_text
+                session.commit()
+                print(f"✓ 전체 텍스트 저장: {doc_id} ({len(full_text)}자)")
         finally:
             session.close()
     

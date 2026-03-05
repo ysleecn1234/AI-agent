@@ -701,7 +701,7 @@ class Researcher:
         web_citations = []
         
         if self.use_rag:
-            # ──── Drive 참조 ON: Drive 문서 검색만 실행 ────
+            # ──── Drive 참조 ON: Drive 문서 검색 → 관련 문서 전체 텍스트 가져오기 ────
             print("  [Drive 참조] Drive 문서 검색 시작")
             
             # 사용자 부서 조회 (권한 필터링용)
@@ -718,15 +718,54 @@ class Researcher:
                 except Exception as e:
                     print(f"  ⚠️ 부서 조회 실패 (기본값 사용): {e}")
             
-            documents = self.search_documents(user_input, top_k=5, department=user_department)
-            print(f"  [Drive 참조] Drive 검색 완료: {len(documents)}개 문서")
+            documents = self.search_documents(user_input, top_k=10, department=user_department)
+            print(f"  [Drive 참조] Drive 검색 완료: {len(documents)}개 청크")
+            
+            # ── 관련 문서 식별 + 전체 텍스트 가져오기 ──
+            full_docs = []
+            if documents:
+                # doc_id별 점수 합산 → 가장 관련 높은 문서 식별
+                from collections import defaultdict
+                doc_scores = defaultdict(lambda: {"score_sum": 0, "count": 0, "title": ""})
+                for doc in documents:
+                    did = doc.get("doc_id", "")
+                    if did:
+                        doc_scores[did]["score_sum"] += doc.get("score", 0)
+                        doc_scores[did]["count"] += 1
+                        doc_scores[did]["title"] = doc.get("source", "")
+                
+                # 상위 2개 문서 선택 (점수 합산 기준)
+                top_doc_ids = sorted(
+                    doc_scores.items(),
+                    key=lambda x: x[1]["score_sum"],
+                    reverse=True
+                )[:2]
+                
+                # PostgreSQL에서 전체 텍스트 조회
+                try:
+                    from services.ai_drive.db.postgres_client import PostgresClient
+                    pg = PostgresClient()
+                    for did, info in top_doc_ids:
+                        full_text = pg.get_full_text(did)
+                        if full_text:
+                            full_docs.append({
+                                "doc_id": did,
+                                "title": info["title"],
+                                "full_text": full_text
+                            })
+                            print(f"  [전체 문서] {info['title']} ({len(full_text)}자)")
+                    pg.engine.dispose()
+                except Exception as e:
+                    print(f"  ⚠️ 전체 텍스트 조회 실패: {e}")
         else:
             # ──── Drive 참조 OFF: 웹 검색만 ────
             web_context, web_citations = self._web_search(user_input)
+            full_docs = []
         
         return {
             **routing_result,
             "retrieved_documents": documents,
+            "full_docs": full_docs,
             "web_context": web_context,
             "web_citations": web_citations,
         }
@@ -796,11 +835,25 @@ class Reasoner:
         # 복잡도 → task명
         task = self.complexity_task_map.get(complexity, "chat_reasoning")
         
-        # RAG 컨텍스트 구성
+        # RAG 컨텍스트 구성 (전체 문서 우선, 없으면 청크 폴백)
         rag_context = ""
-        if documents:
+        full_docs = context.get("full_docs", [])
+        
+        if full_docs:
+            # ── 전체 문서 텍스트 사용 (정확도 최우선) ──
             rag_context = "\n\n참고 문서:\n"
-            for i, doc in enumerate(documents[:5], 1):
+            for i, fdoc in enumerate(full_docs, 1):
+                doc_id = fdoc.get("doc_id", f"doc-{i}")
+                title = fdoc.get("title", "알 수 없음")
+                text = fdoc.get("full_text", "")
+                # 토큰 제한: 문서당 최대 80,000자 (약 50K토큰)
+                if len(text) > 80000:
+                    text = text[:80000] + "\n... (이하 생략)"
+                rag_context += f"[DOC_ID:{doc_id}] 출처: {title}\n내용:\n{text}\n\n"
+        elif documents:
+            # ── 청크 기반 폴백 (전체 텍스트 없을 때) ──
+            rag_context = "\n\n참고 문서:\n"
+            for i, doc in enumerate(documents[:10], 1):
                 doc_id = doc.get('doc_id', f'doc-{i}')
                 rag_context += f"[DOC_ID:{doc_id}] 출처: {doc.get('source', '알 수 없음')}\n내용: {doc.get('content', '')}\n\n"
         
@@ -818,7 +871,7 @@ class Reasoner:
         
         # 참고 문서 ID 반환 지시 (LLM이 실제로 참고한 문서만 필터링)
         used_docs_instruction = ""
-        if documents:
+        if documents or full_docs:
             used_docs_instruction = '\n[중요] 답변 작성 후, 실제로 내용을 참고한 문서의 DOC_ID만 답변 맨 마지막 줄에 다음 형식으로 적어주세요: <!--USED_DOCS:["id1","id2"]-->' \
                                    '\n참고하지 않은 문서는 절대 포함하지 마세요. 어떤 문서도 참고하지 않았다면: <!--USED_DOCS:[]-->'
         
@@ -1646,7 +1699,7 @@ class Pipeline:
             
             if use_rag:
                 print("  → RAG 검색 실행")
-                documents = self.researcher.search_documents(user_input, top_k=5)
+                documents = self.researcher.search_documents(user_input, top_k=10)
                 
                 if documents:
                     rag_context = "\n\n[참고 자료]\n"
