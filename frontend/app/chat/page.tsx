@@ -23,6 +23,8 @@ interface ChatMessage {
     role: 'user' | 'assistant';
     content: string;
     sources?: ChatSource[];
+    web_searched?: boolean;
+    web_citations?: string[];
     liked?: boolean;
 }
 
@@ -182,6 +184,8 @@ function ChatContent() {
                 role: 'assistant',
                 content: response.response,
                 sources: response.sources || [],
+                web_searched: response.web_searched || false,
+                web_citations: response.web_citations || [],
                 liked: false
             }]);
         } catch (error) {
@@ -534,6 +538,45 @@ function ChatContent() {
                                             <p className="whitespace-pre-wrap">{msg.content}</p>
                                         )}
                                     </div>
+
+                                    {/* Web Search Citations (AI messages only) */}
+                                    {msg.role === 'assistant' && msg.web_searched && msg.web_citations && msg.web_citations.length > 0 && (
+                                        <div className="bg-green-50 border border-green-200 rounded-lg p-3 space-y-2">
+                                            <div className="flex items-center gap-2 text-xs font-medium text-green-900">
+                                                <span>🌐</span>
+                                                <span>웹 검색 참조 ({msg.web_citations.length})</span>
+                                            </div>
+                                            <div className="space-y-1">
+                                                {msg.web_citations.map((url, cIdx) => (
+                                                    <div key={cIdx} className="text-xs">
+                                                        <a
+                                                            href={url}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="text-green-600 hover:underline truncate block"
+                                                        >
+                                                            {(() => {
+                                                                try {
+                                                                    const hostname = new URL(url).hostname.replace('www.', '');
+                                                                    return hostname;
+                                                                } catch {
+                                                                    return url;
+                                                                }
+                                                            })()}
+                                                        </a>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Web Search Badge (no citations) */}
+                                    {msg.role === 'assistant' && msg.web_searched && (!msg.web_citations || msg.web_citations.length === 0) && (
+                                        <div className="flex items-center gap-1.5 text-xs text-green-700 bg-green-50 border border-green-200 rounded-md px-2.5 py-1.5 w-fit">
+                                            <span>🌐</span>
+                                            <span>웹 검색 결과 반영</span>
+                                        </div>
+                                    )}
 
                                     {/* RAG Sources (AI messages only) */}
                                     {msg.role === 'assistant' && msg.sources && msg.sources.length > 0 && (

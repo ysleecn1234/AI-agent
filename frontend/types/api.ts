@@ -197,6 +197,8 @@ export interface ChatResponse {
     used_model: string;
     session_id: string;
     sources?: ChatSource[];
+    web_searched?: boolean;
+    web_citations?: string[];
 }
 
 // API Response Wrapper

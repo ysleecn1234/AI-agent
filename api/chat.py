@@ -30,6 +30,8 @@ class ChatResponse(BaseModel):
     used_model: str
     sources: List[ChatSourceOut]
     session_id: str
+    web_searched: bool = False
+    web_citations: List[str] = []
 
 class RenameRequest(BaseModel):
     title: str
@@ -79,7 +81,9 @@ async def chat_endpoint(
         "response": result["response"],
         "used_model": result.get("used_model", "unknown"),
         "sources": result.get("sources", []),
-        "session_id": session_id
+        "session_id": session_id,
+        "web_searched": result.get("web_searched", False),
+        "web_citations": result.get("web_citations", []),
     }
 
 

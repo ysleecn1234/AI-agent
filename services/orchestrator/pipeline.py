@@ -702,10 +702,11 @@ class Researcher:
         complexity = routing_result["complexity"]
         
         # 1. 웹 검색 (Perplexity) - 모든 질문에 대해 실시간 정보 수집
-        web_context = self._web_search(user_input)
+        web_context, web_citations = self._web_search(user_input)
         
         # 2. 문서 검색 (RAG) - 분석/검색 의도 또는 복잡한 질문일 때
         should_search = (
+            self.use_rag or
             intent in ["search", "analysis"] or
             complexity in ["complex", "bulk"]
         )
@@ -721,10 +722,16 @@ class Researcher:
             **routing_result,
             "retrieved_documents": documents,
             "web_context": web_context,
+            "web_citations": web_citations,
         }
     
-    def _web_search(self, query: str) -> str:
-        """Perplexity API를 통한 실시간 웹 검색"""
+    def _web_search(self, query: str) -> tuple:
+        """
+        Perplexity API를 통한 실시간 웹 검색
+        
+        Returns:
+            (content: str, citations: list[str]) - 검색 결과 텍스트와 출처 URL 리스트
+        """
         try:
             print(f"  → 웹 검색 실행: {query[:30]}...")
             response = litellm.completion(
@@ -733,11 +740,24 @@ class Researcher:
                 max_tokens=500,
             )
             result = response.choices[0].message.content or ""
-            print(f"  → 웹 검색 완료 ({len(result)}자)")
-            return result
+            
+            # Perplexity API citations 추출
+            citations = []
+            try:
+                if hasattr(response, 'citations') and response.citations:
+                    citations = list(response.citations)
+                elif hasattr(response, '_hidden_params'):
+                    raw = response._hidden_params.get('original_response', {})
+                    if hasattr(raw, 'citations'):
+                        citations = list(raw.citations)
+            except Exception:
+                pass
+            
+            print(f"  → 웹 검색 완료 ({len(result)}자, 출처 {len(citations)}개)")
+            return result, citations
         except Exception as e:
             print(f"  → 웹 검색 실패 (Fallback: 웹 검색 없이 진행): {e}")
-            return ""
+            return "", []
 
 
 
@@ -1513,11 +1533,17 @@ class Pipeline:
                     })
                     seen_docs.add(dedup_key)
             
+            # 웹 검색 정보 추출
+            web_citations = research_result.get("web_citations", [])
+            web_searched = bool(research_result.get("web_context", ""))
+            
             return {
                 "session_id": session_id,
                 "response": final_result["final_response"],
                 "used_model": model_used,
                 "sources": sources,
+                "web_searched": web_searched,
+                "web_citations": web_citations,
                 "metadata": {
                     "intent": routing_result.get("intent"),
                     "complexity": routing_result.get("complexity"),
@@ -1610,6 +1636,7 @@ class Pipeline:
             
             # 2-1. 웹 검색 (Perplexity 모델이 아닌 경우에만 — Perplexity는 자체 검색 내장)
             web_context = ""
+            web_citations = []
             if model_type != "PERPLEXITY":
                 try:
                     print(f"  → 웹 검색 실행: {user_input[:30]}...")
@@ -1619,7 +1646,19 @@ class Pipeline:
                         max_tokens=500,
                     )
                     web_context = web_response.choices[0].message.content or ""
-                    print(f"  → 웹 검색 완료 ({len(web_context)}자)")
+                    
+                    # Perplexity API citations 추출
+                    try:
+                        if hasattr(web_response, 'citations') and web_response.citations:
+                            web_citations = list(web_response.citations)
+                        elif hasattr(web_response, '_hidden_params'):
+                            raw = web_response._hidden_params.get('original_response', {})
+                            if hasattr(raw, 'citations'):
+                                web_citations = list(raw.citations)
+                    except Exception:
+                        pass
+                    
+                    print(f"  → 웹 검색 완료 ({len(web_context)}자, 출처 {len(web_citations)}개)")
                 except Exception as e:
                     print(f"  → 웹 검색 실패 (스킵): {e}")
             
@@ -1711,6 +1750,8 @@ class Pipeline:
                 "response": safe_response,
                 "used_model": model_name,
                 "sources": sources,
+                "web_searched": bool(web_context),
+                "web_citations": web_citations,
                 "metadata": {
                     "intent": "premium_direct",
                     "complexity": "premium",
