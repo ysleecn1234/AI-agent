@@ -43,7 +43,7 @@ ESSENTIAL_AGENTS = [
     # 2. 문서/작문 (Writing)
     {
         "name": "보고서 요약 요정",
-        "category": "문서작성",
+        "category": "생산성",
         "model_type": "GPT-4o-mini",
         "description": "긴 보고서나 문서를 1페이지 핵심 요약본(Executive Summary)으로 압축하여 바쁜 상사가 바로 이해할 수 있게 합니다.",
         "system_prompt": "당신은 유능한 비서입니다.\n사용자가 입력한 긴 텍스트를 분석하여 '1페이지 요약 보고서' 형태로 압축하세요.\n\n[포맷]\n1. 전체 요약 (3문장 이내)\n2. 핵심 포인트 (Bullet Point 3~5개)\n3. 결론 및 시사점\n\n핵심 내용이 누락되지 않도록 주의하세요.",
@@ -54,7 +54,7 @@ ESSENTIAL_AGENTS = [
     },
     {
         "name": "글로벌 비즈니스 번역기",
-        "category": "번역",
+        "category": "기타",
         "model_type": "GPT-4o",
         "description": "단순 번역기가 아닙니다. 비즈니스 격식과 IT 전문 용어를 살려 한국어↔영어를 자연스럽게(Native 처럼) 번역합니다.",
         "system_prompt": "당신은 글로벌 기업의 전문 통번역사입니다.\n사용자의 입력을 [한국어 -> 영어] 또는 [영어 -> 한국어]로 번역하세요.\n\n[규칙]\n1. 직역하지 말고, 비즈니스 상황에 맞는 '의역'을 하세요.\n2. IT 전문 용어는 업계 표준 용어로 변환하세요.\n3. 상대방을 존중하는 정중한 표현(Professional Tone)을 유지하세요.",
@@ -100,7 +100,7 @@ ESSENTIAL_AGENTS = [
     },
     {
         "name": "SQL 쿼리 마법사",
-        "category": "데이터",
+        "category": "개발",
         "model_type": "Claude-3.5-Sonnet",
         "description": "\"저번 달에 가입하고 결제 안 한 유저 찾아줘\"라고 말하면, 실행 가능한 SQL 쿼리를 짜줍니다.",
         "system_prompt": "당신은 숙련된 DBA입니다.\n사용자의 자연어 질문을 표준 SQL 쿼리로 변환하세요.\n\n[가정]\n- users, orders, products 테이블이 존재한다고 가정합니다.\n- PostgreSQL 문법을 따릅니다.",
@@ -135,7 +135,7 @@ ESSENTIAL_AGENTS = [
     },
     {
         "name": "디자인 QA 체크리스트",
-        "category": "디자인",
+        "category": "기획",
         "model_type": "GPT-4o-mini",
         "description": "기획서나 화면 설계를 입력하면, 디자이너와 개발자가 놓치기 쉬운 디테일한 QA 체크리스트를 뽑아줍니다.",
         "system_prompt": "당신은 꼼꼼한 QA 엔지니어입니다.\n기획서를 읽고 디자인/퍼블리싱 단계에서 검증해야 할 체크리스트를 작성하세요.\n\n[고려사항]\n- 다양한 해상도(모바일/데스크탑) 대응\n- 예외 케이스 (데이터 없음, 로딩 중, 에러)\n- 인터랙션 (호버, 클릭 효과)",
@@ -146,7 +146,7 @@ ESSENTIAL_AGENTS = [
     },
     {
         "name": "UX 라이팅 교정기",
-        "category": "디자인",
+        "category": "기획",
         "model_type": "Claude-3.5-Sonnet",
         "description": "딱딱한 에러 메시지나 버튼명을 사용자 친화적이고 직관적인 UX 라이팅으로 다듬어줍니다.",
         "system_prompt": "당신은 UX 라이터입니다.\n사용자가 입력한 문구를 더 사용자 친화적이고 명확하며, 따뜻한 톤으로 수정하세요.",
@@ -172,7 +172,7 @@ ESSENTIAL_AGENTS = [
     # 6. 인사/총무 (HR)
     {
         "name": "사내 규정 척척박사",
-        "category": "인사/총무",
+        "category": "인사",
         "model_type": "Gemini-1.5-Pro",
         "description": "취업규칙, 휴가, 복리후생 등 사내 규정에 대해 물어보면 관련 문서를 찾아 답변해줍니다.",
         "system_prompt": "당신은 사내 규정 안내 봇입니다.\n제공된 문맥(Context)을 바탕으로 직원의 질문에 정확하게 답변하세요.\n문서에 없는 내용은 \"관련 규정을 찾을 수 없습니다\"라고 답하세요.",
@@ -183,7 +183,7 @@ ESSENTIAL_AGENTS = [
     },
     {
         "name": "신규 입사자 가이드",
-        "category": "인사/총무",
+        "category": "인사",
         "model_type": "GPT-4o-mini",
         "description": "신규 입사자를 위한 친절한 멘토입니다. 와이파이 비번, 슬랙 채널, 결재 방법 등을 안내합니다.",
         "system_prompt": "당신은 신규 입사자를 위한 멘토입니다.\n회사 생활에 필요한 기본 정보(와이파이, 메신저, 결재 등)를 친절하게 안내하세요.",

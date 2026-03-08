@@ -104,7 +104,7 @@ def list_agents(
     user_id: str = Depends(get_current_user_id)
 ):
     """배포된 에이전트 목록 조회 (department 지정 시 해당 부서 관련 에이전트 우선)"""
-    agents = hub_service.get_public_agents(db, sort_by=sort_by, category=category)
+    agents = hub_service.get_visible_agents(db, user_id=user_id, sort_by=sort_by, category=category)
     
     result = [
         {
@@ -112,9 +112,10 @@ def list_agents(
             "name": a.name,
             "description": a.description,
             "category": getattr(a, 'category', '기타'),
-            "visibility": a.is_public,
+            "visibility": getattr(a, 'is_public', 'TEAM'),
             "creator_id": str(a.creator_id) if a.creator_id else None,
-            "creator_department": None,
+            "creator": a.creator.name if a.creator else "Unknown",
+            "creator_department": a.creator.department if a.creator else None,
             "model_type": getattr(a, 'model_type', 'AUTO'),
             "use_rag": getattr(a, 'use_rag', False),
             "system_prompt": getattr(a, 'system_prompt', ''),

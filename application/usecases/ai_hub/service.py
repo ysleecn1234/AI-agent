@@ -7,11 +7,26 @@ class AIHubService:
     def __init__(self):
         pass
 
-    def get_public_agents(self, db: Session, sort_by: str = "newest", category: Optional[str] = None) -> List[Agent]:
+    def get_visible_agents(self, db: Session, user_id: str, sort_by: str = "newest", category: Optional[str] = None) -> List[Agent]:
         """
-        Fetch agents that are marked as 'TEAM' or 'PUBLIC' (Public).
+        Fetch agents based on visibility rules:
+        - PUBLIC: Everyone
+        - TEAM: Only users in the same department as the creator
+        - PRIVATE: Only the creator
         """
-        query = db.query(Agent).filter(Agent.is_public.in_(["TEAM", "PUBLIC"]))
+        from application.database import User
+        from sqlalchemy import or_
+        
+        user = db.query(User).filter(User.id == user_id).first()
+        user_dept = user.department if user else ""
+
+        query = db.query(Agent).join(User, Agent.creator_id == User.id).filter(
+            or_(
+                Agent.is_public == "PUBLIC",
+                Agent.creator_id == user_id,
+                (Agent.is_public == "TEAM") & (User.department == user_dept)
+            )
+        )
 
         # Filter by Category
         if category:
@@ -19,14 +34,6 @@ class AIHubService:
 
         # Sorting
         if sort_by == "newest":
-            # Assuming 'id' is uuid, we might not have created_at. 
-            # In Plan v33, Agent table didn't have created_at explicitly shown in table, 
-            # but usually UUID v7 or just adding a column is good.
-            # For now, let's assume simple sort by name if created_at is missing, 
-            # OR we should have added created_at. 
-            # Let's check models.py... it does NOT have created_at.
-            # I will fallback to sorting by Name for now to avoid schema drift, 
-            # or request to add it later.
             query = query.order_by(Agent.name) 
         elif sort_by == "name":
              query = query.order_by(Agent.name)
