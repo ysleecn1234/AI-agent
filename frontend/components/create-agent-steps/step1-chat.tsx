@@ -96,7 +96,7 @@ export function Step1Chat({ draft, setDraft, onNext }: Step1ChatProps) {
 
             const response = await api.sendMessage({
                 message: contextMessage,
-                model_type: 'gemini/gemini-2.5-flash-lite',
+                model_type: 'AUTO',
                 use_rag: false,
             });
 
@@ -126,7 +126,6 @@ export function Step1Chat({ draft, setDraft, onNext }: Step1ChatProps) {
                     <div className="flex items-center gap-2">
                         <Sparkles className="w-4 h-4 text-blue-600" />
                         <span className="font-medium text-sm text-gray-700">Agent Architect AI</span>
-                        <span className="text-xs text-gray-400 ml-1">(Gemini 2.5 Flash Lite)</span>
                     </div>
                     <Button
                         variant="ghost"
