@@ -1,6 +1,19 @@
 version: '3.8'
 
 services:
+  # 0. Frontend Application
+  frontend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.frontend
+    container_name: agent-frontend
+    ports:
+      - "3000:3000"
+    env_file:
+      - ../frontend/.env.local
+    depends_on:
+      - backend
+
   # 1. Backend Application
   backend:
     build:
