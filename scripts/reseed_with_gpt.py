@@ -57,9 +57,22 @@ async def reseed_with_gpt():
             {"role": "user", "content": user_message}
         ]
         
+        # 템플릿 설계도(Schema) 정의
+        template_schema = {
+            "name": "",
+            "description": "",
+            "category": agent_data["category"],
+            "input_example": "",
+            "output_example": "",
+            "system_prompt": "",
+            "use_rag": agent_data["use_rag"],
+            "model_type": agent_data["model_type"],
+            "visibility": agent_data["is_public"]
+        }
+        
         try:
-            # Generate new data via pipeline
-            draft_result = await orchestrator.analyze_for_draft(messages)
+            # Generate new data via pipeline (Schema 전달 추가)
+            draft_result = await orchestrator.analyze_for_draft(messages, template_schema)
             
             # Use original hardcoded values if parsing failed
             name = draft_result.get("name") or agent_data["name"]
@@ -68,10 +81,10 @@ async def reseed_with_gpt():
             input_example = draft_result.get("input_example") or agent_data["input_example"]
             output_example = draft_result.get("output_example") or agent_data["output_example"]
             
-            category = agent_data["category"] 
+            category = draft_result.get("category") or agent_data["category"] 
             model_type = agent_data["model_type"]
-            use_rag = agent_data["use_rag"]
-            is_public = agent_data["is_public"]
+            use_rag = draft_result.get("use_rag", agent_data["use_rag"])
+            is_public = draft_result.get("visibility") or agent_data["is_public"]
             
             new_agent = Agent(
                 id=uuid.uuid4(),
@@ -101,14 +114,16 @@ async def reseed_with_gpt():
                     "system_prompt": new_agent.system_prompt,
                     "model_type": new_agent.model_type,
                     "input_example": new_agent.input_example,
-                    "output_example": new_agent.output_example
+                    "output_example": new_agent.output_example,
+                    "visibility": is_public,
+                    "author": admin.name
                 }
                 milvus.insert_agent(milvus_data, embedding)
                 
             db.commit()
             print(f"[ReSeed] Successfully saved '{name}'")
-            # Sleep 1 second to avoid rate-limiting from LiteLLM / Upstage providers
-            time.sleep(1)
+            # Sleep 1 second to avoid rate-limiting
+            await asyncio.sleep(1)
             
         except Exception as e:
             print(f"[ERROR] Failed to generate {agent_data['name']}: {e}")
