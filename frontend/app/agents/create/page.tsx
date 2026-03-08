@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Check, Sparkles, Settings2 } from 'lucide-react';
+import { ArrowLeft, Sparkles, Settings2, FileText } from 'lucide-react';
 import { AgentDraft, Step1Chat } from '@/components/create-agent-steps/step1-chat';
 import { Step2Config } from '@/components/create-agent-steps/step2-config';
 import { api } from '@/lib/api';
@@ -16,36 +16,40 @@ export default function CreateAgentPage() {
         name: '',
         description: '',
         goal: '',
-        model: 'Gemini-1.5-Flash', // Default
+        model: 'AUTO',
         systemPrompt: '',
         ragEnabled: false,
         knowledgeBaseId: undefined,
-        category: '업무보조', // Default
-        visibility: 'private', // Default
+        category: '기타',
+        visibility: 'team',
+        inputExample: '',
+        outputExample: '',
         messages: []
     });
 
     const handleNext = async () => {
-        if (currentStep !== 1 || !draft.messages?.length) {
-            setCurrentStep(2);
-            return;
-        }
-        try {
-            const res = await api.createAgentDraft({ selected_messages: draft.messages });
-            setDraftId(res.draft_id);
-            if (res.filled) {
-                const f = res.filled;
-                setDraft(prev => ({
-                    ...prev,
-                    name: f.name ?? prev.name,
-                    description: f.description ?? prev.description,
-                    category: f.category ?? prev.category,
-                    systemPrompt: f.system_prompt ?? prev.systemPrompt
-                }));
+        if (currentStep === 1) {
+            // Step 1 → Step 2: AI 채팅 → 설정
+            if (draft.messages?.length) {
+                try {
+                    const res = await api.createAgentDraft({ selected_messages: draft.messages });
+                    setDraftId(res.draft_id);
+                    if (res.filled) {
+                        const f = res.filled;
+                        setDraft(prev => ({
+                            ...prev,
+                            name: f.name ?? prev.name,
+                            description: f.description ?? prev.description,
+                            category: f.category ?? prev.category,
+                            systemPrompt: f.system_prompt ?? prev.systemPrompt,
+                            inputExample: f.input_example ?? prev.inputExample,
+                            outputExample: f.output_example ?? prev.outputExample,
+                        }));
+                    }
+                } catch (e) {
+                    console.error('Draft 생성 실패:', e);
+                }
             }
-            setCurrentStep(2);
-        } catch (e) {
-            console.error('Draft 생성 실패, Step2만 이동:', e);
             setCurrentStep(2);
         }
     };
@@ -60,8 +64,8 @@ export default function CreateAgentPage() {
         let name = draft.name;
         let description = draft.description;
         let category = draft.category;
-        let inputExample = draft.messages?.[0]?.content ?? '';
-        let outputExample = draft.messages?.[1]?.content ?? '';
+        let inputExample = draft.inputExample || draft.messages?.[0]?.content || '';
+        let outputExample = draft.outputExample || draft.messages?.[1]?.content || '';
 
         if (!id && draft.messages?.length) {
             try {
@@ -81,8 +85,17 @@ export default function CreateAgentPage() {
             }
         }
         if (!id) {
-            alert('먼저 [다음]을 눌러 기획을 완료해 주세요.');
-            return;
+            // No draft from chat — create one with manual data
+            try {
+                const res = await api.createAgentDraft({
+                    selected_messages: [{ role: 'user', content: draft.description || draft.name }]
+                });
+                id = res.draft_id;
+            } catch (e) {
+                console.error(e);
+                alert('Draft 생성에 실패했습니다.');
+                return;
+            }
         }
         try {
             await api.updateAgentStep1({
@@ -96,10 +109,10 @@ export default function CreateAgentPage() {
             await api.updateAgentStep2({
                 draft_id: id,
                 category,
-                visibility: (draft.visibility || 'private').toUpperCase() as 'PRIVATE' | 'TEAM' | 'PUBLIC',
-                model_type: draft.model,
+                visibility: (draft.visibility || 'team').toUpperCase() as 'PRIVATE' | 'TEAM' | 'PUBLIC',
+                model_type: draft.model || 'AUTO',
                 use_rag: draft.ragEnabled,
-                linked_doc_ids: draft.knowledgeBaseId ? [draft.knowledgeBaseId] : []
+                linked_doc_ids: []
             });
 
             await api.publishAgent({ draft_id: id });
@@ -125,20 +138,26 @@ export default function CreateAgentPage() {
 
                 {/* Steps Indicator */}
                 <div className="flex items-center gap-2">
-                    <div className={`flex items-center px-4 py-2 rounded-full ${currentStep === 1 ? 'bg-blue-100 text-blue-700' : 'text-gray-500'}`}>
-                        <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-2 ${currentStep === 1 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500'}`}>1</div>
-                        <Sparkles className="w-4 h-4 mr-1" />
-                        <span className="font-medium">기획 (Chat)</span>
+                    {/* Step 1 */}
+                    <div className={`flex items-center px-3 py-2 rounded-full text-sm ${currentStep === 1 ? 'bg-blue-100 text-blue-700' : currentStep > 1 ? 'bg-green-50 text-green-700' : 'text-gray-400'}`}>
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-2 text-xs font-medium ${currentStep === 1 ? 'bg-blue-600 text-white' : currentStep > 1 ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-500'}`}>
+                            {currentStep > 1 ? '✓' : '1'}
+                        </div>
+                        <Sparkles className="w-3.5 h-3.5 mr-1" />
+                        <span className="font-medium">AI 기획</span>
                     </div>
-                    <div className="w-8 h-px bg-gray-300"></div>
-                    <div className={`flex items-center px-4 py-2 rounded-full ${currentStep === 2 ? 'bg-blue-100 text-blue-700' : 'text-gray-500'}`}>
-                        <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-2 ${currentStep === 2 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500'}`}>2</div>
-                        <Settings2 className="w-4 h-4 mr-1" />
-                        <span className="font-medium">설정 (Config)</span>
+                    <div className="w-6 h-px bg-gray-300"></div>
+                    {/* Step 2 */}
+                    <div className={`flex items-center px-3 py-2 rounded-full text-sm ${currentStep === 2 ? 'bg-blue-100 text-blue-700' : 'text-gray-400'}`}>
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-2 text-xs font-medium ${currentStep === 2 ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-500'}`}>
+                            2
+                        </div>
+                        <Settings2 className="w-3.5 h-3.5 mr-1" />
+                        <span className="font-medium">상세 설정</span>
                     </div>
                 </div>
 
-                <div className="w-24"></div> {/* Spacer for center alignment */}
+                <div className="w-24"></div>
             </header>
 
             {/* Main Content */}

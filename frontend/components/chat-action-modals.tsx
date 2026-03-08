@@ -202,6 +202,8 @@ interface CreateAgentModalProps {
         use_rag: boolean;
         input_example: string;
         output_example: string;
+        system_prompt: string;
+        model_type: string;
     }) => void;
     content: string;
 }
@@ -216,6 +218,8 @@ export function CreateAgentModal({ isOpen, onClose, onCreate, content }: CreateA
     const [useRag, setUseRag] = useState(false);
     const [inputExample, setInputExample] = useState('');
     const [outputExample, setOutputExample] = useState('');
+    const [systemPrompt, setSystemPrompt] = useState('');
+    const [modelType, setModelType] = useState('AUTO');
     const [isGenerating, setIsGenerating] = useState(false);
 
     // Auto-generate agent info when modal opens
@@ -238,6 +242,7 @@ export function CreateAgentModal({ isOpen, onClose, onCreate, content }: CreateA
                 setCategory(filled.category || '기타');
                 setInputExample(filled.input_example || '');
                 setOutputExample(filled.output_example || '');
+                setSystemPrompt(filled.system_prompt || '');
             }
         } catch (error) {
             console.error('Failed to generate agent metadata:', error);
@@ -253,19 +258,26 @@ export function CreateAgentModal({ isOpen, onClose, onCreate, content }: CreateA
             setName(`AI 어시스턴트 - ${new Date().toLocaleDateString()}`);
             setDescription('대화 내용을 기반으로 생성된 맞춤형 Agent입니다.');
             setCategory(detectedCategory);
+            setSystemPrompt('사용자의 요청에 정확하고 유용하게 답변하세요.');
         } finally {
             setIsGenerating(false);
         }
     };
 
     const handleCreate = () => {
-        onCreate({ scope, name, description, category, visibility, use_rag: useRag, input_example: inputExample, output_example: outputExample });
+        onCreate({
+            scope, name, description, category, visibility,
+            use_rag: useRag,
+            input_example: inputExample,
+            output_example: outputExample,
+            system_prompt: systemPrompt,
+            model_type: modelType,
+        });
         handleClose();
     };
 
     const handleClose = () => {
         onClose();
-        // Reset
         setStep(1);
         setScope('single');
         setName('');
@@ -275,17 +287,19 @@ export function CreateAgentModal({ isOpen, onClose, onCreate, content }: CreateA
         setUseRag(false);
         setInputExample('');
         setOutputExample('');
+        setSystemPrompt('');
+        setModelType('AUTO');
     };
 
     return (
         <Dialog open={isOpen} onOpenChange={handleClose}>
-            <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+            <DialogContent className="sm:max-w-[640px] max-h-[90vh] overflow-y-auto">
                 {/* Header with Step indicator */}
                 <DialogHeader>
                     <div className="flex items-center justify-between">
                         <DialogTitle className="flex items-center gap-2">
                             <Sparkles className="w-5 h-5 text-blue-600" />
-                            에이전트 편집
+                            에이전트 생성
                         </DialogTitle>
                         <div className="flex items-center gap-1 text-sm">
                             <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${step === 1 ? 'bg-blue-600 text-white' : 'bg-green-500 text-white'}`}>
@@ -299,20 +313,15 @@ export function CreateAgentModal({ isOpen, onClose, onCreate, content }: CreateA
                     </div>
                     <DialogDescription>
                         {step === 1
-                            ? 'AI가 에이전트 명과 필요한 내용을 미리 작성했어요.'
-                            : 'AI가 에이전트 명과 필요한 내용을 미리 작성했어요.'}
+                            ? '에이전트의 핵심 정보와 프롬프트를 설정하세요.'
+                            : '에이전트의 분류와 세부 설정을 완료하세요.'}
                     </DialogDescription>
                 </DialogHeader>
 
                 {step === 1 ? (
-                    /* ===== Step 1: 학습 범위 + 제목 + 입력/출력 예시 ===== */
+                    /* ===== Step 1: 학습 범위 + 이름 + 입력/출력 예시 + 시스템 프롬프트 ===== */
                     <div className="space-y-5 py-4">
-                        {/* Step Label */}
-                        <p className="text-sm font-semibold text-blue-600">Step 1</p>
-                        <div>
-                            <h3 className="text-lg font-bold text-gray-900">AI가 에이전트 명과 필요한 내용을 미리 작성했어요.</h3>
-                            <p className="text-sm text-gray-500 mt-1">자동으로 채워진 내용을 확인하고 필요 시 수정하세요.</p>
-                        </div>
+                        <p className="text-sm font-semibold text-blue-600">Step 1 — 기본 정보 및 프롬프트</p>
 
                         {/* 학습 범위 */}
                         <div>
@@ -335,11 +344,11 @@ export function CreateAgentModal({ isOpen, onClose, onCreate, content }: CreateA
                             </RadioGroup>
                         </div>
 
-                        {/* 제목 */}
+                        {/* 에이전트 이름 */}
                         <div>
                             <div className="flex items-center justify-between mb-2">
                                 <Label htmlFor="agent-name" className="text-sm font-medium flex items-center gap-2">
-                                    제목 <span className="text-red-500">*</span>
+                                    에이전트 이름 <span className="text-red-500">*</span>
                                     {isGenerating && <Loader2 className="w-3 h-3 animate-spin text-blue-600" />}
                                 </Label>
                                 <span className="text-xs text-gray-400">{name.length}/100</span>
@@ -348,7 +357,7 @@ export function CreateAgentModal({ isOpen, onClose, onCreate, content }: CreateA
                                 id="agent-name"
                                 value={name}
                                 onChange={(e) => setName(e.target.value.slice(0, 100))}
-                                placeholder="에이전트 제목을 입력하세요"
+                                placeholder="에이전트 이름을 입력하세요"
                                 disabled={isGenerating}
                             />
                         </div>
@@ -363,7 +372,7 @@ export function CreateAgentModal({ isOpen, onClose, onCreate, content }: CreateA
                                 value={inputExample}
                                 onChange={(e) => setInputExample(e.target.value)}
                                 placeholder="에이전트에 입력할 예시를 작성하세요"
-                                className="min-h-[120px]"
+                                className="min-h-[80px]"
                                 disabled={isGenerating}
                             />
                         </div>
@@ -378,19 +387,31 @@ export function CreateAgentModal({ isOpen, onClose, onCreate, content }: CreateA
                                 value={outputExample}
                                 onChange={(e) => setOutputExample(e.target.value)}
                                 placeholder="에이전트가 출력할 예시를 작성하세요"
-                                className="min-h-[120px]"
+                                className="min-h-[80px]"
+                                disabled={isGenerating}
+                            />
+                        </div>
+
+                        {/* 시스템 프롬프트 */}
+                        <div>
+                            <Label htmlFor="system-prompt" className="text-sm font-medium mb-2 flex items-center gap-1">
+                                시스템 프롬프트
+                            </Label>
+                            <p className="text-xs text-gray-500 mb-2">에이전트의 역할과 행동 규칙을 정의합니다. 자동 생성된 내용을 수정할 수 있습니다.</p>
+                            <Textarea
+                                id="system-prompt"
+                                value={systemPrompt}
+                                onChange={(e) => setSystemPrompt(e.target.value)}
+                                placeholder="예: 당신은 숙련된 DBA입니다. 사용자의 자연어 질문을 SQL 쿼리로 변환하세요."
+                                className="min-h-[100px] font-mono text-sm"
                                 disabled={isGenerating}
                             />
                         </div>
                     </div>
                 ) : (
-                    /* ===== Step 2: 카테고리 + 설명 + 문서 참조 + 공개 범위 ===== */
+                    /* ===== Step 2: 카테고리 + 설명 + 모델 선택 + RAG + 공개 범위 ===== */
                     <div className="space-y-5 py-4">
-                        <p className="text-sm font-semibold text-blue-600">Step2</p>
-                        <div>
-                            <h3 className="text-lg font-bold text-gray-900">AI가 에이전트 명과 필요한 내용을 미리 작성했어요.</h3>
-                            <p className="text-sm text-gray-500 mt-1">자동으로 채워진 내용을 확인하고 필요 시 수정하세요.</p>
-                        </div>
+                        <p className="text-sm font-semibold text-blue-600">Step 2 — 분류 및 설정</p>
 
                         {/* 카테고리 */}
                         <div>
@@ -421,15 +442,45 @@ export function CreateAgentModal({ isOpen, onClose, onCreate, content }: CreateA
                                 <Label htmlFor="agent-description" className="text-sm font-medium flex items-center gap-1">
                                     에이전트 설명 <span className="text-red-500">*</span>
                                 </Label>
-                                <span className="text-xs text-gray-400">{description.length}/100</span>
+                                <span className="text-xs text-gray-400">{description.length}/200</span>
                             </div>
-                            <Input
+                            <Textarea
                                 id="agent-description"
                                 value={description}
-                                onChange={(e) => setDescription(e.target.value.slice(0, 100))}
+                                onChange={(e) => setDescription(e.target.value.slice(0, 200))}
                                 placeholder="에이전트 설명을 입력하세요"
+                                className="min-h-[60px]"
                                 disabled={isGenerating}
                             />
+                        </div>
+
+                        {/* 모델 선택 */}
+                        <div>
+                            <Label className="text-sm font-medium flex items-center gap-1 mb-1">
+                                사용 모델
+                            </Label>
+                            <p className="text-xs text-gray-500 mb-2">Auto를 선택하면 질문에 맞는 최적 모델이 자동 선택됩니다.</p>
+                            <Select value={modelType} onValueChange={setModelType}>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="AUTO">⚡ Auto (자동 선택)</SelectItem>
+                                    <SelectItem value="gemini/gemini-2.5-flash-lite">Gemini 2.5 Flash Lite</SelectItem>
+                                    <SelectItem value="gemini/gemini-2.5-flash">Gemini 2.5 Flash</SelectItem>
+                                    <SelectItem value="gemini/gemini-3-flash-preview">Gemini 3 Flash</SelectItem>
+                                    <SelectItem value="gemini/gemini-3.1-pro-preview">Gemini 3.1 Pro</SelectItem>
+                                    <SelectItem value="gpt-5-nano">GPT-5 Nano</SelectItem>
+                                    <SelectItem value="gpt-5-mini">GPT-5 Mini</SelectItem>
+                                    <SelectItem value="gpt-5.2">GPT-5.2</SelectItem>
+                                    <SelectItem value="gpt-5.2-pro">GPT-5.2 Pro</SelectItem>
+                                    <SelectItem value="claude-haiku-4.5">Claude Haiku 4.5</SelectItem>
+                                    <SelectItem value="claude-sonnet-4-6">Claude Sonnet 4.6</SelectItem>
+                                    <SelectItem value="claude-opus-4-6">Claude Opus 4.6</SelectItem>
+                                    <SelectItem value="perplexity/sonar">Perplexity Sonar</SelectItem>
+                                    <SelectItem value="perplexity/sonar-pro">Perplexity Sonar Pro</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
 
                         {/* 문서 참조 (RAG) */}
@@ -447,7 +498,7 @@ export function CreateAgentModal({ isOpen, onClose, onCreate, content }: CreateA
 
                         {/* 공개 범위 */}
                         <div>
-                            <Label className="text-sm font-bold mb-1 block">에이전트의 공개 범위를 선택해주 세요.</Label>
+                            <Label className="text-sm font-bold mb-1 block">에이전트의 공개 범위를 선택해주세요.</Label>
                             <p className="text-xs text-gray-500 mb-3">저장 후에도 언제든지 변경하실 수 있습니다.</p>
                             <RadioGroup value={visibility} onValueChange={(value) => setVisibility(value as 'team' | 'public')} className="space-y-3">
                                 <div className={`p-4 border rounded-lg cursor-pointer hover:bg-gray-50 ${visibility === 'public' ? 'border-blue-500 bg-blue-50' : ''}`}

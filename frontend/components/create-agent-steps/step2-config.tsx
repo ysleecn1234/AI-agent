@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AgentDraft } from '@/types/agent';
-import { Save, ArrowLeft, Database, Bot, Sparkles } from 'lucide-react';
+import { Save, ArrowLeft, Database, Bot, Sparkles, Settings2 } from 'lucide-react';
 
 interface Step2ConfigProps {
     draft: AgentDraft;
@@ -27,7 +27,7 @@ export function Step2Config({ draft, setDraft, onBack, onComplete }: Step2Config
         <div className="flex flex-col h-full max-w-4xl mx-auto p-6 gap-8 overflow-y-auto">
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Left Column: Basic Info & Model */}
+                {/* Left Column: Basic Info + Prompt */}
                 <div className="space-y-6">
                     <div className="bg-white p-6 rounded-xl border border-gray-200 space-y-4">
                         <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -66,11 +66,13 @@ export function Step2Config({ draft, setDraft, onBack, onComplete }: Step2Config
                                     <SelectValue placeholder="카테고리 선택" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="업무보조">업무보조</SelectItem>
+                                    <SelectItem value="생산성">생산성</SelectItem>
                                     <SelectItem value="마케팅">마케팅</SelectItem>
                                     <SelectItem value="개발">개발</SelectItem>
-                                    <SelectItem value="데이터분석">데이터분석</SelectItem>
-                                    <SelectItem value="고객응대">고객응대</SelectItem>
+                                    <SelectItem value="기획">기획</SelectItem>
+                                    <SelectItem value="영업">영업</SelectItem>
+                                    <SelectItem value="인사">인사</SelectItem>
+                                    <SelectItem value="재무">재무</SelectItem>
                                     <SelectItem value="기타">기타</SelectItem>
                                 </SelectContent>
                             </Select>
@@ -86,7 +88,6 @@ export function Step2Config({ draft, setDraft, onBack, onComplete }: Step2Config
                                     <SelectValue placeholder="공개 범위 선택" />
                                 </SelectTrigger>
                                 <SelectContent>
-
                                     <SelectItem value="team">👥 팀 공유</SelectItem>
                                     <SelectItem value="public">🌐 전체 공개</SelectItem>
                                 </SelectContent>
@@ -111,21 +112,17 @@ export function Step2Config({ draft, setDraft, onBack, onComplete }: Step2Config
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="AUTO">⚡ Auto (자동 선택)</SelectItem>
-                                    {/* Google */}
                                     <SelectItem value="gemini/gemini-2.5-flash-lite">Gemini 2.5 Flash Lite</SelectItem>
                                     <SelectItem value="gemini/gemini-2.5-flash">Gemini 2.5 Flash</SelectItem>
                                     <SelectItem value="gemini/gemini-3-flash-preview">Gemini 3 Flash</SelectItem>
                                     <SelectItem value="gemini/gemini-3.1-pro-preview">Gemini 3.1 Pro</SelectItem>
-                                    {/* OpenAI */}
                                     <SelectItem value="gpt-5-nano">GPT-5 Nano</SelectItem>
                                     <SelectItem value="gpt-5-mini">GPT-5 Mini</SelectItem>
                                     <SelectItem value="gpt-5.2">GPT-5.2</SelectItem>
                                     <SelectItem value="gpt-5.2-pro">GPT-5.2 Pro</SelectItem>
-                                    {/* Anthropic */}
                                     <SelectItem value="claude-haiku-4.5">Claude Haiku 4.5</SelectItem>
                                     <SelectItem value="claude-sonnet-4-6">Claude Sonnet 4.6</SelectItem>
                                     <SelectItem value="claude-opus-4-6">Claude Opus 4.6</SelectItem>
-                                    {/* Perplexity */}
                                     <SelectItem value="perplexity/sonar">Perplexity Sonar</SelectItem>
                                     <SelectItem value="perplexity/sonar-pro">Perplexity Sonar Pro</SelectItem>
                                 </SelectContent>
@@ -134,15 +131,27 @@ export function Step2Config({ draft, setDraft, onBack, onComplete }: Step2Config
                                 * Auto를 선택하면 질문에 맞는 최적 모델이 자동 선택됩니다.
                             </p>
                         </div>
+
+                        {/* RAG 토글 */}
+                        <div className="flex items-center justify-between pt-2 border-t">
+                            <div>
+                                <Label className="text-sm font-medium">문서 참조 (RAG)</Label>
+                                <p className="text-xs text-gray-500">활성화 시 AI 드라이브 문서를 참조하여 답변합니다.</p>
+                            </div>
+                            <Switch
+                                checked={draft.ragEnabled}
+                                onCheckedChange={(checked) => handleChange('ragEnabled', checked)}
+                            />
+                        </div>
                     </div>
                 </div>
 
-                {/* Right Column: Prompt & Knowledge */}
+                {/* Right Column: Prompt + Examples */}
                 <div className="space-y-6">
-                    <div className="bg-white p-6 rounded-xl border border-gray-200 space-y-4 h-full flex flex-col">
+                    <div className="bg-white p-6 rounded-xl border border-gray-200 space-y-4 flex flex-col">
                         <h3 className="text-lg font-semibold flex items-center gap-2">
                             <Settings2 className="w-5 h-5 text-orange-600" />
-                            프롬프트 엔지니어링
+                            프롬프트 및 예시
                         </h3>
 
                         <div className="space-y-2 flex-1 flex flex-col">
@@ -152,54 +161,36 @@ export function Step2Config({ draft, setDraft, onBack, onComplete }: Step2Config
                                 value={draft.systemPrompt}
                                 onChange={(e) => handleChange('systemPrompt', e.target.value)}
                                 placeholder="에이전트의 페르소나와 행동 지침을 정의하세요."
-                                className="flex-1 min-h-[200px] font-mono text-sm leading-relaxed"
+                                className="flex-1 min-h-[150px] font-mono text-sm leading-relaxed"
                             />
                             <p className="text-xs text-gray-500">
                                 * Step 1에서 AI와 대화한 내용이 프롬프트로 자동 변환되었습니다.
                             </p>
                         </div>
-                    </div>
-                </div>
-            </div>
 
-            {/* Knowledge Base Section (Full Width) */}
-            <div className="bg-white p-6 rounded-xl border border-gray-200 space-y-4">
-                <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-semibold flex items-center gap-2">
-                        <Database className="w-5 h-5 text-green-600" />
-                        지식 연동 (RAG)
-                    </h3>
-                    <Switch
-                        checked={draft.ragEnabled}
-                        onCheckedChange={(checked) => handleChange('ragEnabled', checked)}
-                    />
-                </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="inputExample">입력 예시</Label>
+                            <Textarea
+                                id="inputExample"
+                                value={draft.inputExample || ''}
+                                onChange={(e) => handleChange('inputExample', e.target.value)}
+                                placeholder="에이전트에 입력할 예시를 작성하세요"
+                                className="min-h-[80px] text-sm"
+                            />
+                        </div>
 
-                {draft.ragEnabled && (
-                    <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 animate-in fade-in slide-in-from-top-2">
-                        <div className="space-y-4">
-                            <div className="space-y-2">
-                                <Label>연동할 문서함 선택</Label>
-                                <Select
-                                    value={draft.knowledgeBaseId}
-                                    onValueChange={(value) => handleChange('knowledgeBaseId', value)}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="문서함 선택" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="kb-marketing">마케팅 팀 공유 문서함</SelectItem>
-                                        <SelectItem value="kb-tech">개발 팀 기술 문서함</SelectItem>
-                                        <SelectItem value="kb-hr">인사 규정 문서함</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <p className="text-sm text-gray-600">
-                                선택된 문서함의 내용을 기반으로 에이전트가 답변을 생성합니다.
-                            </p>
+                        <div className="space-y-2">
+                            <Label htmlFor="outputExample">출력 예시</Label>
+                            <Textarea
+                                id="outputExample"
+                                value={draft.outputExample || ''}
+                                onChange={(e) => handleChange('outputExample', e.target.value)}
+                                placeholder="에이전트가 출력할 예시를 작성하세요"
+                                className="min-h-[80px] text-sm"
+                            />
                         </div>
                     </div>
-                )}
+                </div>
             </div>
 
             {/* Actions */}
@@ -215,5 +206,3 @@ export function Step2Config({ draft, setDraft, onBack, onComplete }: Step2Config
         </div>
     );
 }
-
-import { Settings2 } from 'lucide-react';

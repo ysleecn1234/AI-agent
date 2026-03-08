@@ -96,5 +96,7 @@ export interface AgentDraft {
     knowledgeBaseId?: string;
     category: string;
     visibility: 'private' | 'team' | 'public';
+    inputExample?: string;
+    outputExample?: string;
     messages?: Array<{ role: 'user' | 'assistant'; content: string }>;
 }

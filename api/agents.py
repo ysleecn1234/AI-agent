@@ -192,6 +192,74 @@ def get_agent_detail(
         "is_active": True,
     }
 
+class UpdateAgentRequest(BaseModel):
+    """에이전트 수정 요청"""
+    name: Optional[str] = None
+    description: Optional[str] = None
+    category: Optional[str] = None
+    system_prompt: Optional[str] = None
+    model_type: Optional[str] = None
+    use_rag: Optional[bool] = None
+    visibility: Optional[str] = None  # "PRIVATE" | "TEAM" | "PUBLIC"
+
+@router.put("/{agent_id}")
+def update_agent(
+    agent_id: str,
+    req: UpdateAgentRequest,
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id)
+):
+    """에이전트 수정 (DB + 벡터 DB 동시 업데이트)"""
+    from services.ai_hub.db.tables import Agent
+    
+    agent = db.query(Agent).filter(Agent.id == agent_id).first()
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+    
+    # 필드 업데이트 (None이 아닌 값만)
+    if req.name is not None:
+        agent.name = req.name
+    if req.description is not None:
+        agent.description = req.description
+    if req.category is not None:
+        agent.category = req.category
+    if req.system_prompt is not None:
+        agent.system_prompt = req.system_prompt
+    if req.model_type is not None:
+        agent.model_type = req.model_type
+    if req.use_rag is not None:
+        agent.use_rag = req.use_rag
+    if req.visibility is not None:
+        agent.is_public = req.visibility
+    
+    db.commit()
+    db.refresh(agent)
+    
+    # 벡터 DB 업데이트 (이름/설명/카테고리 변경 시 임베딩 재생성)
+    if any([req.name, req.description, req.category]):
+        try:
+            from services.ai_hub.core.agent.manager import agent_manager
+            import asyncio
+            loop = asyncio.new_event_loop()
+            loop.run_until_complete(agent_manager.update_agent_vector(agent))
+            loop.close()
+        except Exception as e:
+            print(f"[Warning] 벡터 DB 업데이트 실패 (DB는 정상 저장됨): {e}")
+    
+    return {
+        "status": "updated",
+        "agent": {
+            "id": str(agent.id),
+            "name": agent.name,
+            "description": agent.description,
+            "category": getattr(agent, 'category', '기타'),
+            "system_prompt": agent.system_prompt,
+            "model_type": agent.model_type,
+            "use_rag": agent.use_rag,
+            "visibility": agent.is_public,
+        }
+    }
+
 @router.delete("/{agent_id}")
 def delete_agent(agent_id: str, db: Session = Depends(get_db), user_id: str = Depends(get_current_user_id)):
     """

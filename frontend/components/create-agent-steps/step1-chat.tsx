@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { AgentDraft } from '@/types/agent';
 import { Send, Bot, User, Sparkles } from 'lucide-react';
+import { api } from '@/lib/api';
 
 export type { AgentDraft };
 
@@ -20,6 +21,23 @@ interface Message {
     content: string;
 }
 
+const ARCHITECT_SYSTEM_PROMPT = `당신은 AI 에이전트 기획을 도와주는 "Agent Architect"입니다.
+사용자가 원하는 에이전트의 역할, 기능, 대상 사용자를 파악하여 에이전트를 기획해 주세요.
+
+대화를 통해 다음 정보를 자연스럽게 수집하세요:
+1. 에이전트 이름
+2. 에이전트 설명 (한 줄)
+3. 에이전트의 목표/역할
+4. 시스템 프롬프트 (에이전트의 행동 지침)
+
+응답 마지막에 항상 아래 형식으로 현재까지의 초안을 정리해 주세요:
+---DRAFT---
+이름: (에이전트 이름)
+설명: (한 줄 설명)
+목표: (에이전트의 핵심 목표)
+프롬프트: (시스템 프롬프트 초안)
+---END---`;
+
 export function Step1Chat({ draft, setDraft, onNext }: Step1ChatProps) {
     const [messages, setMessages] = useState<Message[]>([
         { role: 'assistant', content: '안녕하세요! 어떤 에이전트를 만들고 싶으신가요? 에이전트의 역할이나 목표를 말씀해 주세요.' }
@@ -28,55 +46,67 @@ export function Step1Chat({ draft, setDraft, onNext }: Step1ChatProps) {
     const [isLoading, setIsLoading] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
 
-    // Auto-scroll to bottom
     useEffect(() => {
         if (scrollRef.current) {
             scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
         }
     }, [messages]);
 
+    // Parse draft info from AI response
+    const parseDraftFromResponse = (response: string) => {
+        const draftMatch = response.match(/---DRAFT---([\s\S]*?)---END---/);
+        if (!draftMatch) return;
+
+        const draftText = draftMatch[1];
+        const nameMatch = draftText.match(/이름:\s*(.+)/);
+        const descMatch = draftText.match(/설명:\s*(.+)/);
+        const goalMatch = draftText.match(/목표:\s*(.+)/);
+        const promptMatch = draftText.match(/프롬프트:\s*([\s\S]*?)(?=\n(?:이름|설명|목표):|$)/);
+
+        setDraft({
+            ...draft,
+            name: nameMatch?.[1]?.trim() || draft.name,
+            description: descMatch?.[1]?.trim() || draft.description,
+            goal: goalMatch?.[1]?.trim() || draft.goal,
+            systemPrompt: promptMatch?.[1]?.trim() || draft.systemPrompt,
+        });
+    };
+
     const handleSendMessage = async () => {
         if (!inputValue.trim() || isLoading) return;
 
         const userMsg = inputValue;
         setInputValue('');
-        setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
+        const newMessages: Message[] = [...messages, { role: 'user', content: userMsg }];
+        setMessages(newMessages);
         setIsLoading(true);
 
-        // Simulate Orchestrator analysis & response
-        setTimeout(() => {
-            let aiResponse = '';
+        try {
+            // Build conversation context with system prompt
+            const contextMessage = `[시스템 지시] ${ARCHITECT_SYSTEM_PROMPT}\n\n[대화 기록]\n${newMessages.map(m => `${m.role === 'user' ? '사용자' : 'AI'}: ${m.content}`).join('\n')}\n\n위 대화를 바탕으로 Agent Architect로서 응답해 주세요.`;
 
-            // Simple mock logic based on interaction count
-            if (messages.length === 1) {
-                aiResponse = `네, '${userMsg}' 역할을 수행하는 에이전트를 기획해 드릴게요.\n\n에이전트 이름은 "AI Assistant"로, 목표는 사용자의 요청을 수행하는 것으로 설정했습니다.\n\n이 에이전트가 특별히 참고해야 할 문서나 데이터가 있나요?`;
+            const response = await api.sendMessage({
+                message: contextMessage,
+                model_type: 'gemini/gemini-2.5-flash-lite',
+                use_rag: false,
+            });
 
-                // Update draft mock
-                setDraft({
-                    ...draft,
-                    name: 'AI Assistant',
-                    description: userMsg,
-                    goal: userMsg,
-                    systemPrompt: `You are a helpful assistant specialized in ${userMsg}.`,
-                    category: draft.category || '업무보조',
-                    visibility: draft.visibility || 'private'
-                });
-            } else if (messages.length === 3) {
-                aiResponse = `알겠습니다. 지식 기반도 고려하여 설정을 업데이트했습니다.\n\n이제 기본적인 기획이 완료되었습니다. [다음] 버튼을 눌러 세부 설정을 확인하고 모델을 선택해 주세요.`;
-                setDraft({
-                    ...draft,
-                    ragEnabled: true
-                });
-            } else {
-                aiResponse = `추가적인 요청사항이 반영되었습니다. 더 수정할 내용이 없다면 [다음] 단계로 진행해 주세요.`;
-            }
-
-            const updatedMessages = [...messages, { role: 'user' as const, content: userMsg }, { role: 'assistant' as const, content: aiResponse }];
+            const aiResponse = response.response;
             setMessages(prev => [...prev, { role: 'assistant', content: aiResponse }]);
-            // 대화 내용을 draft에 저장
+
+            // Parse draft info from response
+            parseDraftFromResponse(aiResponse);
+
+            // Save messages to draft
+            const updatedMessages = [...newMessages, { role: 'assistant' as const, content: aiResponse }];
             setDraft({ ...draft, messages: updatedMessages });
+        } catch (error) {
+            console.error('AI 응답 실패:', error);
+            const fallbackResponse = '죄송합니다. 일시적인 오류가 발생했습니다. 다시 시도해 주세요.';
+            setMessages(prev => [...prev, { role: 'assistant', content: fallbackResponse }]);
+        } finally {
             setIsLoading(false);
-        }, 1500);
+        }
     };
 
     return (
@@ -87,6 +117,7 @@ export function Step1Chat({ draft, setDraft, onNext }: Step1ChatProps) {
                     <div className="flex items-center gap-2">
                         <Sparkles className="w-4 h-4 text-blue-600" />
                         <span className="font-medium text-sm text-gray-700">Agent Architect AI</span>
+                        <span className="text-xs text-gray-400 ml-1">(Gemini 2.5 Flash Lite)</span>
                     </div>
                     <Button
                         variant="ghost"
@@ -111,7 +142,8 @@ export function Step1Chat({ draft, setDraft, onNext }: Step1ChatProps) {
                                     ? 'bg-blue-600 text-white'
                                     : 'bg-gray-100 text-gray-800'
                                     }`}>
-                                    {msg.content}
+                                    {/* Hide draft block from display */}
+                                    {msg.content.replace(/---DRAFT---[\s\S]*?---END---/g, '').trim()}
                                 </div>
                                 {msg.role === 'user' && (
                                     <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">

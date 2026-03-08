@@ -338,6 +338,8 @@ function ChatContent() {
         use_rag?: boolean;
         input_example?: string;
         output_example?: string;
+        system_prompt?: string;
+        model_type?: string;
     }) => {
         try {
             // 1. 선택된 메시지 준비
@@ -359,12 +361,12 @@ function ChatContent() {
                 output_example: data.output_example || selectedMessages[1]?.content || ''
             });
 
-            // 4. Step2 업데이트 (카테고리, 공개범위, 문서참조)
+            // 4. Step2 업데이트 (카테고리, 공개범위, 모델, 문서참조)
             await api.updateAgentStep2({
                 draft_id: draftResponse.draft_id,
                 category: data.category,
                 visibility: data.visibility.toUpperCase() as 'PRIVATE' | 'TEAM' | 'PUBLIC',
-                model_type: 'gpt-4o-mini',
+                model_type: data.model_type || 'AUTO',
                 use_rag: data.use_rag ?? false,
                 linked_doc_ids: []
             });
