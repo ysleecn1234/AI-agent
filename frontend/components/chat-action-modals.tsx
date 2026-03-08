@@ -206,9 +206,10 @@ interface CreateAgentModalProps {
         model_type: string;
     }) => void;
     content: string;
+    fullMessages?: { role: string; content: string }[];
 }
 
-export function CreateAgentModal({ isOpen, onClose, onCreate, content }: CreateAgentModalProps) {
+export function CreateAgentModal({ isOpen, onClose, onCreate, content, fullMessages }: CreateAgentModalProps) {
     const [step, setStep] = useState(1);
     const [scope, setScope] = useState<'single' | 'all'>('single');
     const [name, setName] = useState('');
@@ -222,18 +223,22 @@ export function CreateAgentModal({ isOpen, onClose, onCreate, content }: CreateA
     const [modelType, setModelType] = useState('AUTO');
     const [isGenerating, setIsGenerating] = useState(false);
 
-    // Auto-generate agent info when modal opens
+    // Auto-generate agent info when modal opens or scope changes
     useEffect(() => {
         if (isOpen && content) {
             generateAgentInfo();
         }
-    }, [isOpen, content]);
+    }, [isOpen, content, scope]);
 
     const generateAgentInfo = async () => {
         setIsGenerating(true);
         try {
+            const selected_messages = scope === 'all' && fullMessages && fullMessages.length > 0
+                ? fullMessages
+                : [{ role: 'user', content }];
+
             const result = await api.createAgentDraft({
-                selected_messages: [{ role: 'user', content }],
+                selected_messages,
             });
             const filled = result.filled;
             if (filled) {
