@@ -185,6 +185,8 @@ def get_agent_detail(
         "description": agent.description,
         "category": getattr(agent, 'category', '기타'),
         "system_prompt": agent.system_prompt,
+        "input_example": getattr(agent, 'input_example', ''),
+        "output_example": getattr(agent, 'output_example', ''),
         "visibility": agent.is_public,
         "creator_id": str(agent.creator_id) if agent.creator_id else None,
         "model_type": agent.model_type,
@@ -198,6 +200,8 @@ class UpdateAgentRequest(BaseModel):
     description: Optional[str] = None
     category: Optional[str] = None
     system_prompt: Optional[str] = None
+    input_example: Optional[str] = None
+    output_example: Optional[str] = None
     model_type: Optional[str] = None
     use_rag: Optional[bool] = None
     visibility: Optional[str] = None  # "PRIVATE" | "TEAM" | "PUBLIC"
@@ -225,6 +229,10 @@ def update_agent(
         agent.category = req.category
     if req.system_prompt is not None:
         agent.system_prompt = req.system_prompt
+    if req.input_example is not None:
+        agent.input_example = req.input_example
+    if req.output_example is not None:
+        agent.output_example = req.output_example
     if req.model_type is not None:
         agent.model_type = req.model_type
     if req.use_rag is not None:

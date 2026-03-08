@@ -284,6 +284,13 @@ class ApiClient {
         });
     }
 
+    public async updateAgent(id: string, data: any): Promise<{ status: string }> {
+        return this.request<{ status: string }>(`/agents/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(data),
+        });
+    }
+
     public async deleteAgent(id: string): Promise<void> {
         return this.request<void>(`/agents/${id}`, {
             method: 'DELETE',
