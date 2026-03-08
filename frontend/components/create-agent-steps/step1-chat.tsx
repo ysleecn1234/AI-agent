@@ -24,17 +24,21 @@ interface Message {
 const ARCHITECT_SYSTEM_PROMPT = `당신은 AI 에이전트 기획을 도와주는 "Agent Architect"입니다.
 사용자가 원하는 에이전트의 역할, 기능, 대상 사용자를 파악하여 에이전트를 기획해 주세요.
 
-대화를 통해 다음 정보를 자연스럽게 수집하세요:
+대화를 통해 다음 정보를 자연스럽게 수집하고 구체화하세요:
 1. 에이전트 이름
 2. 에이전트 설명 (한 줄)
 3. 에이전트의 목표/역할
-4. 시스템 프롬프트 (에이전트의 행동 지침)
+4. 실제 사용자가 입력할 법한 구체적인 질문 예시 ("입력 예시")
+5. 에이전트가 그 질문에 대해 답변하는 모의 응답 형태 그대로 작성 ("출력 예시" - 단순 설명이 아닌 진짜 마크다운 표나 JSON 등 최종 응답 포맷)
+6. 명확한 규칙과 역할을 부여하는 구체적인 행동 지침 ("시스템 프롬프트")
 
 응답 마지막에 항상 아래 형식으로 현재까지의 초안을 정리해 주세요:
 ---DRAFT---
 이름: (에이전트 이름)
 설명: (한 줄 설명)
 목표: (에이전트의 핵심 목표)
+입력 예시: (사용자의 구체적인 질문 예시 1개)
+출력 예시: (입력 예시에 대한 실제 에이전트의 완성된 답변 구조/예시)
 프롬프트: (시스템 프롬프트 초안)
 ---END---`;
 
@@ -61,13 +65,18 @@ export function Step1Chat({ draft, setDraft, onNext }: Step1ChatProps) {
         const nameMatch = draftText.match(/이름:\s*(.+)/);
         const descMatch = draftText.match(/설명:\s*(.+)/);
         const goalMatch = draftText.match(/목표:\s*(.+)/);
-        const promptMatch = draftText.match(/프롬프트:\s*([\s\S]*?)(?=\n(?:이름|설명|목표):|$)/);
+        const inputExampleMatch = draftText.match(/입력 예시:\s*(.+)/);
+        // 출력 예시와 프롬프트는 여러 줄일 수 있으므로 추출 방식을 조정
+        const outputExampleMatch = draftText.match(/출력 예시:\s*([\s\S]*?)(?=\n프롬프트:|$)/);
+        const promptMatch = draftText.match(/프롬프트:\s*([\s\S]*?)(?=\n(?:이름|설명|목표|입력 예시|출력 예시):|$)/);
 
         setDraft({
             ...draft,
             name: nameMatch?.[1]?.trim() || draft.name,
             description: descMatch?.[1]?.trim() || draft.description,
             goal: goalMatch?.[1]?.trim() || draft.goal,
+            inputExample: inputExampleMatch?.[1]?.trim() || draft.inputExample,
+            outputExample: outputExampleMatch?.[1]?.trim() || draft.outputExample,
             systemPrompt: promptMatch?.[1]?.trim() || draft.systemPrompt,
         });
     };
