@@ -163,6 +163,18 @@ class MilvusClient:
         
         return formatted_results
 
+    def delete_agent(self, agent_id: str) -> bool:
+        """에이전트 정보 삭제"""
+        try:
+            expr = f'agent_id == "{agent_id}"'
+            self.collection.delete(expr)
+            self.collection.flush()
+            print(f"[Hub:MilvusClient] Agent Deleted: {agent_id}")
+            return True
+        except Exception as e:
+            print(f"[Hub:MilvusClient] Delete Failed: {e}")
+            return False
+
     def close(self):
         """연결 종료"""
         try:

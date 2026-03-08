@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Sparkles, Settings2 } from 'lucide-react';
+import { ArrowLeft, Sparkles, Settings2, Trash2 } from 'lucide-react';
 import { AgentDraft, Step1Chat } from '@/components/create-agent-steps/step1-chat';
 import { Step2Config } from '@/components/create-agent-steps/step2-config';
 import { api } from '@/lib/api';
@@ -94,6 +94,19 @@ export default function EditAgentPage() {
         }
     };
 
+    const handleDelete = async () => {
+        if (!confirm('정말로 이 에이전트를 삭제하시겠습니까?')) return;
+
+        try {
+            await api.deleteAgent(agentId);
+            alert('에이전트가 삭제되었습니다.');
+            router.push('/agents');
+        } catch (error) {
+            console.error('삭제 실패:', error);
+            alert('에이전트 삭제에 실패했습니다.');
+        }
+    };
+
     if (isLoading) {
         return <div className="flex items-center justify-center h-screen">로딩중...</div>;
     }
@@ -130,7 +143,16 @@ export default function EditAgentPage() {
                     </div>
                 </div>
 
-                <div className="w-24"></div>
+                <div className="flex items-center gap-2">
+                    <Button
+                        variant="ghost"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={handleDelete}
+                    >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        삭제
+                    </Button>
+                </div>
             </header>
 
             {/* Main Content */}

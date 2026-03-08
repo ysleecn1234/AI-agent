@@ -63,7 +63,14 @@ class AIHubService:
         if str(agent.creator_id) != str(requester_id):
             return {"success": False, "message": "삭제 권한이 없습니다. (본인이 만든 에이전트만 삭제 가능)", "code": 403}
             
-        # 4. 삭제 수행
+        # 4. 삭제 수행 (PostgreSQL + Milvus 동시 삭제)
+        try:
+            from services.ai_hub.db.milvus_client import MilvusClient
+            milvus = MilvusClient()
+            milvus.delete_agent(str(agent.id))
+        except Exception as e:
+            print(f"[Hub:Service] Warning: Failed to delete from Milvus: {e}")
+
         db.delete(agent)
         db.commit()
         return {"success": True, "message": "Agent deleted successfully", "code": 204}
