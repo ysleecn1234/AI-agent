@@ -9,6 +9,9 @@ RUN npm install
 # Copy frontend source
 COPY frontend/ .
 
+# Ensure no local dev variables override production URLs
+RUN rm -f .env.local
+
 # Build
 RUN npm run build
 
