@@ -61,8 +61,7 @@ function ChatContent() {
     const [activeAgent, setActiveAgent] = useState<Agent | null>(null);
     const [isSaving, setIsSaving] = useState(false);
     const [saveProgress, setSaveProgress] = useState(0);
-    // messagesRef: messages state를 항상 동기적으로 반영 (useEffect 클로저 문제 방지)
-    const messagesRef = useRef<ChatMessage[]>([]);
+
 
     const loadSessions = useCallback(async () => {
         try {
@@ -92,9 +91,7 @@ function ChatContent() {
     useEffect(() => {
         loadSessions();
         const sessionParam = searchParams.get('session');
-        // 이미 메시지가 있으면 loadSession 호출 안함 (web_citations 덮어쓰기 방지)
-        // messagesRef를 통해 현재 messages 상태를 클로저 없이 읽음
-        if (sessionParam && messagesRef.current.length === 0) {
+        if (sessionParam) {
             loadSession(sessionParam);
         }
         // Agent Hub에서 에이전트 실행 시 자동 활성화
@@ -109,11 +106,6 @@ function ChatContent() {
             }).catch(() => { });
         }
     }, [loadSessions, searchParams, loadSession]);
-
-    // messagesRef를 messages state와 항상 동기화
-    useEffect(() => {
-        messagesRef.current = messages;
-    }, [messages]);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
