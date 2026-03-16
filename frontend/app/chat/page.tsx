@@ -105,7 +105,8 @@ function ChatContent() {
                 if (agent.use_rag) setDriveEnabled(true);
             }).catch(() => { });
         }
-    }, [loadSessions, searchParams, loadSession]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
