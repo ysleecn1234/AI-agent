@@ -91,7 +91,8 @@ function ChatContent() {
     useEffect(() => {
         loadSessions();
         const sessionParam = searchParams.get('session');
-        if (sessionParam) {
+        // currentSessionId와 다를 때만 로드 (메시지 전송 후 URL 변경으로 인한 덮어쓰기 방지)
+        if (sessionParam && sessionParam !== currentSessionId) {
             loadSession(sessionParam);
         }
         // Agent Hub에서 에이전트 실행 시 자동 활성화
@@ -105,7 +106,7 @@ function ChatContent() {
                 if (agent.use_rag) setDriveEnabled(true);
             }).catch(() => { });
         }
-    }, [loadSessions, searchParams, loadSession]);
+    }, [loadSessions, searchParams, loadSession, currentSessionId]);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
