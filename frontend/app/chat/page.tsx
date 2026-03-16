@@ -61,7 +61,7 @@ function ChatContent() {
     const [activeAgent, setActiveAgent] = useState<Agent | null>(null);
     const [isSaving, setIsSaving] = useState(false);
     const [saveProgress, setSaveProgress] = useState(0);
-
+    const skipNextLoadSession = useRef(false);
 
     const loadSessions = useCallback(async () => {
         try {
@@ -91,9 +91,13 @@ function ChatContent() {
     useEffect(() => {
         loadSessions();
         const sessionParam = searchParams.get('session');
-        // currentSessionId가 없을 때만 loadSession 호출 (메시지 전송 후 URL 변경 시 덮어쓰기 방지)
-        if (sessionParam && !currentSessionId) {
-            loadSession(sessionParam);
+        if (sessionParam) {
+            if (skipNextLoadSession.current) {
+                // 메시지 전송 후 URL 변경 시 loadSession 건너뜀 (web_citations 덮어쓰기 방지)
+                skipNextLoadSession.current = false;
+            } else {
+                loadSession(sessionParam);
+            }
         }
         // Agent Hub에서 에이전트 실행 시 자동 활성화
         const agentParam = searchParams.get('agent');
@@ -106,7 +110,7 @@ function ChatContent() {
                 if (agent.use_rag) setDriveEnabled(true);
             }).catch(() => { });
         }
-    }, [loadSessions, searchParams, loadSession, currentSessionId]);
+    }, [loadSessions, searchParams, loadSession]);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -176,6 +180,7 @@ function ChatContent() {
 
             if (!currentSessionId && response.session_id) {
                 setCurrentSessionId(response.session_id);
+                skipNextLoadSession.current = true;
                 router.push(`/chat?session=${response.session_id}`, { scroll: false });
             }
             loadSessions();
