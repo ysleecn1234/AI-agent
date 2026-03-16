@@ -775,7 +775,8 @@ class Researcher:
         Perplexity API를 통한 실시간 웹 검색
         
         Returns:
-            (content: str, citations: list[str]) - 검색 결과 텍스트와 출처 URL 리스트
+            (content: str, citations: list[dict]) - 검색 결과 텍스트와 구조화된 출처 목록
+            각 citation: {"url": str, "title": str}
         """
         try:
             print(f"  → 웹 검색 실행: {query[:30]}...")
@@ -786,23 +787,89 @@ class Researcher:
             )
             result = response.choices[0].message.content or ""
             
-            # Perplexity API citations 추출
-            citations = []
+            # ── Perplexity API citations 강력 추출 (여러 경로 시도) ──
+            raw_citations = []
+            
+            # 방법 1: response 최상위 citations
             try:
                 if hasattr(response, 'citations') and response.citations:
-                    citations = list(response.citations)
-                elif hasattr(response, '_hidden_params'):
-                    raw = response._hidden_params.get('original_response', {})
-                    if hasattr(raw, 'citations'):
-                        citations = list(raw.citations)
-            except Exception:
-                pass
+                    raw_citations = list(response.citations)
+                    print(f"  → citations 추출 (최상위): {len(raw_citations)}개")
+            except Exception as e1:
+                print(f"  → citations 최상위 추출 실패: {e1}")
             
-            print(f"  → 웹 검색 완료 ({len(result)}자, 출처 {len(citations)}개)")
-            return result, citations
+            # 방법 2: _hidden_params.original_response.citations
+            if not raw_citations:
+                try:
+                    if hasattr(response, '_hidden_params'):
+                        raw_resp = response._hidden_params.get('original_response', {})
+                        if hasattr(raw_resp, 'citations') and raw_resp.citations:
+                            raw_citations = list(raw_resp.citations)
+                            print(f"  → citations 추출 (hidden_params): {len(raw_citations)}개")
+                        elif isinstance(raw_resp, dict) and 'citations' in raw_resp:
+                            raw_citations = list(raw_resp['citations'])
+                            print(f"  → citations 추출 (hidden_params dict): {len(raw_citations)}개")
+                except Exception as e2:
+                    print(f"  → citations hidden_params 추출 실패: {e2}")
+            
+            # 방법 3: model_extra 또는 json 응답 직접 탐색
+            if not raw_citations:
+                try:
+                    resp_dict = response.model_dump() if hasattr(response, 'model_dump') else {}
+                    if 'citations' in resp_dict:
+                        raw_citations = list(resp_dict['citations'])
+                        print(f"  → citations 추출 (model_dump): {len(raw_citations)}개")
+                except Exception as e3:
+                    print(f"  → citations model_dump 추출 실패: {e3}")
+            
+            # 방법 4: 응답 텍스트에서 URL 정규식 추출 (최후의 수단)
+            if not raw_citations and result:
+                import re
+                urls = re.findall(r'https?://[^\s\)\]\"\'<>]+', result)
+                if urls:
+                    raw_citations = list(dict.fromkeys(urls))  # 중복 제거
+                    print(f"  → citations 추출 (정규식 fallback): {len(raw_citations)}개")
+            
+            # ── URL을 구조화된 citation 객체로 변환 ──
+            structured_citations = []
+            for url in raw_citations:
+                if isinstance(url, str) and url.startswith('http'):
+                    title = self._extract_title_from_url(url)
+                    structured_citations.append({
+                        "url": url,
+                        "title": title
+                    })
+            
+            print(f"  → 웹 검색 완료 ({len(result)}자, 출처 {len(structured_citations)}개)")
+            return result, structured_citations
         except Exception as e:
             print(f"  → 웹 검색 실패 (Fallback: 웹 검색 없이 진행): {e}")
             return "", []
+    
+    def _extract_title_from_url(self, url: str) -> str:
+        """URL 경로에서 읽기 가능한 제목을 추출"""
+        try:
+            from urllib.parse import urlparse, unquote
+            parsed = urlparse(url)
+            hostname = parsed.hostname or ""
+            hostname = hostname.replace("www.", "")
+            
+            # URL 경로에서 의미 있는 부분 추출
+            path = unquote(parsed.path).strip("/")
+            if path:
+                # 마지막 경로 세그먼트 사용
+                last_segment = path.split("/")[-1]
+                # 파일 확장자 제거
+                if "." in last_segment:
+                    last_segment = last_segment.rsplit(".", 1)[0]
+                # 하이픈/언더스코어를 공백으로
+                last_segment = last_segment.replace("-", " ").replace("_", " ")
+                if len(last_segment) > 3:
+                    return f"{hostname} - {last_segment}"
+            
+            return hostname
+        except Exception:
+            return url[:60]
 
 
 
@@ -1736,26 +1803,7 @@ class Pipeline:
             web_citations = []
             if model_type != "PERPLEXITY":
                 try:
-                    print(f"  → 웹 검색 실행: {user_input[:30]}...")
-                    web_response = litellm.completion(
-                        model="perplexity/sonar",
-                        messages=[{"role": "user", "content": user_input}],
-                        max_tokens=500,
-                    )
-                    web_context = web_response.choices[0].message.content or ""
-                    
-                    # Perplexity API citations 추출
-                    try:
-                        if hasattr(web_response, 'citations') and web_response.citations:
-                            web_citations = list(web_response.citations)
-                        elif hasattr(web_response, '_hidden_params'):
-                            raw = web_response._hidden_params.get('original_response', {})
-                            if hasattr(raw, 'citations'):
-                                web_citations = list(raw.citations)
-                    except Exception:
-                        pass
-                    
-                    print(f"  → 웹 검색 완료 ({len(web_context)}자, 출처 {len(web_citations)}개)")
+                    web_context, web_citations = self.retriever._web_search(user_input)
                 except Exception as e:
                     print(f"  → 웹 검색 실패 (스킵): {e}")
             

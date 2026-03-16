@@ -24,7 +24,7 @@ interface ChatMessage {
     content: string;
     sources?: ChatSource[];
     web_searched?: boolean;
-    web_citations?: string[];
+    web_citations?: Array<string | { url: string; title?: string }>;
     liked?: boolean;
 }
 
@@ -548,26 +548,38 @@ function ChatContent() {
                                                 <span>🌐</span>
                                                 <span>웹 검색 참조 ({msg.web_citations.length})</span>
                                             </div>
-                                            <div className="space-y-1">
-                                                {msg.web_citations.map((url, cIdx) => (
-                                                    <div key={cIdx} className="text-xs">
-                                                        <a
-                                                            href={url}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="text-green-600 hover:underline truncate block"
-                                                        >
-                                                            {(() => {
-                                                                try {
-                                                                    const hostname = new URL(url).hostname.replace('www.', '');
-                                                                    return hostname;
-                                                                } catch {
-                                                                    return url;
-                                                                }
-                                                            })()}
-                                                        </a>
-                                                    </div>
-                                                ))}
+                                            <div className="space-y-1.5">
+                                                {msg.web_citations.map((citation: any, cIdx: number) => {
+                                                    // 구조화된 객체({url, title}) 또는 단순 문자열 모두 지원
+                                                    const url = typeof citation === 'string' ? citation : citation?.url || '';
+                                                    const title = typeof citation === 'string' ? null : citation?.title;
+                                                    
+                                                    let hostname = '';
+                                                    try {
+                                                        hostname = new URL(url).hostname.replace('www.', '');
+                                                    } catch {
+                                                        hostname = url;
+                                                    }
+                                                    
+                                                    return (
+                                                        <div key={cIdx} className="flex items-start gap-2 text-xs">
+                                                            <span className="text-green-400 mt-0.5 shrink-0">•</span>
+                                                            <div className="min-w-0 flex-1">
+                                                                <a
+                                                                    href={url}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="text-green-700 hover:underline font-medium truncate block"
+                                                                >
+                                                                    {title || hostname}
+                                                                </a>
+                                                                {title && (
+                                                                    <span className="text-gray-400 text-[10px]">{hostname}</span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
                                             </div>
                                         </div>
                                     )}
