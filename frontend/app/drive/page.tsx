@@ -477,7 +477,10 @@ export default function DrivePage() {
                                                     />
                                                 </TableCell>
                                                 <TableCell onClick={() => router.push(`/drive/documents/${doc.doc_id}`)} className="cursor-pointer">{getFileIcon(doc.file_type)}</TableCell>
-                                                <TableCell onClick={() => router.push(`/drive/documents/${doc.doc_id}`)} className="font-medium cursor-pointer">{doc.title}</TableCell>
+                                                <TableCell onClick={() => router.push(`/drive/documents/${doc.doc_id}`)} className="cursor-pointer">
+                                                    <div className="font-medium">{doc.title}</div>
+                                                    {doc.description && <div className="text-xs text-gray-400 mt-0.5 truncate max-w-xs">{doc.description}</div>}
+                                                </TableCell>
                                                 <TableCell onClick={() => router.push(`/drive/documents/${doc.doc_id}`)} className="cursor-pointer">{doc.creator_department}</TableCell>
                                                 <TableCell onClick={() => router.push(`/drive/documents/${doc.doc_id}`)} className="cursor-pointer">{formatDate(doc.modified_at)}</TableCell>
                                                 <TableCell onClick={() => router.push(`/drive/documents/${doc.doc_id}`)} className="cursor-pointer">{getVisibilityBadge(doc.visibility)}</TableCell>
