@@ -175,7 +175,8 @@ function ChatContent() {
 
             if (!currentSessionId && response.session_id) {
                 setCurrentSessionId(response.session_id);
-                router.push(`/chat?session=${response.session_id}`, { scroll: false });
+                // router.push 대신 history API 사용 → searchParams 변경 없이 URL만 업데이트 (useEffect 재실행 방지)
+                window.history.replaceState(null, '', `/chat?session=${response.session_id}`);
             }
             loadSessions();
 
