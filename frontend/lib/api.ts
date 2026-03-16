@@ -108,7 +108,7 @@ class ApiClient {
 
     // Chat
     public async sendMessage(data: ChatRequest): Promise<ChatResponse> {
-        return this.request<ChatResponse>('/chat', {
+        return this.request<ChatResponse>('/chat/', {
             method: 'POST',
             body: JSON.stringify(data),
         });
