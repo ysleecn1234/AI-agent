@@ -29,6 +29,7 @@ logs/
 
 # 테스트 파일
 services/ai_drive/test_files/
+services/ai_drive/tests/
 
 # 업로드 파일
 services/ai_drive/uploads/
