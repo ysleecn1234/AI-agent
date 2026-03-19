@@ -1803,7 +1803,7 @@ class Pipeline:
             web_citations = []
             if model_type != "PERPLEXITY":
                 try:
-                    web_context, web_citations = self.retriever._web_search(user_input)
+                    web_context, web_citations = self.researcher._web_search(user_input)
                 except Exception as e:
                     print(f"  → 웹 검색 실패 (스킵): {e}")
             

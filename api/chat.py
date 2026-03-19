@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, Union
 
 from application.auth import decode_access_token
 from application.database import get_db
@@ -31,7 +31,7 @@ class ChatResponse(BaseModel):
     sources: List[ChatSourceOut]
     session_id: str
     web_searched: bool = False
-    web_citations: List[str] = []
+    web_citations: List[Union[str, dict]] = []
 
 class RenameRequest(BaseModel):
     title: str
