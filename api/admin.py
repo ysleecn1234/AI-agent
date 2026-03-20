@@ -227,18 +227,7 @@ def get_usage_summary(
         monthly_budget = _get_monthly_budget(db, user_id)
         budget_pct = round(total_krw_f / monthly_budget * 100, 1) if monthly_budget > 0 else 0.0
 
-        # 인기 모델 TOP 5 (cost_logs 기준, 이번 달)
-        CHAT_ANSWER_OPERATIONS = [
-            'llm:chat_simple',
-            'llm:chat_complex', 
-            'llm:chat_bulk',
-            'llm:chat_reasoning',
-            'llm:premium:GPT_5_2',
-            'llm:premium:GEMINI_3_PRO',
-            'llm:premium:PERPLEXITY',
-            'llm:premium:OPUS_4_6',
-        ]
-        
+        # 인기 모델 TOP 5 (text-embedding-3-small 제외 전체)
         top_models_rows = (
             db.query(
                 CostLog.model_name,
@@ -251,7 +240,7 @@ def get_usage_summary(
                 cast(CostLog.timestamp, Date) <= cur_last,
                 CostLog.model_name != None,
                 CostLog.model_name != "",
-                CostLog.operation.in_(CHAT_ANSWER_OPERATIONS)
+                CostLog.model_name != "text-embedding-3-small"
             )
             .group_by(CostLog.model_name)
             .order_by(func.sum(CostLog.cost_krw).desc())
@@ -268,6 +257,19 @@ def get_usage_summary(
                 "tokens": int(r.sum_tokens or 0)
             })
 
+        # 일 평균 / 월말 예측 계산
+        total_days_in_month = (cur_last - cur_first).days + 1
+        today = date.today()
+        if today > cur_last:
+            elapsed_days = total_days_in_month
+        elif today < cur_first:
+            elapsed_days = 1
+        else:
+            elapsed_days = today.day
+
+        daily_avg_krw = round(total_krw_f / elapsed_days) if elapsed_days > 0 else 0
+        month_end_estimate_krw = daily_avg_krw * total_days_in_month
+
         return {
             "month": f"{cur_first.year}-{cur_first.month:02d}",
             "total_cost_krw": total_krw_f,
@@ -275,6 +277,8 @@ def get_usage_summary(
             "total_tokens": total_tokens,
             "monthly_budget_krw": monthly_budget,
             "budget_usage_percent": budget_pct,
+            "daily_avg_krw": daily_avg_krw,
+            "month_end_estimate_krw": month_end_estimate_krw,
             "cost_by_category": cost_by_category,
             "top_models": top_models,
             "vs_last_month": {

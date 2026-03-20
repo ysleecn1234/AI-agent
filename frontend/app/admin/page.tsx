@@ -360,7 +360,7 @@ export default function AdminPage() {
                                                         };
                                                         const displayName = displayNames[item.model] || item.model;
                                                         
-                                                        const badgeColors = ['bg-blue-600', 'bg-gray-500', 'bg-gray-400', 'bg-gray-300', 'bg-gray-200'];
+                                                        const badgeColors = ['bg-blue-600', 'bg-gray-600', 'bg-gray-500', 'bg-gray-400', 'bg-gray-300'];
                                                         const badgeColor = badgeColors[idx] || 'bg-gray-100';
                                                         
                                                         return (
@@ -378,6 +378,19 @@ export default function AdminPage() {
                                                             </div>
                                                         );
                                                     })}
+                                                </div>
+                                            )}
+
+                                            {/* 일 평균 비용 + 월말 예측 */}
+                                            {typeof summary?.daily_avg_krw === 'number' && typeof summary?.month_end_estimate_krw === 'number' && (
+                                                <div className="border-t border-gray-100 pt-3 mt-3 text-center">
+                                                    <p className={`text-sm font-medium ${
+                                                        summary.month_end_estimate_krw >= summary.monthly_budget_krw ? 'text-red-600' :
+                                                        summary.month_end_estimate_krw >= summary.monthly_budget_krw * 0.8 ? 'text-amber-600' :
+                                                        'text-gray-500'
+                                                    }`}>
+                                                        📊 하루 평균 ₩{Math.round(summary.daily_avg_krw).toLocaleString()} 사용 중 · 이 추세면 월말 예상 ₩{Math.round(summary.month_end_estimate_krw).toLocaleString()}
+                                                    </p>
                                                 </div>
                                             )}
                                         </div>

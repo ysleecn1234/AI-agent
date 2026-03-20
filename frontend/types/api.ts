@@ -208,6 +208,8 @@ export interface UsageSummaryResponse {
     total_tokens: number;
     monthly_budget_krw: number;
     budget_usage_percent: number;
+    daily_avg_krw?: number;
+    month_end_estimate_krw?: number;
     cost_by_category: Record<string, any>;
     top_models?: {
         model: string;
