@@ -33,7 +33,17 @@ function LoginForm() {
       const redirect = searchParams.get('redirect') || '/chat';
       router.push(redirect);
     } catch (err) {
-      setError(err instanceof Error ? err.message : '로그인에 실패했습니다.');
+      let errorMessage = '로그인에 실패했습니다.';
+      if (err instanceof Error) {
+        if (err.message.includes('401')) {
+          errorMessage = '이메일 또는 비밀번호가 일치하지 않습니다.';
+        } else if (err.message.includes('404')) {
+          errorMessage = '존재하지 않는 계정입니다.';
+        } else {
+          errorMessage = err.message.replace('API Error:', '네트워크 오류:');
+        }
+      }
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

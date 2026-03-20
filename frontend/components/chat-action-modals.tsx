@@ -306,7 +306,7 @@ export function CreateAgentModal({ isOpen, onClose, onCreate, content, fullMessa
                             <Sparkles className="w-5 h-5 text-blue-600" />
                             에이전트 생성
                         </DialogTitle>
-                        <div className="flex items-center gap-1 text-sm">
+                        <div className="flex items-center gap-1 text-sm pr-8">
                             <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${step === 1 ? 'bg-blue-600 text-white' : 'bg-green-500 text-white'}`}>
                                 {step === 1 ? '1' : '✓'}
                             </span>

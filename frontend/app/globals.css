@@ -6,6 +6,18 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  /* Custom C4D2DE Theme Override */
+  --color-blue-50: #f5f8fa;
+  --color-blue-100: #eaf1f5;
+  --color-blue-200: #dce7ee;
+  --color-blue-300: #cbdce6;
+  --color-blue-400: #b9d2de;
+  --color-blue-500: #a5c6d6;
+  --color-blue-600: #c4d2de;
+  --color-blue-700: #aebfd1;
+  --color-blue-800: #96a9bd;
+  --color-blue-900: #7c8f9f;
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);

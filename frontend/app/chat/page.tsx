@@ -199,7 +199,23 @@ function ChatContent() {
 
     const handleCopyMessage = async (content: string, index: number) => {
         try {
-            await navigator.clipboard.writeText(content);
+            if (navigator.clipboard && window.isSecureContext) {
+                // 브라우저가 https 이거나 localhost 일 때 동작
+                await navigator.clipboard.writeText(content);
+            } else {
+                // http 방식(IP 접속 등)일 경우의 폴백
+                const textArea = document.createElement('textarea');
+                textArea.value = content;
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                } catch (err) {
+                    throw new Error('Fallback copy failed');
+                }
+                document.body.removeChild(textArea);
+            }
             setCopiedIndex(index);
             setTimeout(() => setCopiedIndex(null), 2000);
         } catch (error) {
@@ -639,22 +655,13 @@ function ChatContent() {
                                                 )}
                                             </Button>
                                             <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => handleLikeMessage(idx)}
-                                                className={`text-xs h-7 px-2 ${msg.liked ? 'text-blue-600' : ''}`}
-                                            >
-                                                <ThumbsUp className={`w-3 h-3 mr-1 ${msg.liked ? 'fill-blue-600' : ''}`} />
-                                                {msg.liked ? '좋아요' : '좋아요'}
-                                            </Button>
-                                            <Button
                                                 variant="outline"
                                                 size="sm"
                                                 onClick={() => handleSaveToDrive(idx)}
                                                 className="text-xs h-7"
                                             >
                                                 <Save className="w-3 h-3 mr-1" />
-                                                저장
+                                                Drive 공유
                                             </Button>
                                             <Button
                                                 variant="outline"
