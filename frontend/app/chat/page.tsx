@@ -468,7 +468,7 @@ function ChatContent() {
                         {/* Logo Home Button */}
                         <div 
                             className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity ml-1" 
-                            onClick={() => router.push('/chat')}
+                            onClick={handleNewChat}
                         >
                             <div className="w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center">
                                 <span className="text-white text-[10px] font-bold">ISOR</span>
