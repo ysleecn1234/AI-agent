@@ -6,17 +6,17 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  /* Custom C4D2DE Theme Override */
-  --color-blue-50: #f5f8fa;
-  --color-blue-100: #eaf1f5;
-  --color-blue-200: #dce7ee;
-  --color-blue-300: #cbdce6;
-  --color-blue-400: #b9d2de;
-  --color-blue-500: #a5c6d6;
-  --color-blue-600: #c4d2de;
-  --color-blue-700: #aebfd1;
-  --color-blue-800: #96a9bd;
-  --color-blue-900: #7c8f9f;
+  /* Warm Navy + Cool Cream Theme */
+  --color-blue-50: #F5F7FA;
+  --color-blue-100: #E6EBF2;
+  --color-blue-200: #CCDBEA;
+  --color-blue-300: #9AB3CF;
+  --color-blue-400: #6B8FB5;
+  --color-blue-500: #3D6A94;
+  --color-blue-600: #1B3A5C;
+  --color-blue-700: #17314E;
+  --color-blue-800: #122840;
+  --color-blue-900: #0D1E30;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -62,7 +62,7 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
+  --background: #F5F7FA;
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
@@ -85,7 +85,7 @@
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
+  --sidebar: #EDF0F6;
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
   --sidebar-primary-foreground: oklch(0.985 0 0);
@@ -133,6 +133,7 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }

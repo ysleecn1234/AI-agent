@@ -18,13 +18,13 @@ import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend
 } from 'recharts';
 
-// 차트 색상 — 사용자 관점 4개 카테고리
+// 차트 색상 — 사용자 관점 카테고리
 const CATEGORY_COLORS: Record<string, string> = {
-    ai_chat: '#3B82F6',        // blue-500
-    doc_qa: '#8B5CF6',         // purple-500
-    doc_processing: '#10B981', // emerald-500
-    agent: '#F59E0B',          // amber-500
-    other: '#6B7280',          // gray-500
+    ai_chat: '#5B8DB8',
+    doc_qa: '#6B9E8A',
+    doc_processing: '#6B9E8A',
+    agent: '#C4956A',
+    other: '#A0A4AB',
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -372,7 +372,7 @@ export default function AdminPage() {
                                                             name,
                                                         ]) as any}
                                                     />
-                                                    <Bar dataKey="비용" fill="#3B82F6" radius={[3, 3, 0, 0]} />
+                                                    <Bar dataKey="비용" fill="#1B3A5C" radius={[3, 3, 0, 0]} />
                                                 </BarChart>
                                             </ResponsiveContainer>
                                         ) : (
