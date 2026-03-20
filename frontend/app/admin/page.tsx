@@ -334,9 +334,9 @@ export default function AdminPage() {
                                             </div>
                                         </div>
 
-                                        {/* 인기 모델 TOP 3 섹션 */}
+                                        {/* 인기 모델 TOP 5 섹션 */}
                                         <div className="border-t border-gray-100 pt-4 mt-4">
-                                            <h3 className="text-sm font-semibold text-gray-900 mb-3">인기 모델 TOP 3</h3>
+                                            <h3 className="text-sm font-semibold text-gray-900 mb-3">인기 모델 TOP 5</h3>
                                             {(!summary?.top_models || summary.top_models.length === 0) ? (
                                                 <p className="text-sm text-gray-400 text-center py-4">아직 사용 데이터가 없습니다</p>
                                             ) : (
@@ -360,8 +360,8 @@ export default function AdminPage() {
                                                         };
                                                         const displayName = displayNames[item.model] || item.model;
                                                         
-                                                        const badgeColors = ['bg-blue-600', 'bg-gray-500', 'bg-gray-400'];
-                                                        const badgeColor = badgeColors[idx] || 'bg-gray-300';
+                                                        const badgeColors = ['bg-blue-600', 'bg-gray-500', 'bg-gray-400', 'bg-gray-300', 'bg-gray-200'];
+                                                        const badgeColor = badgeColors[idx] || 'bg-gray-100';
                                                         
                                                         return (
                                                             <div key={idx} className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-lg">

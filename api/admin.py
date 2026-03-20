@@ -227,7 +227,18 @@ def get_usage_summary(
         monthly_budget = _get_monthly_budget(db, user_id)
         budget_pct = round(total_krw_f / monthly_budget * 100, 1) if monthly_budget > 0 else 0.0
 
-        # 인기 모델 TOP 3 (cost_logs 기준, 이번 달)
+        # 인기 모델 TOP 5 (cost_logs 기준, 이번 달)
+        CHAT_ANSWER_OPERATIONS = [
+            'llm:chat_simple',
+            'llm:chat_complex', 
+            'llm:chat_bulk',
+            'llm:chat_reasoning',
+            'llm:premium:GPT_5_2',
+            'llm:premium:GEMINI_3_PRO',
+            'llm:premium:PERPLEXITY',
+            'llm:premium:OPUS_4_6',
+        ]
+        
         top_models_rows = (
             db.query(
                 CostLog.model_name,
@@ -239,11 +250,12 @@ def get_usage_summary(
                 cast(CostLog.timestamp, Date) >= cur_first,
                 cast(CostLog.timestamp, Date) <= cur_last,
                 CostLog.model_name != None,
-                CostLog.model_name != ""
+                CostLog.model_name != "",
+                CostLog.operation.in_(CHAT_ANSWER_OPERATIONS)
             )
             .group_by(CostLog.model_name)
             .order_by(func.sum(CostLog.cost_krw).desc())
-            .limit(3)
+            .limit(5)
             .all()
         )
         
