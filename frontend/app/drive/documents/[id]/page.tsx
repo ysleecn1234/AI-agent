@@ -246,6 +246,19 @@ export default function DocumentDetailPage() {
                         </SheetContent>
                     </Sheet>
 
+                    {/* Logo Home Button */}
+                    <div 
+                        className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity ml-1 mr-2" 
+                        onClick={() => router.push('/chat')}
+                    >
+                        <div className="w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center">
+                            <span className="text-white text-[10px] font-bold">ISOR</span>
+                        </div>
+                        <span className="font-semibold text-sm text-gray-800">ISOR</span>
+                    </div>
+                    
+                    <div className="h-4 w-px bg-gray-300 hidden sm:block"></div>
+
                     {/* Document Title + Description */}
                     <div>
                         <h1 className="text-lg font-semibold text-gray-900">{document.title}</h1>

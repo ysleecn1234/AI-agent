@@ -21,7 +21,7 @@ import {
 // 차트 색상 — 사용자 관점 카테고리
 const CATEGORY_COLORS: Record<string, string> = {
     ai_chat: '#5B8DB8',
-    doc_qa: '#6B9E8A',
+    doc_qa: '#8B7E9B',
     doc_processing: '#6B9E8A',
     agent: '#C4956A',
     other: '#A0A4AB',
@@ -56,6 +56,7 @@ export default function AdminPage() {
     const [byUser, setByUser] = useState<any>(null);
     const [byDept, setByDept] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [pieSort, setPieSort] = useState<'amount' | 'name'>('amount');
 
     const userName = typeof window !== 'undefined' ? localStorage.getItem('user_name') || '사용자' : '사용자';
 
@@ -105,7 +106,7 @@ export default function AdminPage() {
     // 도넛 차트 데이터 (other는 비용이 있을 때만 표시)
     const pieData = useMemo(() => {
         if (!summary?.cost_by_category) return [];
-        return Object.entries(summary.cost_by_category)
+        const data = Object.entries(summary.cost_by_category)
             .filter(([key, val]: [string, any]) => key !== 'other' || val.cost_krw > 0)
             .map(([key, val]: [string, any]) => ({
                 name: CATEGORY_LABELS[key] || key,
@@ -113,7 +114,14 @@ export default function AdminPage() {
                 count: val.activity_count ?? 0,   // activity_logs 기반 건수
                 color: CATEGORY_COLORS[key] || CATEGORY_COLORS.other,
             }));
-    }, [summary]);
+            
+        if (pieSort === 'name') {
+            data.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+        } else {
+            data.sort((a, b) => b.value - a.value);
+        }
+        return data;
+    }, [summary, pieSort]);
 
     // 바 차트 데이터
     const barData = useMemo(() => {
@@ -142,21 +150,34 @@ export default function AdminPage() {
         <div className="flex flex-col h-screen bg-gray-50">
             {/* Header */}
             <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
-                <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-                    <SheetTrigger asChild>
-                        <button className="p-2 hover:bg-gray-100 rounded-lg">
-                            <Menu className="w-6 h-6 text-gray-700" />
-                        </button>
-                    </SheetTrigger>
-                    <SheetContent side="left" className="p-0 w-[280px]">
-                        <AppSidebar
-                            onNavigate={(path) => router.push(path)}
-                            isMobile
-                            onClose={() => setSidebarOpen(false)}
-                            currentPath="/admin"
-                        />
-                    </SheetContent>
-                </Sheet>
+                <div className="flex items-center gap-2">
+                    <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+                        <SheetTrigger asChild>
+                            <button className="p-2 hover:bg-gray-100 rounded-lg">
+                                <Menu className="w-6 h-6 text-gray-700" />
+                            </button>
+                        </SheetTrigger>
+                        <SheetContent side="left" className="p-0 w-[280px]">
+                            <AppSidebar
+                                onNavigate={(path) => router.push(path)}
+                                isMobile
+                                onClose={() => setSidebarOpen(false)}
+                                currentPath="/admin"
+                            />
+                        </SheetContent>
+                    </Sheet>
+
+                    {/* Logo Home Button */}
+                    <div 
+                        className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity ml-1" 
+                        onClick={() => router.push('/chat')}
+                    >
+                        <div className="w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center">
+                            <span className="text-white text-[10px] font-bold">ISOR</span>
+                        </div>
+                        <span className="font-semibold text-sm text-gray-800">ISOR</span>
+                    </div>
+                </div>
 
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -266,22 +287,50 @@ export default function AdminPage() {
                                             </div>
 
                                             {/* 카테고리 범례 */}
-                                            <div className="w-full md:w-1/2 space-y-2">
-                                                {pieData.map((item, idx) => (
-                                                    <div key={idx} className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-lg">
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="w-3 h-3 rounded-full" style={{ background: item.color }} />
-                                                            <span className="text-sm text-gray-700">{item.name}</span>
+                                            <div className="w-full md:w-1/2 flex flex-col h-[220px]">
+                                                {/* 정렬 토글 */}
+                                                <div className="flex items-center gap-2 mb-3 border-b border-gray-100">
+                                                    <button
+                                                        onClick={() => setPieSort('name')}
+                                                        className={`pb-2 px-1 text-sm transition-colors ${
+                                                            pieSort === 'name' 
+                                                                ? 'font-semibold text-gray-900 border-b-2 border-blue-600' 
+                                                                : 'text-gray-400 hover:text-gray-600'
+                                                        }`}
+                                                    >
+                                                        이름순
+                                                    </button>
+                                                    <span className="text-gray-300 pb-2">|</span>
+                                                    <button
+                                                        onClick={() => setPieSort('amount')}
+                                                        className={`pb-2 px-1 text-sm transition-colors ${
+                                                            pieSort === 'amount' 
+                                                                ? 'font-semibold text-gray-900 border-b-2 border-blue-600' 
+                                                                : 'text-gray-400 hover:text-gray-600'
+                                                        }`}
+                                                    >
+                                                        금액순
+                                                    </button>
+                                                </div>
+                                                
+                                                {/* 범례 리스트 */}
+                                                <div className="flex-1 overflow-y-auto space-y-2 pr-2">
+                                                    {pieData.map((item, idx) => (
+                                                        <div key={idx} className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-lg">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: item.color }} />
+                                                                <span className="text-sm text-gray-700 truncate">{item.name}</span>
+                                                            </div>
+                                                            <div className="text-right flex-shrink-0">
+                                                                <span className="text-sm font-semibold text-gray-900">₩{Math.round(item.value).toLocaleString()}</span>
+                                                                <span className="text-xs text-gray-500 ml-2">{item.count}건</span>
+                                                            </div>
                                                         </div>
-                                                        <div className="text-right">
-                                                            <span className="text-sm font-semibold text-gray-900">₩{Math.round(item.value).toLocaleString()}</span>
-                                                            <span className="text-xs text-gray-500 ml-2">{item.count}건</span>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                                {pieData.length === 0 && (
-                                                    <p className="text-sm text-gray-400 text-center py-4">사용 내역이 없습니다</p>
-                                                )}
+                                                    ))}
+                                                    {pieData.length === 0 && (
+                                                        <p className="text-sm text-gray-400 text-center py-4">사용 내역이 없습니다</p>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     </CardContent>

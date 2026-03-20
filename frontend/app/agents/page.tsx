@@ -33,6 +33,22 @@ import { AppSidebar } from '@/components/app-sidebar';
 import { api } from '@/lib/api';
 import type { Agent } from '@/types/api';
 
+const categoryColors: Record<string, { button: string, badgeBg: string, badgeText: string }> = {
+    '개발': { button: '#3B5F8A', badgeBg: '#EDF1F7', badgeText: '#3B5F8A' },
+    '기획': { button: '#C4956A', badgeBg: '#FBF3EB', badgeText: '#C4956A' },
+    '문서작성': { button: '#6B9E8A', badgeBg: '#EEF6F2', badgeText: '#6B9E8A' },
+    '인사': { button: '#8B7E9B', badgeBg: '#F3F0F6', badgeText: '#8B7E9B' },
+    '생산성': { button: '#5A8F7B', badgeBg: '#EDF5F1', badgeText: '#5A8F7B' },
+    '마케팅': { button: '#D4845A', badgeBg: '#FDF0E8', badgeText: '#D4845A' },
+    '영업': { button: '#4A7FB5', badgeBg: '#EBF2F9', badgeText: '#4A7FB5' },
+    '재무': { button: '#7B8A5E', badgeBg: '#F2F4ED', badgeText: '#7B8A5E' },
+    '기타': { button: '#A0A4AB', badgeBg: '#F0F0F2', badgeText: '#A0A4AB' }
+};
+
+const getCategoryColor = (category: string) => {
+    return categoryColors[category] || categoryColors['기타'];
+};
+
 export default function AgentsPage() {
     const router = useRouter();
     const [agents, setAgents] = useState<Agent[]>([]);
@@ -132,6 +148,19 @@ export default function AgentsPage() {
                             />
                         </SheetContent>
                     </Sheet>
+
+                    {/* Logo Home Button */}
+                    <div 
+                        className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity ml-1 mx-2" 
+                        onClick={() => router.push('/chat')}
+                    >
+                        <div className="w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center">
+                            <span className="text-white text-[10px] font-bold">ISOR</span>
+                        </div>
+                        <span className="font-semibold text-sm text-gray-800">ISOR</span>
+                    </div>
+                    
+                    <div className="h-4 w-px bg-gray-300 hidden sm:block"></div>
 
                     <h1 className="text-2xl font-bold text-gray-900">Agent Hub</h1>
                 </div>
@@ -242,7 +271,14 @@ export default function AgentsPage() {
                                             <CardHeader className="pb-3">
                                                 <div className="flex justify-between items-start">
                                                     <div className="flex items-center gap-2">
-                                                        <Badge variant="outline" className="text-xs">
+                                                        <Badge 
+                                                            variant="outline" 
+                                                            className="text-xs border-0"
+                                                            style={{ 
+                                                                backgroundColor: getCategoryColor(agent.category).badgeBg, 
+                                                                color: getCategoryColor(agent.category).badgeText 
+                                                            }}
+                                                        >
                                                             {agent.category}
                                                         </Badge>
                                                     </div>
@@ -286,7 +322,8 @@ export default function AgentsPage() {
                                                 <Button
                                                     size="sm"
                                                     variant="default"
-                                                    className="w-full bg-blue-600 hover:bg-blue-700"
+                                                    className="w-full hover:opacity-90 transition-opacity"
+                                                    style={{ backgroundColor: getCategoryColor(agent.category).button }}
                                                     onClick={() => handleRunAgent(agent.id)}
                                                 >
                                                     <Play className="w-3 h-3 mr-1" />

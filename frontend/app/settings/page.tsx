@@ -145,22 +145,35 @@ export default function SettingsPage() {
         <div className="flex flex-col h-screen bg-gray-50">
             {/* Header */}
             <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
-                {/* Sidebar Trigger */}
-                <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-                    <SheetTrigger asChild>
-                        <button className="p-2 hover:bg-gray-100 rounded-lg">
-                            <Menu className="w-6 h-6 text-gray-700" />
-                        </button>
-                    </SheetTrigger>
-                    <SheetContent side="left" className="p-0 w-[280px]">
-                        <AppSidebar
-                            onNavigate={(path) => router.push(path)}
-                            isMobile
-                            onClose={() => setSidebarOpen(false)}
-                            currentPath="/settings"
-                        />
-                    </SheetContent>
-                </Sheet>
+                <div className="flex items-center gap-2">
+                    {/* Sidebar Trigger */}
+                    <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+                        <SheetTrigger asChild>
+                            <button className="p-2 hover:bg-gray-100 rounded-lg">
+                                <Menu className="w-6 h-6 text-gray-700" />
+                            </button>
+                        </SheetTrigger>
+                        <SheetContent side="left" className="p-0 w-[280px]">
+                            <AppSidebar
+                                onNavigate={(path) => router.push(path)}
+                                isMobile
+                                onClose={() => setSidebarOpen(false)}
+                                currentPath="/settings"
+                            />
+                        </SheetContent>
+                    </Sheet>
+
+                    {/* Logo Home Button */}
+                    <div 
+                        className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity ml-1" 
+                        onClick={() => router.push('/chat')}
+                    >
+                        <div className="w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center">
+                            <span className="text-white text-[10px] font-bold">ISOR</span>
+                        </div>
+                        <span className="font-semibold text-sm text-gray-800">ISOR</span>
+                    </div>
+                </div>
 
                 {/* User Menu */}
                 <DropdownMenu>
