@@ -846,6 +846,7 @@ function ChatContent() {
                     onClose={() => setSaveModalOpen(false)}
                     onSave={handleSaveConfirm}
                     content={getModalContent()}
+                    fullMessages={messages.map(m => ({ role: m.role, content: m.content }))}
                 />
                 <CreateAgentModal
                     isOpen={agentModalOpen}

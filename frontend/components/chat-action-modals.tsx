@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { FileText, MessageSquare, ChevronDown, ChevronUp, Loader2, Sparkles } from 'lucide-react';
+import { FileText, MessageSquare, ChevronDown, ChevronUp, Loader2, Sparkles, Save } from 'lucide-react';
 import { api } from '@/lib/api';
 
 interface SaveToDriveModalProps {
@@ -22,9 +22,10 @@ interface SaveToDriveModalProps {
         visibility: 'team' | 'public';
     }) => void;
     content: string;
+    fullMessages?: { role: string; content: string }[];
 }
 
-export function SaveToDriveModal({ isOpen, onClose, onSave, content }: SaveToDriveModalProps) {
+export function SaveToDriveModal({ isOpen, onClose, onSave, content, fullMessages }: SaveToDriveModalProps) {
     const [scope, setScope] = useState<'single' | 'all'>('single');
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
@@ -37,19 +38,26 @@ export function SaveToDriveModal({ isOpen, onClose, onSave, content }: SaveToDri
         if (isOpen && content) {
             generateTitleAndDescription();
         }
-    }, [isOpen, content]);
+    }, [isOpen, content, scope]);
 
     const generateTitleAndDescription = async () => {
         setIsGenerating(true);
         try {
+            const textToUse = scope === 'all' && fullMessages && fullMessages.length > 0
+                ? fullMessages.map(m => `${m.role === 'user' ? '사용자' : 'AI'}:\n${m.content}`).join('\n\n---\n\n')
+                : content;
+
             // Call backend API for LLM-based generation
-            const metadata = await api.generateDocumentMetadata(content);
+            const metadata = await api.generateDocumentMetadata(textToUse);
             setTitle(metadata.title);
             setDescription(metadata.description);
         } catch (error) {
             console.error('Failed to generate metadata:', error);
             // Fallback to simple generation
-            const lines = content.split('\n').filter(l => l.trim());
+            const textToUse = scope === 'all' && fullMessages && fullMessages.length > 0
+                ? fullMessages.map(m => `${m.role === 'user' ? '사용자' : 'AI'}:\n${m.content}`).join('\n\n---\n\n')
+                : content;
+            const lines = textToUse.split('\n').filter(l => l.trim());
             const firstLine = lines[0] || '대화 내용';
             const generatedTitle = firstLine.length > 50
                 ? firstLine.substring(0, 50) + '...'
@@ -77,7 +85,10 @@ export function SaveToDriveModal({ isOpen, onClose, onSave, content }: SaveToDri
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>드라이브에 저장</DialogTitle>
+                    <DialogTitle className="flex items-center gap-2">
+                        <Save className="w-5 h-5 text-blue-600" />
+                        드라이브에 저장
+                    </DialogTitle>
                     <DialogDescription>
                         문서 정보를 입력하고 저장하세요
                     </DialogDescription>
@@ -165,8 +176,10 @@ export function SaveToDriveModal({ isOpen, onClose, onSave, content }: SaveToDri
 
                         {showPreview && (
                             <div className="mt-3 p-4 bg-gray-50 border rounded-lg max-h-[200px] overflow-y-auto">
-                                <pre className="text-sm whitespace-pre-wrap text-gray-700">
-                                    {content}
+                                <pre className="text-sm whitespace-pre-wrap text-gray-700 font-sans">
+                                    {scope === 'all' && fullMessages && fullMessages.length > 0
+                                        ? fullMessages.map(m => `${m.role === 'user' ? '사용자' : 'AI'}:\n${m.content}`).join('\n\n---\n\n')
+                                        : content}
                                 </pre>
                             </div>
                         )}
