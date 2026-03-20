@@ -201,6 +201,26 @@ export interface ChatResponse {
     web_citations?: string[];
 }
 
+export interface UsageSummaryResponse {
+    month: string;
+    total_cost_krw: number;
+    total_cost_usd: number;
+    total_tokens: number;
+    monthly_budget_krw: number;
+    budget_usage_percent: number;
+    cost_by_category: Record<string, any>;
+    top_models?: {
+        model: string;
+        cost_krw: number;
+        count: number;
+        tokens: number;
+    }[];
+    vs_last_month: {
+        cost_change_percent: number;
+        token_change_percent: number;
+    };
+}
+
 // API Response Wrapper
 export interface ApiResponse<T> {
     data?: T;

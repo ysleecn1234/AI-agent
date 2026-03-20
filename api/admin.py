@@ -227,6 +227,35 @@ def get_usage_summary(
         monthly_budget = _get_monthly_budget(db, user_id)
         budget_pct = round(total_krw_f / monthly_budget * 100, 1) if monthly_budget > 0 else 0.0
 
+        # 인기 모델 TOP 3 (cost_logs 기준, 이번 달)
+        top_models_rows = (
+            db.query(
+                CostLog.model_name,
+                func.round(func.sum(CostLog.cost_krw)).label("sum_krw"),
+                func.count().label("usage_count"),
+                func.sum(CostLog.tokens_used).label("sum_tokens"),
+            )
+            .filter(
+                cast(CostLog.timestamp, Date) >= cur_first,
+                cast(CostLog.timestamp, Date) <= cur_last,
+                CostLog.model_name != None,
+                CostLog.model_name != ""
+            )
+            .group_by(CostLog.model_name)
+            .order_by(func.sum(CostLog.cost_krw).desc())
+            .limit(3)
+            .all()
+        )
+        
+        top_models = []
+        for r in top_models_rows:
+            top_models.append({
+                "model": r.model_name,
+                "cost_krw": float(r.sum_krw or 0),
+                "count": r.usage_count,
+                "tokens": int(r.sum_tokens or 0)
+            })
+
         return {
             "month": f"{cur_first.year}-{cur_first.month:02d}",
             "total_cost_krw": total_krw_f,
@@ -235,6 +264,7 @@ def get_usage_summary(
             "monthly_budget_krw": monthly_budget,
             "budget_usage_percent": budget_pct,
             "cost_by_category": cost_by_category,
+            "top_models": top_models,
             "vs_last_month": {
                 "cost_change_percent": cost_change,
                 "token_change_percent": token_change,

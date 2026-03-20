@@ -10,7 +10,8 @@ import {
     Agent,
     AgentDetail,
     ChatSaveRequest,
-    AgentSaveRequest
+    AgentSaveRequest,
+    UsageSummaryResponse
 } from '@/types/api';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://223.130.142.76:8000';
@@ -350,9 +351,9 @@ class ApiClient {
     }
 
     // Admin / Usage Statistics
-    public async getUsageSummary(month?: string): Promise<any> {
+    public async getUsageSummary(month?: string): Promise<UsageSummaryResponse> {
         const query = month ? `?month=${month}` : '';
-        return this.request(`/admin/usage/summary${query}`);
+        return this.request<UsageSummaryResponse>(`/admin/usage/summary${query}`);
     }
 
     public async getUsageDaily(month: string): Promise<any> {

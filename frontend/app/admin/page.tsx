@@ -333,6 +333,54 @@ export default function AdminPage() {
                                                 </div>
                                             </div>
                                         </div>
+
+                                        {/* 인기 모델 TOP 3 섹션 */}
+                                        <div className="border-t border-gray-100 pt-4 mt-4">
+                                            <h3 className="text-sm font-semibold text-gray-900 mb-3">인기 모델 TOP 3</h3>
+                                            {(!summary?.top_models || summary.top_models.length === 0) ? (
+                                                <p className="text-sm text-gray-400 text-center py-4">아직 사용 데이터가 없습니다</p>
+                                            ) : (
+                                                <div className="space-y-2">
+                                                    {summary.top_models.map((item: any, idx: number) => {
+                                                        const displayNames: Record<string, string> = {
+                                                            'AUTO': 'Auto (자동)',
+                                                            'gemini/gemini-2.5-flash-lite': 'Gemini 2.5 Flash Lite',
+                                                            'gemini/gemini-2.5-flash': 'Gemini 2.5 Flash',
+                                                            'gemini/gemini-3-flash-preview': 'Gemini 3 Flash',
+                                                            'gemini/gemini-3.1-pro-preview': 'Gemini 3.1 Pro',
+                                                            'gpt-5-nano': 'GPT-5 Nano',
+                                                            'gpt-5-mini': 'GPT-5 Mini',
+                                                            'gpt-5.2': 'GPT-5.2',
+                                                            'gpt-5.2-pro': 'GPT-5.2 Pro',
+                                                            'claude-haiku-4.5': 'Claude Haiku 4.5',
+                                                            'claude-sonnet-4-6': 'Claude Sonnet 4.6',
+                                                            'claude-opus-4-6': 'Claude Opus 4.6',
+                                                            'perplexity/sonar': 'Perplexity Sonar',
+                                                            'perplexity/sonar-pro': 'Perplexity Sonar Pro',
+                                                        };
+                                                        const displayName = displayNames[item.model] || item.model;
+                                                        
+                                                        const badgeColors = ['bg-blue-600', 'bg-gray-500', 'bg-gray-400'];
+                                                        const badgeColor = badgeColors[idx] || 'bg-gray-300';
+                                                        
+                                                        return (
+                                                            <div key={idx} className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-lg">
+                                                                <div className="flex items-center gap-2">
+                                                                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white ${badgeColor}`}>
+                                                                        {idx + 1}
+                                                                    </div>
+                                                                    <span className="text-sm text-gray-700 font-medium">{displayName}</span>
+                                                                </div>
+                                                                <div className="text-right flex flex-col sm:flex-row sm:items-center sm:gap-2">
+                                                                    <span className="text-sm font-semibold text-gray-900">₩{Math.round(item.cost_krw).toLocaleString()}</span>
+                                                                    <span className="text-xs text-gray-500">{item.count}건</span>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+                                        </div>
                                     </CardContent>
                                 </Card>
 
