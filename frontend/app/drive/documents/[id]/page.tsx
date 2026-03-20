@@ -340,9 +340,9 @@ export default function DocumentDetailPage() {
                                     className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                                 >
                                     <div
-                                        className={`max-w-[80%] rounded-lg px-4 py-3 ${msg.role === 'user'
-                                            ? 'bg-blue-600 text-white'
-                                            : 'bg-white text-gray-800 border border-gray-200'
+                                        className={`${msg.role === 'user'
+                                            ? 'max-w-[80%] rounded-2xl px-5 py-3 bg-[#EAEDF2] text-gray-900'
+                                            : 'max-w-[90%] text-gray-800 py-2'
                                             }`}
                                     >
                                         {msg.role === 'user' ? (

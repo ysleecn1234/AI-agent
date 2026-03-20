@@ -495,54 +495,54 @@ function ChatContent() {
                 <div className="flex-1 overflow-y-auto py-4">
                     <div className="max-w-4xl mx-auto w-full px-6 space-y-6 flex flex-col min-h-[calc(100vh-140px)]">
                         {messages.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center flex-1">
-                            {agentId ? (() => {
-                                const agent = activeAgent || recommendedAgents.find(a => a.id === agentId);
-                                return (
+                            <div className="flex flex-col items-center justify-center flex-1">
+                                {agentId ? (() => {
+                                    const agent = activeAgent || recommendedAgents.find(a => a.id === agentId);
+                                    return (
+                                        <div className="text-center">
+                                            <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                                                <span className="text-white text-xl font-bold">ISOR</span>
+                                            </div>
+                                            <h2 className="text-2xl font-bold text-gray-800 mb-2">
+                                                {agent?.name || '에이전트'}
+                                            </h2>
+                                            <p className="text-gray-600 max-w-md">
+                                                {agent?.description || '에이전트가 활성화되었습니다'}
+                                            </p>
+                                            <p className="text-gray-400 text-sm mt-3">
+                                                무엇을 도와드릴까요?
+                                            </p>
+                                        </div>
+                                    );
+                                })() : (
                                     <div className="text-center">
                                         <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                                            <span className="text-white text-xl font-bold">ISOR</span>
+                                            <span className="text-white text-3xl font-bold">ISOR</span>
                                         </div>
                                         <h2 className="text-2xl font-bold text-gray-800 mb-2">
-                                            {agent?.name || '에이전트'}
-                                        </h2>
-                                        <p className="text-gray-600 max-w-md">
-                                            {agent?.description || '에이전트가 활성화되었습니다'}
-                                        </p>
-                                        <p className="text-gray-400 text-sm mt-3">
                                             무엇을 도와드릴까요?
+                                        </h2>
+                                        <p className="text-gray-600">
+                                            질문을 입력하시면 AI가 답변해드립니다
                                         </p>
                                     </div>
-                                );
-                            })() : (
-                                <div className="text-center">
-                                    <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                                        <span className="text-white text-3xl font-bold">ISOR</span>
-                                    </div>
-                                    <h2 className="text-2xl font-bold text-gray-800 mb-2">
-                                        무엇을 도와드릴까요?
-                                    </h2>
-                                    <p className="text-gray-600">
-                                        질문을 입력하시면 AI가 답변해드립니다
-                                    </p>
-                                </div>
-                            )}
-                        </div>
-                    ) : (
-                        messages.map((msg, idx) => (
-                            <div
-                                key={idx}
-                                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                            >
-                                <div className={`${msg.role === 'user' ? 'max-w-[75%]' : 'w-full'} space-y-2`}>
-                                    <div
-                                        className={`${msg.role === 'user'
-                                            ? 'rounded-2xl px-5 py-3 bg-[#EAEDF2] text-gray-900'
-                                            : 'text-gray-800 py-2'
-                                            }`}
-                                    >
-                                        {msg.role === 'assistant' ? (
-                                            <div className="prose prose-sm max-w-none 
+                                )}
+                            </div>
+                        ) : (
+                            messages.map((msg, idx) => (
+                                <div
+                                    key={idx}
+                                    className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                                >
+                                    <div className={`${msg.role === 'user' ? 'max-w-[75%]' : 'w-full'} space-y-2`}>
+                                        <div
+                                            className={`${msg.role === 'user'
+                                                ? 'rounded-2xl px-5 py-3 bg-[#EAEDF2] text-gray-900'
+                                                : 'text-gray-800 py-2'
+                                                }`}
+                                        >
+                                            {msg.role === 'assistant' ? (
+                                                <div className="prose prose-sm max-w-none 
                                             prose-headings:font-semibold prose-headings:mb-2 prose-headings:mt-3
                                             prose-p:my-1.5 prose-p:leading-relaxed
                                             prose-ul:my-1.5 prose-ul:list-disc prose-ul:pl-5
@@ -553,146 +553,146 @@ function ChatContent() {
                                             prose-pre:bg-gray-900 prose-pre:text-gray-100 prose-pre:p-3 prose-pre:rounded prose-pre:my-2 prose-pre:overflow-x-auto
                                             prose-blockquote:border-l-2 prose-blockquote:border-gray-300 prose-blockquote:pl-3 prose-blockquote:italic prose-blockquote:text-gray-700
                                             prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline">
-                                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+                                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+                                                </div>
+                                            ) : (
+                                                <p className="whitespace-pre-wrap">{msg.content}</p>
+                                            )}
+                                        </div>
+
+                                        {/* Web Search Citations (AI messages only) */}
+                                        {msg.role === 'assistant' && msg.web_searched && msg.web_citations && msg.web_citations.length > 0 && (
+                                            <div className="bg-green-50 border border-green-200 rounded-lg p-3 space-y-2 w-fit min-w-[300px] max-w-2xl">
+                                                <div className="flex items-center gap-2 text-xs font-medium text-green-900">
+                                                    <span>🌐</span>
+                                                    <span>웹 검색 참조 ({msg.web_citations.length})</span>
+                                                </div>
+                                                <div className="space-y-1.5">
+                                                    {msg.web_citations.map((citation: any, cIdx: number) => {
+                                                        // 구조화된 객체({url, title}) 또는 단순 문자열 모두 지원
+                                                        const url = typeof citation === 'string' ? citation : citation?.url || '';
+                                                        const title = typeof citation === 'string' ? null : citation?.title;
+
+                                                        let hostname = '';
+                                                        try {
+                                                            hostname = new URL(url).hostname.replace('www.', '');
+                                                        } catch {
+                                                            hostname = url;
+                                                        }
+
+                                                        return (
+                                                            <div key={cIdx} className="flex items-start gap-2 text-xs">
+                                                                <span className="text-green-400 mt-0.5 shrink-0">•</span>
+                                                                <div className="min-w-0 flex-1">
+                                                                    <a
+                                                                        href={url}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className="text-green-700 hover:underline font-medium truncate block"
+                                                                    >
+                                                                        {title || hostname}
+                                                                    </a>
+                                                                    {title && (
+                                                                        <span className="text-gray-400 text-[10px]">{hostname}</span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
                                             </div>
-                                        ) : (
-                                            <p className="whitespace-pre-wrap">{msg.content}</p>
+                                        )}
+
+                                        {/* Web Search Badge (no citations) */}
+                                        {msg.role === 'assistant' && msg.web_searched && (!msg.web_citations || msg.web_citations.length === 0) && (
+                                            <div className="flex items-center gap-1.5 text-xs text-green-700 bg-green-50 border border-green-200 rounded-md px-2.5 py-1.5 w-fit">
+                                                <span>🌐</span>
+                                                <span>웹 검색 결과 반영</span>
+                                            </div>
+                                        )}
+
+                                        {/* RAG Sources (AI messages only) */}
+                                        {msg.role === 'assistant' && msg.sources && msg.sources.length > 0 && (
+                                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-2 w-fit min-w-[300px] max-w-2xl">
+                                                <div className="flex items-center gap-2 text-xs font-medium text-blue-900">
+                                                    <FileText className="w-3 h-3" />
+                                                    <span>참조 문서 ({msg.sources.length})</span>
+                                                </div>
+                                                <div className="space-y-1">
+                                                    {msg.sources.map((source, sIdx) => (
+                                                        <div key={sIdx} className="flex items-center justify-between text-xs">
+                                                            <button
+                                                                onClick={() => router.push(`/drive/documents/${source.id}`)}
+                                                                className="text-blue-600 hover:underline truncate flex-1 text-left"
+                                                            >
+                                                                {source.title}
+                                                            </button>
+                                                            <span className="text-gray-500 ml-2">
+                                                                {Math.round(source.score * 100)}%
+                                                            </span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Action Buttons (AI messages only) */}
+                                        {msg.role === 'assistant' && (
+                                            <div className="flex gap-2 flex-wrap">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => handleCopyMessage(msg.content, idx)}
+                                                    className="text-xs h-7 px-2"
+                                                >
+                                                    {copiedIndex === idx ? (
+                                                        <>
+                                                            <Copy className="w-3 h-3 mr-1" />
+                                                            복사됨!
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Copy className="w-3 h-3 mr-1" />
+                                                            복사
+                                                        </>
+                                                    )}
+                                                </Button>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => handleSaveToDrive(idx)}
+                                                    className="text-xs h-7"
+                                                >
+                                                    <Save className="w-3 h-3 mr-1" />
+                                                    Drive 공유
+                                                </Button>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => handleCreateAgent(idx)}
+                                                    className="text-xs h-7"
+                                                >
+                                                    <Sparkles className="w-3 h-3 mr-1" />
+                                                    Agent 생성
+                                                </Button>
+                                            </div>
                                         )}
                                     </div>
-
-                                    {/* Web Search Citations (AI messages only) */}
-                                    {msg.role === 'assistant' && msg.web_searched && msg.web_citations && msg.web_citations.length > 0 && (
-                                        <div className="bg-green-50 border border-green-200 rounded-lg p-3 space-y-2">
-                                            <div className="flex items-center gap-2 text-xs font-medium text-green-900">
-                                                <span>🌐</span>
-                                                <span>웹 검색 참조 ({msg.web_citations.length})</span>
-                                            </div>
-                                            <div className="space-y-1.5">
-                                                {msg.web_citations.map((citation: any, cIdx: number) => {
-                                                    // 구조화된 객체({url, title}) 또는 단순 문자열 모두 지원
-                                                    const url = typeof citation === 'string' ? citation : citation?.url || '';
-                                                    const title = typeof citation === 'string' ? null : citation?.title;
-                                                    
-                                                    let hostname = '';
-                                                    try {
-                                                        hostname = new URL(url).hostname.replace('www.', '');
-                                                    } catch {
-                                                        hostname = url;
-                                                    }
-                                                    
-                                                    return (
-                                                        <div key={cIdx} className="flex items-start gap-2 text-xs">
-                                                            <span className="text-green-400 mt-0.5 shrink-0">•</span>
-                                                            <div className="min-w-0 flex-1">
-                                                                <a
-                                                                    href={url}
-                                                                    target="_blank"
-                                                                    rel="noopener noreferrer"
-                                                                    className="text-green-700 hover:underline font-medium truncate block"
-                                                                >
-                                                                    {title || hostname}
-                                                                </a>
-                                                                {title && (
-                                                                    <span className="text-gray-400 text-[10px]">{hostname}</span>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Web Search Badge (no citations) */}
-                                    {msg.role === 'assistant' && msg.web_searched && (!msg.web_citations || msg.web_citations.length === 0) && (
-                                        <div className="flex items-center gap-1.5 text-xs text-green-700 bg-green-50 border border-green-200 rounded-md px-2.5 py-1.5 w-fit">
-                                            <span>🌐</span>
-                                            <span>웹 검색 결과 반영</span>
-                                        </div>
-                                    )}
-
-                                    {/* RAG Sources (AI messages only) */}
-                                    {msg.role === 'assistant' && msg.sources && msg.sources.length > 0 && (
-                                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-2">
-                                            <div className="flex items-center gap-2 text-xs font-medium text-blue-900">
-                                                <FileText className="w-3 h-3" />
-                                                <span>참조 문서 ({msg.sources.length})</span>
-                                            </div>
-                                            <div className="space-y-1">
-                                                {msg.sources.map((source, sIdx) => (
-                                                    <div key={sIdx} className="flex items-center justify-between text-xs">
-                                                        <button
-                                                            onClick={() => router.push(`/drive/documents/${source.id}`)}
-                                                            className="text-blue-600 hover:underline truncate flex-1 text-left"
-                                                        >
-                                                            {source.title}
-                                                        </button>
-                                                        <span className="text-gray-500 ml-2">
-                                                            {Math.round(source.score * 100)}%
-                                                        </span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Action Buttons (AI messages only) */}
-                                    {msg.role === 'assistant' && (
-                                        <div className="flex gap-2 flex-wrap">
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => handleCopyMessage(msg.content, idx)}
-                                                className="text-xs h-7 px-2"
-                                            >
-                                                {copiedIndex === idx ? (
-                                                    <>
-                                                        <Copy className="w-3 h-3 mr-1" />
-                                                        복사됨!
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Copy className="w-3 h-3 mr-1" />
-                                                        복사
-                                                    </>
-                                                )}
-                                            </Button>
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => handleSaveToDrive(idx)}
-                                                className="text-xs h-7"
-                                            >
-                                                <Save className="w-3 h-3 mr-1" />
-                                                Drive 공유
-                                            </Button>
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => handleCreateAgent(idx)}
-                                                className="text-xs h-7"
-                                            >
-                                                <Sparkles className="w-3 h-3 mr-1" />
-                                                Agent 생성
-                                            </Button>
-                                        </div>
-                                    )}
+                                </div>
+                            ))
+                        )}
+                        <div ref={messagesEndRef} />
+                        {isLoading && (
+                            <div className="flex justify-start">
+                                <div className="bg-white border border-gray-200 rounded-lg px-4 py-3">
+                                    <div className="flex gap-2">
+                                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
+                                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100" />
+                                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200" />
+                                    </div>
                                 </div>
                             </div>
-                        ))
-                    )}
-                    <div ref={messagesEndRef} />
-                    {isLoading && (
-                        <div className="flex justify-start">
-                            <div className="bg-white border border-gray-200 rounded-lg px-4 py-3">
-                                <div className="flex gap-2">
-                                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
-                                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100" />
-                                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200" />
-                                </div>
-                            </div>
-                        </div>
-                    )}
+                        )}
                     </div>
                 </div>
 
@@ -702,141 +702,141 @@ function ChatContent() {
 
 
 
-                    {/* Agent Recommendations */}
-                    {agentEnabled && recommendedAgents.length > 0 && (
-                        <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg space-y-2">
-                            <div className="flex items-center justify-between">
-                                <span className="text-xs font-medium text-gray-700">
-                                    {message.trim() ? '추천 Agent' : 'TOP Agent'}
-                                </span>
-                                {isLoadingAgents && (
-                                    <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                                )}
+                        {/* Agent Recommendations */}
+                        {agentEnabled && recommendedAgents.length > 0 && (
+                            <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs font-medium text-gray-700">
+                                        {message.trim() ? '추천 Agent' : 'TOP Agent'}
+                                    </span>
+                                    {isLoadingAgents && (
+                                        <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                                    )}
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {recommendedAgents.map((agent) => (
+                                        <button
+                                            key={agent.id}
+                                            onClick={() => handleSelectAgent(agent)}
+                                            className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${agentId === agent.id
+                                                ? 'bg-blue-600 text-white border-blue-600'
+                                                : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+                                                }`}
+                                        >
+                                            {agent.name}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
-                            <div className="flex flex-wrap gap-2">
-                                {recommendedAgents.map((agent) => (
-                                    <button
-                                        key={agent.id}
-                                        onClick={() => handleSelectAgent(agent)}
-                                        className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${agentId === agent.id
-                                            ? 'bg-blue-600 text-white border-blue-600'
-                                            : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400 hover:bg-blue-50'
-                                            }`}
-                                    >
-                                        {agent.name}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Message Input */}
-                    <div className="relative">
-                        <Textarea
-                            value={message}
-                            onChange={(e) => setMessage(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter' && !e.shiftKey) {
-                                    e.preventDefault();
-                                    handleSend();
-                                }
-                            }}
-                            placeholder="메시지를 입력하세요..."
-                            className="min-h-[60px] pr-12 resize-none"
-                            ref={inputRef}
-                        />
-                        <Button
-                            onClick={handleSend}
-                            disabled={!message.trim() || isLoading}
-                            size="icon"
-                            className="absolute right-2 bottom-2 bg-blue-600 hover:bg-blue-700"
-                        >
-                            <Send className="w-4 h-4" />
-                        </Button>
-                    </div>
-
-                    {/* Bottom Controls */}
-                    <div className="flex items-center gap-4 text-sm flex-wrap">
-                        {/* Model Selector */}
-                        {agentId ? (
-                            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 border border-gray-300 rounded-md text-gray-600 text-sm w-[220px]">
-                                <span>🔒</span>
-                                <span className="truncate">
-                                    {(() => {
-                                        const agent = recommendedAgents.find(a => a.id === agentId);
-                                        const modelName = agent?.model_type || 'AUTO';
-                                        const displayNames: Record<string, string> = {
-                                            'AUTO': 'Auto (자동)',
-                                            'gemini/gemini-2.5-flash-lite': 'Gemini 2.5 Flash Lite',
-                                            'gemini/gemini-2.5-flash': 'Gemini 2.5 Flash',
-                                            'gemini/gemini-3-flash-preview': 'Gemini 3 Flash',
-                                            'gemini/gemini-3.1-pro-preview': 'Gemini 3.1 Pro',
-                                            'gpt-5-nano': 'GPT-5 Nano',
-                                            'gpt-5-mini': 'GPT-5 Mini',
-                                            'gpt-5.2': 'GPT-5.2',
-                                            'gpt-5.2-pro': 'GPT-5.2 Pro',
-                                            'claude-haiku-4.5': 'Claude Haiku 4.5',
-                                            'claude-sonnet-4-6': 'Claude Sonnet 4.6',
-                                            'claude-opus-4-6': 'Claude Opus 4.6',
-                                            'perplexity/sonar': 'Perplexity Sonar',
-                                            'perplexity/sonar-pro': 'Perplexity Sonar Pro',
-                                        };
-                                        return displayNames[modelName] || modelName;
-                                    })()}
-                                </span>
-                            </div>
-                        ) : (
-                            <Select value={selectedModel} onValueChange={setSelectedModel}>
-                                <SelectTrigger className="w-[220px]">
-                                    <SelectValue placeholder="모델 선택" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="AUTO">⚡ Auto (자동 선택)</SelectItem>
-                                    <SelectItem value="GPT_5_2">GPT 5.2 (Thinking)</SelectItem>
-                                    <SelectItem value="GEMINI_3_PRO">Gemini 3.1 Pro</SelectItem>
-                                    <SelectItem value="PERPLEXITY">Perplexity Sonar Pro</SelectItem>
-                                    <SelectItem value="OPUS_4_6">Claude Opus 4.6</SelectItem>
-                                </SelectContent>
-                            </Select>
                         )}
 
-                        {/* Agent Activation Checkbox */}
-                        <div className="flex items-center gap-2">
-                            <Checkbox
-                                id="agent-enabled"
-                                checked={agentEnabled}
-                                onCheckedChange={(checked) => {
-                                    setAgentEnabled(checked as boolean);
-                                    if (!checked) {
-                                        handleDeselectAgent();
+                        {/* Message Input */}
+                        <div className="relative">
+                            <Textarea
+                                value={message}
+                                onChange={(e) => setMessage(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault();
+                                        handleSend();
                                     }
                                 }}
+                                placeholder="메시지를 입력하세요..."
+                                className="min-h-[60px] pr-12 resize-none"
+                                ref={inputRef}
                             />
-                            <label
-                                htmlFor="agent-enabled"
-                                className="text-gray-700 cursor-pointer select-none"
+                            <Button
+                                onClick={handleSend}
+                                disabled={!message.trim() || isLoading}
+                                size="icon"
+                                className="absolute right-2 bottom-2 bg-blue-600 hover:bg-blue-700"
                             >
-                                Agent 활성화
-                            </label>
+                                <Send className="w-4 h-4" />
+                            </Button>
                         </div>
 
-                        {/* Drive Reference Switch */}
-                        <div className="flex items-center gap-2">
-                            <div
-                                onClick={() => setDriveEnabled(!driveEnabled)}
-                                className={`relative w-11 h-6 rounded-full cursor-pointer transition-colors ${driveEnabled ? 'bg-blue-600' : 'bg-gray-300'
-                                    }`}
-                            >
-                                <div
-                                    className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${driveEnabled ? 'translate-x-5' : 'translate-x-0'
-                                        }`}
+                        {/* Bottom Controls */}
+                        <div className="flex items-center gap-4 text-sm flex-wrap">
+                            {/* Model Selector */}
+                            {agentId ? (
+                                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 border border-gray-300 rounded-md text-gray-600 text-sm w-[220px]">
+                                    <span>🔒</span>
+                                    <span className="truncate">
+                                        {(() => {
+                                            const agent = recommendedAgents.find(a => a.id === agentId);
+                                            const modelName = agent?.model_type || 'AUTO';
+                                            const displayNames: Record<string, string> = {
+                                                'AUTO': 'Auto (자동)',
+                                                'gemini/gemini-2.5-flash-lite': 'Gemini 2.5 Flash Lite',
+                                                'gemini/gemini-2.5-flash': 'Gemini 2.5 Flash',
+                                                'gemini/gemini-3-flash-preview': 'Gemini 3 Flash',
+                                                'gemini/gemini-3.1-pro-preview': 'Gemini 3.1 Pro',
+                                                'gpt-5-nano': 'GPT-5 Nano',
+                                                'gpt-5-mini': 'GPT-5 Mini',
+                                                'gpt-5.2': 'GPT-5.2',
+                                                'gpt-5.2-pro': 'GPT-5.2 Pro',
+                                                'claude-haiku-4.5': 'Claude Haiku 4.5',
+                                                'claude-sonnet-4-6': 'Claude Sonnet 4.6',
+                                                'claude-opus-4-6': 'Claude Opus 4.6',
+                                                'perplexity/sonar': 'Perplexity Sonar',
+                                                'perplexity/sonar-pro': 'Perplexity Sonar Pro',
+                                            };
+                                            return displayNames[modelName] || modelName;
+                                        })()}
+                                    </span>
+                                </div>
+                            ) : (
+                                <Select value={selectedModel} onValueChange={setSelectedModel}>
+                                    <SelectTrigger className="w-[220px]">
+                                        <SelectValue placeholder="모델 선택" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="AUTO">⚡ Auto (자동 선택)</SelectItem>
+                                        <SelectItem value="GPT_5_2">GPT 5.2 (Thinking)</SelectItem>
+                                        <SelectItem value="GEMINI_3_PRO">Gemini 3.1 Pro</SelectItem>
+                                        <SelectItem value="PERPLEXITY">Perplexity Sonar Pro</SelectItem>
+                                        <SelectItem value="OPUS_4_6">Claude Opus 4.6</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            )}
+
+                            {/* Agent Activation Checkbox */}
+                            <div className="flex items-center gap-2">
+                                <Checkbox
+                                    id="agent-enabled"
+                                    checked={agentEnabled}
+                                    onCheckedChange={(checked) => {
+                                        setAgentEnabled(checked as boolean);
+                                        if (!checked) {
+                                            handleDeselectAgent();
+                                        }
+                                    }}
                                 />
+                                <label
+                                    htmlFor="agent-enabled"
+                                    className="text-gray-700 cursor-pointer select-none"
+                                >
+                                    Agent 활성화
+                                </label>
                             </div>
-                            <label className="text-gray-700 cursor-pointer select-none" onClick={() => setDriveEnabled(!driveEnabled)}>
-                                Drive 참조
-                            </label>
+
+                            {/* Drive Reference Switch */}
+                            <div className="flex items-center gap-2">
+                                <div
+                                    onClick={() => setDriveEnabled(!driveEnabled)}
+                                    className={`relative w-11 h-6 rounded-full cursor-pointer transition-colors ${driveEnabled ? 'bg-blue-600' : 'bg-gray-300'
+                                        }`}
+                                >
+                                    <div
+                                        className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${driveEnabled ? 'translate-x-5' : 'translate-x-0'
+                                            }`}
+                                    />
+                                </div>
+                                <label className="text-gray-700 cursor-pointer select-none" onClick={() => setDriveEnabled(!driveEnabled)}>
+                                    Drive 참조
+                                </label>
+                            </div>
                         </div>
-                    </div>
                     </div>
                 </div>
 
