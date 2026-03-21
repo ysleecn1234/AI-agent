@@ -1,6 +1,7 @@
 import random
 import string
 from application.database import engine, Base, SessionLocal, InvitationCode
+import services.ai_hub.db.tables  # relationships 연결 문제 해결을 위해 명시적 임포트
 
 def main():
     print("[1] DB 테이블 구성 현행화 중 (InvitationCode 테이블 생성)...")
