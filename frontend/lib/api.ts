@@ -101,10 +101,13 @@ class ApiClient {
     }
 
     public async register(data: RegisterRequest): Promise<AuthResponse> {
-        return this.request<AuthResponse>('/auth/register', {
+        const response = await this.request<AuthResponse>('/auth/register', {
             method: 'POST',
             body: JSON.stringify(data),
         });
+        
+        this.setToken(response.access_token);
+        return response;
     }
 
     // Chat
