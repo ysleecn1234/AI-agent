@@ -1601,21 +1601,25 @@ class Pipeline:
 
     def process(self, user_input: str, user_id: Optional[str] = None, system_prompt: Optional[str] = None) -> Dict[str, Any]:
         """전체 파이프라인 실행"""
+        pipeline_start = time.time()
+        print(f"\n{'='*60}")
         print(f"[Pipeline] 처리 시작: {user_input[:50]}...")
+        print(f"{'='*60}")
         
         # 세션 시작
         session_id = self.logger.start_session(user_input, user_id)
         
         try:
             # Step 1: Router
-            print("[Step 1/5] Router - 의도 분류 및 복잡도 판단")
+            print(f"\n[Step 1/5] Router - 의도 분류 및 복잡도 판단")
             step_start = time.time()
             routing_result = self.router.route(user_input, user_id=user_id)
             step_duration = (time.time() - step_start) * 1000
             self.logger.log_step("Router", routing_result, step_duration)
+            print(f"  ✓ Router 완료: {step_duration:.0f}ms | intent={routing_result.get('intent')} complexity={routing_result.get('complexity')}")
             
             # Step 2: Researcher
-            print("[Step 2/5] Researcher - RAG 기반 문서 검색")
+            print(f"\n[Step 2/5] Researcher - RAG 기반 문서 검색")
             step_start = time.time()
             research_result = self.researcher.retrieve(routing_result)
             
@@ -1627,9 +1631,10 @@ class Pipeline:
             self.logger.log_step("Researcher", {
                 "documents_found": len(research_result.get("retrieved_documents", []))
             }, step_duration)
+            print(f"  ✓ Researcher 완료: {step_duration:.0f}ms | 문서={len(research_result.get('retrieved_documents', []))}개 웹검색={'O' if research_result.get('web_context') else 'X'}")
             
             # Step 3: Reasoner
-            print("[Step 3/5] Reasoner - 논리적 답변 생성 및 검증")
+            print(f"\n[Step 3/5] Reasoner - 논리적 답변 생성 및 검증")
             step_start = time.time()
             reasoning_result = self.reasoner.reason(research_result)
             
@@ -1645,16 +1650,18 @@ class Pipeline:
                 "verified": reasoning_result.get("verified"),
                 "used_docs": len(used_doc_ids)
             }, step_duration)
+            print(f"  ✓ Reasoner 완료: {step_duration:.0f}ms | model={reasoning_result.get('model_used')} verified={reasoning_result.get('verified')}")
             
             # Step 4: Synthesizer
-            print("[Step 4/5] Synthesizer - 최종 응답 포맷팅")
+            print(f"\n[Step 4/5] Synthesizer - 최종 응답 포맷팅")
             step_start = time.time()
             synthesis_result = self.synthesizer.synthesize(reasoning_result)
             step_duration = (time.time() - step_start) * 1000
             self.logger.log_step("Synthesizer", {}, step_duration)
+            print(f"  ✓ Synthesizer 완료: {step_duration:.0f}ms")
             
             # Step 5: Guardrail
-            print("[Step 5/5] Guardrail - 안전성 및 품질 검증")
+            print(f"\n[Step 5/5] Guardrail - 안전성 및 품질 검증")
             step_start = time.time()
             final_result = self.guardrail.guard(synthesis_result)
             step_duration = (time.time() - step_start) * 1000
@@ -1662,6 +1669,7 @@ class Pipeline:
                 "is_safe": final_result.get("is_safe"),
                 "quality_score": final_result.get("quality_score")
             }, step_duration)
+            print(f"  ✓ Guardrail 완료: {step_duration:.0f}ms | safe={final_result.get('is_safe')} quality={final_result.get('quality_score')}")
             
             # 비용은 call_llm()에서 자동 로깅됨 (이중 로깅 방지)
             # process() 결과용으로 Reasoner 정보만 추출
@@ -1672,7 +1680,10 @@ class Pipeline:
             # 세션 종료 (final_result 전달)
             self.logger.end_session(final_result=final_result, success=True)
             
-            print(f"[Pipeline] 처리 완료!")   
+            total_duration = (time.time() - pipeline_start) * 1000
+            print(f"\n{'='*60}")
+            print(f"[Pipeline] 처리 완료! 총 소요시간: {total_duration:.0f}ms ({total_duration/1000:.1f}s)")
+            print(f"{'='*60}\n")   
 
             # 출처 정보 추출 (RAG 검색 결과에서)
             sources = []
