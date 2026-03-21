@@ -1047,7 +1047,10 @@ class Synthesizer:
                 prompt=prompt,
                 user_id=reasoning_result.get("user_id")
             )
-            return llm_result["content"]
+            content = llm_result["content"]
+            if hasattr(self.pipeline, 'guardrail'):
+                content = self.pipeline.guardrail.clean_markdown_formatting(content)
+            return content
             
         except Exception as e:
             print(f"  [!] Synthesizer 실패: {e}, Fallback 사용")
@@ -1105,6 +1108,17 @@ class Guardrail:
         masked_text = re.sub(r'(\d{6})-(\d{7})', r'\1-*******', masked_text)
         
         return masked_text
+    
+    def clean_markdown_formatting(self, text: str) -> str:
+        """LLM이 전체 텍스트를 마크다운 코드 블록으로 감싸서 반환하는 경우 방어"""
+        import re
+        text = text.strip()
+        # ```markdown 또는 ```md 또는 ``` 로 시작해서 ``` 로 끝나는 경우
+        pattern = r'^```(?:markdown|md)?\s*\n([\s\S]*?)\n```$'
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            return match.group(1).strip()
+        return text
     
     def check_safety(self, text: str) -> bool:
         """안전성 검사"""
@@ -1907,8 +1921,9 @@ class Pipeline:
             
             print(f"  → 완료 (입력: {input_tokens}, 출력: {output_tokens} 토큰)")
             
-            # 7. 민감정보 마스킹
+            # 7. 민감정보 마스킹 및 마크다운 포맷팅 방어
             safe_response = self.guardrail.mask_sensitive_info(content)
+            safe_response = self.guardrail.clean_markdown_formatting(safe_response)
             
             # USED_DOCS 파싱 및 sources 필터링
             used_doc_ids = self._extract_used_docs(safe_response)
