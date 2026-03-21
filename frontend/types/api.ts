@@ -13,6 +13,7 @@ export interface RegisterRequest {
     password: string;
     name: string;
     department: string;
+    invitation_code: string;
 }
 
 export interface AuthResponse {

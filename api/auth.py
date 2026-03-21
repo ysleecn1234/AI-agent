@@ -4,9 +4,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional
+from datetime import datetime
 
 from application.database import get_db
-from application.database import User
+from application.database import User, InvitationCode
 from application.auth import get_password_hash, verify_password, create_access_token
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -17,6 +18,7 @@ class UserCreate(BaseModel):
     password: str
     name: str
     department: str
+    invitation_code: str
 
 class UserLogin(BaseModel):
     email: str
@@ -28,16 +30,26 @@ class Token(BaseModel):
     user_id: str
     user_name: str
     department: str
-    user_id: str # [New] Frontend needs this
 
 # 2. Endpoints
 @router.post("/register", response_model=Token)
 def register(user: UserCreate, db: Session = Depends(get_db)):
-    # Check if user exists
+    # [1] 초대 코드 검증
+    invite = db.query(InvitationCode).filter(InvitationCode.code == user.invitation_code).first()
+    if not invite:
+        raise HTTPException(status_code=400, detail="유효하지 않은 초대 코드입니다.")
+    if invite.is_used:
+        raise HTTPException(status_code=400, detail="이미 사용된 초대 코드입니다.")
+
+    # [2] Check if user exists
     db_user = db.query(User).filter(User.email == user.email).first()
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
     
+    # [3] 초대 코드 소모 표시
+    invite.is_used = True
+    invite.used_at = datetime.utcnow()
+
     # Create new user
     hashed_password = get_password_hash(user.password)
     new_user = User(
