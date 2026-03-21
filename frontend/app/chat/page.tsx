@@ -283,15 +283,25 @@ function ChatContent() {
 
     const handleSelectAgent = (agent: Agent) => {
         setAgentId(agent.id);
-
-        // 에이전트 설정에 따라 Drive 참조 자동 전환
+        setActiveAgent(agent);
+        if (agent.model_type) setSelectedModel(agent.model_type);
         setDriveEnabled(!!agent.use_rag);
+
+        // URL 파라미터 업데이트로 확실한 전환
+        const newParams = new URLSearchParams(searchParams.toString());
+        newParams.set('agent', agent.id);
+        router.push(`/chat?${newParams.toString()}`, { scroll: false });
     };
 
     const handleDeselectAgent = () => {
         setAgentId(undefined);
+        setActiveAgent(null);
         setSelectedModel('AUTO');
         setDriveEnabled(false);
+
+        const newParams = new URLSearchParams(searchParams.toString());
+        newParams.delete('agent');
+        router.push(`/chat?${newParams.toString()}`, { scroll: false });
     };
 
     const handleLogout = () => {
