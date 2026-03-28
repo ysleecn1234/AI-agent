@@ -770,9 +770,18 @@ class Researcher:
                     pg.engine.dispose()
                 except Exception as e:
                     print(f"  ⚠️ 전체 텍스트 조회 실패: {e}")
+            
+            try:
+                web_context, web_citations = self._web_search(user_input)
+            except Exception as e:
+                print(f"  ⚠️ 웹 검색 실패 (스킵): {e}")
+                
         else:
             # ──── Drive 참조 OFF: 웹 검색만 ────
-            web_context, web_citations = self._web_search(user_input)
+            try:
+                web_context, web_citations = self._web_search(user_input)
+            except Exception as e:
+                print(f"  ⚠️ 웹 검색 실패 (스킵): {e}")
             full_docs = []
         
         return {
