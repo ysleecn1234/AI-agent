@@ -32,7 +32,8 @@ def get_db():
 # ==========================================
 # 1. 사용자 테이블 (신원 및 프로필)
 # ==========================================
-from sqlalchemy import Column, String, Integer
+from sqlalchemy import Column, String, Integer, Boolean, DateTime
+from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 import uuid
@@ -52,6 +53,16 @@ class User(Base):
     # 관계 설정
     agents = relationship("services.ai_hub.db.tables.Agent", back_populates="creator")
     # chat_logs = relationship("services.orchestrator.db.tables.ChatLog", back_populates="user")  # TODO: 순환 참조 해결 필요
+
+
+class InvitationCode(Base):
+    """회원가입 전용 1회용 초대 코드"""
+    __tablename__ = "invitation_codes"
+
+    code = Column(String(50), primary_key=True, index=True)
+    is_used = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    used_at = Column(DateTime(timezone=True), nullable=True)
 
 
 class UserSettings(Base):

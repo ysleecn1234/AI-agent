@@ -16,6 +16,7 @@ export default function RegisterPage() {
         confirmPassword: '',
         name: '',
         department: '',
+        invitation_code: '',
     });
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
@@ -45,6 +46,7 @@ export default function RegisterPage() {
                 password: formData.password,
                 name: formData.name,
                 department: formData.department,
+                invitation_code: formData.invitation_code,
             });
 
             // 토큰 저장 (api.register에서 이미 access_token 저장됨)
@@ -113,6 +115,19 @@ export default function RegisterPage() {
                                 type="text"
                                 placeholder="개발팀"
                                 value={formData.department}
+                                onChange={handleChange}
+                                required
+                                disabled={isLoading}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="invitation_code">초대 코드 (필수)</Label>
+                            <Input
+                                id="invitation_code"
+                                name="invitation_code"
+                                type="text"
+                                placeholder="8자리 영문/숫자 입력"
+                                value={formData.invitation_code}
                                 onChange={handleChange}
                                 required
                                 disabled={isLoading}
