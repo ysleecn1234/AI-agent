@@ -569,15 +569,16 @@ class Router:
     
     def route(self, user_input: str, user_id: Optional[str] = None) -> Dict[str, Any]:
         """라우팅 실행"""
-        # 임시 주입 (동기식 호출 스택이므로 가능하지만 context var가 더 좋음)
         self.current_user_id = user_id
         try:
             intent = self.classify_intent(user_input)
             complexity = self.determine_complexity(user_input, intent)
+            routing_confidence = self.calculate_confidence(user_input, intent)
             
             return {
                 "intent": intent.value,
                 "complexity": complexity.value,
+                "routing_confidence": routing_confidence,
                 "user_input": user_input,
                 "user_id": user_id
             }
@@ -1119,10 +1120,11 @@ class Guardrail:
         
         # SIMPLE 작업 처리
         if complexity == ComplexityLevel.SIMPLE.value:
-            web_context = synthesis_result.get("web_context", "")
+            routing_confidence = synthesis_result.get("routing_confidence", 1.0)
             
-            if web_context:
-                # 웹 검색으로 가져온 정보 기반 답변 → 출처 있음 → 스킵
+            if routing_confidence >= 0.7:
+                # Router가 SIMPLE이라고 확신 → 신뢰하고 스킵
+                print(f"  → [SIMPLE] Router 신뢰도 높음 ({routing_confidence:.2f}), 검수 스킵")
                 return {
                     "quality_verified": True,
                     "quality_score": 1.0,
@@ -1130,8 +1132,8 @@ class Guardrail:
                     "needs_regeneration": False
                 }
             else:
-                # 웹 검색 없이 모델이 직접 생성 → 할루시네이션 위험 → 경량 검수
-                print("  → [SIMPLE 경량 검수] 웹 검색 없는 답변 규칙 기반 검수 중...")
+                # Router 신뢰도 낮음 → COMPLEX 오분류 가능성 → 경량 검수 적용
+                print(f"  → [SIMPLE 경량 검수] Router 신뢰도 낮음 ({routing_confidence:.2f}), 오분류 가능성 있음")
                 result = self._verify_fallback(synthesis_result)
                 print(f"  ✓ 경량 검수 완료 (점수: {result['quality_score']:.2f})")
                 return result
@@ -1640,7 +1642,7 @@ class Pipeline:
             routing_result = self.router.route(user_input, user_id=user_id)
             step_duration = (time.time() - step_start) * 1000
             self.logger.log_step("Router", routing_result, step_duration)
-            print(f"  ✓ Router 완료: {step_duration:.0f}ms | intent={routing_result.get('intent')} complexity={routing_result.get('complexity')}")
+            print(f"  ✓ Router 완료: {step_duration:.0f}ms | intent={routing_result.get('intent')} complexity={routing_result.get('complexity')} confidence={routing_result.get('routing_confidence', 0):.2f}")
             
             # Step 2: Researcher
             print(f"\n[Step 2/5] Researcher - RAG 기반 문서 검색")
