@@ -40,15 +40,6 @@ class PIIDetector:
             "주소": r'(서울|부산|대구|인천|광주|대전|울산|세종|경기|강원|충북|충남|전북|전남|경북|경남|제주)[시도]?\s?[\w]+[시군구]',
         }
         
-        # 부분 마스킹 함수 맵 (Guardrail 답변 마스킹용)
-        self.partial_mask_funcs = {
-            "전화번호":    lambda m: re.sub(r'(\d{3,4})([-\s]?\d{3,4})([-\s]?\d{4})', lambda x: x.group(1) + re.sub(r'\d', '*', x.group(2)) + x.group(3), m),
-            "주민등록번호": lambda m: re.sub(r'(\d{6})([-\s]?)(\d{7})', r'\1\2*******', m),
-            "이메일":      lambda m: re.sub(r'([^@]{1,3})[^@]*(@.+)', r'\1***\2', m),
-            "신용카드번호": lambda m: re.sub(r'(\d{4}[-\s]?)(\d{4}[-\s]?)(\d{4}[-\s]?)(\d{4})', r'\1****-****-\4', m),
-            "계좌번호":    lambda m: re.sub(r'(\d{3,6})([-\s]\d{2,6})([-\s]\d{4,6})', lambda x: x.group(1) + re.sub(r'\d', '*', x.group(2)) + x.group(3), m),
-            "주소":        lambda m: m[:4] + '***',
-        }
         
         # 프론트엔드 키 → 감지 타입 매핑
         self.key_to_type = {
@@ -169,8 +160,10 @@ class PIIDetector:
     def partial_mask(self, text: str, enabled_items: Dict[str, bool] = None) -> str:
         """
         부분 마스킹: 일부 자리만 *로 치환 (채팅 답변용)
-        예) 010-1234-5678 → 010-****-5678
+        예) 010-1234-5678  → 010-****-5678
             user@company.com → use***@company.com
+            901215-1234567   → 901215-*******
+            1234-5678-9012-3456 → 1234-****-****-3456
         """
         if enabled_items:
             active_types = [
@@ -182,13 +175,60 @@ class PIIDetector:
             active_types = list(self.detection_order)
 
         masked_text = text
-        for pii_type in self.detection_order:
-            if pii_type not in active_types or pii_type not in self.patterns:
-                continue
-            pattern = self.patterns[pii_type]
-            mask_fn = self.partial_mask_funcs.get(pii_type)
-            if mask_fn:
-                masked_text = re.sub(pattern, lambda m, fn=mask_fn: fn(m.group()), masked_text)
+
+        if "전화번호" in active_types:
+            # 구분자(하이픈/공백) 있는 형태: 010-1234-5678 → 010-****-5678
+            masked_text = re.sub(
+                r'(\+82[-\s]?)?(01[016789])([-\s])(\d{3,4})([-\s]\d{4})',
+                lambda m: (m.group(1) or '') + m.group(2) + m.group(3) + '*' * len(m.group(4)) + m.group(5),
+                masked_text
+            )
+            # 구분자 없는 연속 형태: 01012345678 → 010****5678
+            masked_text = re.sub(
+                r'\b(01[016789])(\d{3,4})(\d{4})\b',
+                lambda m: m.group(1) + '*' * len(m.group(2)) + m.group(3),
+                masked_text
+            )
+
+        if "주민등록번호" in active_types:
+            # 901215-1234567 → 901215-*******
+            masked_text = re.sub(
+                r'(\d{6})([-\s]?)(\d{7})',
+                r'\1\2*******',
+                masked_text
+            )
+
+        if "이메일" in active_types:
+            # user@company.com → use***@company.com
+            masked_text = re.sub(
+                r'\b([a-zA-Z0-9._%+-]{1,3})[a-zA-Z0-9._%+-]*(@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\b',
+                r'\1***\2',
+                masked_text
+            )
+
+        if "신용카드번호" in active_types:
+            # 1234-5678-9012-3456 → 1234-****-****-3456
+            masked_text = re.sub(
+                r'\b(\d{4})([-\s]?)(\d{4})([-\s]?)(\d{4})([-\s]?)(\d{4})\b',
+                r'\1\2****\4****\6\7',
+                masked_text
+            )
+
+        if "계좌번호" in active_types:
+            # 110-123-456789 → 110-***-456789
+            masked_text = re.sub(
+                r'\b(\d{3,6})([-\s])(\d{2,6})([-\s])(\d{4,6})\b',
+                lambda m: m.group(1) + m.group(2) + '*' * len(m.group(3)) + m.group(4) + m.group(5),
+                masked_text
+            )
+
+        if "주소" in active_types:
+            masked_text = re.sub(
+                r'(서울|부산|대구|인천|광주|대전|울산|세종|경기|강원|충북|충남|전북|전남|경북|경남|제주)[시도]?\s?[\w]+[시군구]',
+                lambda m: m.group()[:4] + '***',
+                masked_text
+            )
+
         return masked_text
 
     def mask(self, text: str, enabled_items: Dict[str, bool] = None) -> str:
