@@ -1102,23 +1102,30 @@ class Guardrail:
     """
     
     def __init__(self, pipeline=None):
-        self.pipeline = pipeline  # 중앙 call_llm 접근용
-        self.sensitive_patterns = [
-            r'\d{3}-\d{4}-\d{4}',  # 전화번호
-            r'\d{6}-\d{7}',        # 주민등록번호
-        ]
+        self.pipeline = pipeline
+        from services.ai_drive.core.pii_detector import PIIDetector
+        self.pii_detector = PIIDetector()
     
-    def mask_sensitive_info(self, text: str) -> str:
-        """민감 정보 마스킹"""
-        import re
-        masked_text = text
-        
-        # 전화번호 마스킹
-        masked_text = re.sub(r'(\d{3})-(\d{4})-(\d{4})', r'\1-****-\3', masked_text)
-        # 주민등록번호 마스킹
-        masked_text = re.sub(r'(\d{6})-(\d{7})', r'\1-*******', masked_text)
-        
-        return masked_text
+    def _get_user_pii_settings(self, user_id: str) -> Dict[str, bool]:
+        """DB에서 사용자 PII 감지 항목 설정 조회"""
+        try:
+            from application.database import SessionLocal, UserSettings
+            db = SessionLocal()
+            settings = db.query(UserSettings).filter(
+                UserSettings.user_id == user_id
+            ).first()
+            db.close()
+            if settings and settings.detection_items:
+                return settings.detection_items
+        except Exception:
+            pass
+        # 기본값: 전체 활성화
+        return {"ssn": True, "phone": True, "email": True, "creditCard": True, "account": True, "address": True}
+
+    def mask_sensitive_info(self, text: str, user_id: str = None) -> str:
+        """민감 정보 부분 마스킹 (6가지 PII 유형, 사용자 설정 반영)"""
+        enabled_items = self._get_user_pii_settings(user_id) if user_id else None
+        return self.pii_detector.partial_mask(text, enabled_items)
     
     def clean_markdown_formatting(self, text: str) -> str:
         """LLM이 전체 텍스트를 마크다운 코드 블록으로 감싸서 반환하는 경우 방어"""
@@ -1298,8 +1305,9 @@ AI 답변:
         # 1. 품질 검수 (복잡한 작업에 대해)
         quality_result = self.verify_quality(synthesis_result)
         
-        # 2. 민감 정보 마스킹
-        safe_response = self.mask_sensitive_info(formatted_response)
+        # 2. 민감 정보 마스킹 (사용자 설정 반영)
+        user_id = synthesis_result.get("user_id")
+        safe_response = self.mask_sensitive_info(formatted_response, user_id=user_id)
         
         # 3. 안전성 검사
         is_safe = self.check_safety(safe_response)
@@ -1944,7 +1952,7 @@ class Pipeline:
             print(f"  → 완료 (입력: {input_tokens}, 출력: {output_tokens} 토큰)")
             
             # 7. 민감정보 마스킹 및 마크다운 포맷팅 방어
-            safe_response = self.guardrail.mask_sensitive_info(content)
+            safe_response = self.guardrail.mask_sensitive_info(content, user_id=user_id)
             safe_response = self.guardrail.clean_markdown_formatting(safe_response)
             
             # USED_DOCS 파싱 및 sources 필터링

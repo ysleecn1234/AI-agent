@@ -30,12 +30,24 @@ class PIIDetector:
         ]
         
         self.patterns = {
+            # 하이픈/공백/없음, 국제번호(+82) 모두 처리
             "주민등록번호": r'\b\d{6}[-\s]?\d{7}\b',
-            "전화번호": r'\b(01[016789][-\s]?\d{3,4}[-\s]?\d{4}|0\d{1,2}[-\s]?\d{3,4}[-\s]?\d{4})\b',
+            "전화번호": r'(\+82[-\s]?)?0?1[016789][-\s]?\d{3,4}[-\s]?\d{4}|01[016789]\d{7,8}',
             "이메일": r'\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b',
-            "계좌번호": r'\b\d{3,6}[-]\d{2,6}[-]\d{4,6}\b',
+            # 하이픈 또는 공백 구분자 모두 처리
+            "계좌번호": r'\b\d{3,6}[-\s]\d{2,6}[-\s]\d{4,6}\b',
             "신용카드번호": r'\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b',
             "주소": r'(서울|부산|대구|인천|광주|대전|울산|세종|경기|강원|충북|충남|전북|전남|경북|경남|제주)[시도]?\s?[\w]+[시군구]',
+        }
+        
+        # 부분 마스킹 함수 맵 (Guardrail 답변 마스킹용)
+        self.partial_mask_funcs = {
+            "전화번호":    lambda m: re.sub(r'(\d{3,4})([-\s]?\d{3,4})([-\s]?\d{4})', lambda x: x.group(1) + re.sub(r'\d', '*', x.group(2)) + x.group(3), m),
+            "주민등록번호": lambda m: re.sub(r'(\d{6})([-\s]?)(\d{7})', r'\1\2*******', m),
+            "이메일":      lambda m: re.sub(r'([^@]{1,3})[^@]*(@.+)', r'\1***\2', m),
+            "신용카드번호": lambda m: re.sub(r'(\d{4}[-\s]?)(\d{4}[-\s]?)(\d{4}[-\s]?)(\d{4})', r'\1****-****-\4', m),
+            "계좌번호":    lambda m: re.sub(r'(\d{3,6})([-\s]\d{2,6})([-\s]\d{4,6})', lambda x: x.group(1) + re.sub(r'\d', '*', x.group(2)) + x.group(3), m),
+            "주소":        lambda m: m[:4] + '***',
         }
         
         # 프론트엔드 키 → 감지 타입 매핑
@@ -153,6 +165,31 @@ class PIIDetector:
         valid_matches = self._validate_rrn(matches)
         return len(valid_matches) > 0
 
+
+    def partial_mask(self, text: str, enabled_items: Dict[str, bool] = None) -> str:
+        """
+        부분 마스킹: 일부 자리만 *로 치환 (채팅 답변용)
+        예) 010-1234-5678 → 010-****-5678
+            user@company.com → use***@company.com
+        """
+        if enabled_items:
+            active_types = [
+                self.key_to_type[key]
+                for key, enabled in enabled_items.items()
+                if enabled and key in self.key_to_type
+            ]
+        else:
+            active_types = list(self.detection_order)
+
+        masked_text = text
+        for pii_type in self.detection_order:
+            if pii_type not in active_types or pii_type not in self.patterns:
+                continue
+            pattern = self.patterns[pii_type]
+            mask_fn = self.partial_mask_funcs.get(pii_type)
+            if mask_fn:
+                masked_text = re.sub(pattern, lambda m, fn=mask_fn: fn(m.group()), masked_text)
+        return masked_text
 
     def mask(self, text: str, enabled_items: Dict[str, bool] = None) -> str:
         """
