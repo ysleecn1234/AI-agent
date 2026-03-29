@@ -183,9 +183,10 @@ class PIIDetector:
                 lambda m: (m.group(1) or '') + m.group(2) + m.group(3) + '*' * len(m.group(4)) + m.group(5),
                 masked_text
             )
-            # 구분자 없는 연속 형태: 01012345678 → 010****5678
+            # 구분자 없는 연속 형태: 01012345678, 번호는01012345678입니다 → 010****5678
+            # \b 대신 lookaround 사용 (한글 옆에서도 작동)
             masked_text = re.sub(
-                r'\b(01[016789])(\d{3,4})(\d{4})\b',
+                r'(?<!\d)(01[016789])(\d{3,4})(\d{4})(?!\d)',
                 lambda m: m.group(1) + '*' * len(m.group(2)) + m.group(3),
                 masked_text
             )
@@ -209,7 +210,7 @@ class PIIDetector:
         if "신용카드번호" in active_types:
             # 1234-5678-9012-3456 → 1234-****-****-3456
             masked_text = re.sub(
-                r'\b(\d{4})([-\s]?)(\d{4})([-\s]?)(\d{4})([-\s]?)(\d{4})\b',
+                r'(?<!\d)(\d{4})([-\s]?)(\d{4})([-\s]?)(\d{4})([-\s]?)(\d{4})(?!\d)',
                 r'\1\2****\4****\6\7',
                 masked_text
             )
@@ -217,7 +218,7 @@ class PIIDetector:
         if "계좌번호" in active_types:
             # 110-123-456789 → 110-***-456789
             masked_text = re.sub(
-                r'\b(\d{3,6})([-\s])(\d{2,6})([-\s])(\d{4,6})\b',
+                r'(?<!\d)(\d{3,6})([-\s])(\d{2,6})([-\s])(\d{4,6})(?!\d)',
                 lambda m: m.group(1) + m.group(2) + '*' * len(m.group(3)) + m.group(4) + m.group(5),
                 masked_text
             )
