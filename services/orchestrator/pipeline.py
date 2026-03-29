@@ -323,7 +323,8 @@ class Router:
                 "날씨", "온도", "기온", "기상", "비", "눈", "맑음", "흐림", "바람",
                 # 시간/상황
                 "오늘", "지금", "현재", "최근", "요즘", "언제", "몇시", "몇월", "몇일",
-                # 질문형 표현
+                # 질문형 표현 0ms
+                
                 "뭐야", "뭔가요", "뭐예요", "뭐지", "어때", "어떤가요", "어떤거야",
                 "알려줘", "알려주세요", "설명해줘", "설명해주세요",
                 "무엇", "무슨", "어디", "누가", "어떻게 되",
@@ -1112,18 +1113,28 @@ class Guardrail:
         return True
     
     def verify_quality(self, synthesis_result: Dict[str, Any]) -> Dict[str, Any]:
-        """DeepSeek-R1을 사용한 품질 검수"""
+        """품질 검수 (복잡도에 따라 차등 적용)"""
         
         complexity = synthesis_result.get("complexity")
         
-        # SIMPLE 작업은 품질 검수 스킵
+        # SIMPLE 작업 처리
         if complexity == ComplexityLevel.SIMPLE.value:
-            return {
-                "quality_verified": True,
-                "quality_score": 1.0,
-                "quality_issues": [],
-                "needs_regeneration": False
-            }
+            web_context = synthesis_result.get("web_context", "")
+            
+            if web_context:
+                # 웹 검색으로 가져온 정보 기반 답변 → 출처 있음 → 스킵
+                return {
+                    "quality_verified": True,
+                    "quality_score": 1.0,
+                    "quality_issues": [],
+                    "needs_regeneration": False
+                }
+            else:
+                # 웹 검색 없이 모델이 직접 생성 → 할루시네이션 위험 → 경량 검수
+                print("  → [SIMPLE 경량 검수] 웹 검색 없는 답변 규칙 기반 검수 중...")
+                result = self._verify_fallback(synthesis_result)
+                print(f"  ✓ 경량 검수 완료 (점수: {result['quality_score']:.2f})")
+                return result
         
         # COMPLEX, BULK 작업은 DeepSeek-R1로 검수
         print("  → DeepSeek-R1 품질 검수 중...")
