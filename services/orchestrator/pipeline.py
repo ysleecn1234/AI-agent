@@ -56,8 +56,18 @@ TASK_MODEL_CONFIG = {
         "temperature": 0.2,
         "max_tokens": 500,
         "description": "검색 쿼리 생성 및 검증 (Researcher)",
-        "system_prompt": None,
-        # NOTE: 현재 이 task를 호출하는 코드 없음 (A-5에서 활성화 예정)
+        "system_prompt": (
+            "사용자 질문에서 핵심 검색 쿼리를 추출하세요.\n"
+            "\n"
+            "[규칙]\n"
+            "1. 조사·어미·인사말·감탄사를 제거하고 핵심 명사·고유명사만 추출\n"
+            "2. 동의어가 있으면 가장 공식적인 용어 사용 (예: 'AI' → '인공지능' X, 'AI' 유지)\n"
+            "3. 날짜·기간 표현은 보존 (예: '지난달', '2026년 1분기')\n"
+            "4. 지역 미지정 시 '서울' 추가 (날씨, 교통, 맛집 등 지역 관련 질문)\n"
+            "5. 출력: 키워드를 공백으로 구분한 한 줄\n"
+            "\n"
+            "[금지] 문장형 출력 금지. 키워드만 출력."
+        ),
     },
     "chat_simple": {
         "models": ["gemini/gemini-2.5-flash", "gpt-5-mini"],
@@ -81,7 +91,9 @@ TASK_MODEL_CONFIG = {
             "[금지]\n"
             "- 'AI로서', '제 능력 밖', '죄송합니다만' 등 AI 자기 언급 표현\n"
             "- 질문을 되묻는 것 (주어진 정보 내에서 최선의 답변 제공)\n"
-            "- 마크다운 과다 사용 (볼드·리스트 최소한으로)"
+            "- 마크다운 과다 사용 (볼드·리스트 최소한으로)\n"
+            "- '제공된 정보에 따르면', '직접 접근할 수 없다' 같은 변명 표현\n"
+            "- 웹 검색 결과가 제공되면 반드시 활용하여 최신 정보를 포함하세요"
         ),
     },
     "chat_complex": {
@@ -110,7 +122,9 @@ TASK_MODEL_CONFIG = {
             "\n"
             "[톤]\n"
             "- 한국어 존댓말, 전문적이고 객관적인 톤\n"
-            "- 'AI로서' 등 자기 언급 금지"
+            "- 'AI로서' 등 자기 언급 금지\n"
+            "- 참고 문서는 직접 열람한 것처럼 자연스럽게 인용. '제공된 정보에 따르면' 금지\n"
+            "- 웹 검색 결과가 제공되면 반드시 활용하여 최신 정보를 포함하세요"
         ),
     },
     "chat_bulk": {
@@ -137,7 +151,9 @@ TASK_MODEL_CONFIG = {
             "- 문서에 없는 내용을 추론으로 채우지 마세요\n"
             "- 긴 문서를 전체 요약하지 말고 질문에 해당하는 부분만 추출·분석\n"
             "- 한국어 존댓말, 전문적 톤\n"
-            "- 'AI로서' 등 자기 언급 금지"
+            "- 'AI로서' 등 자기 언급 금지\n"
+            "- 참고 문서는 직접 열람한 것처럼 자연스럽게 인용. '제공된 정보에 따르면' 금지\n"
+            "- 웹 검색 결과가 제공되면 반드시 활용하여 최신 정보를 포함하세요"
         ),
     },
     "chat_reasoning": {
@@ -167,7 +183,9 @@ TASK_MODEL_CONFIG = {
             "\n"
             "[톤]\n"
             "- 한국어 존댓말, 분석적이고 신중한 톤\n"
-            "- 'AI로서' 등 자기 언급 금지"
+            "- 'AI로서' 등 자기 언급 금지\n"
+            "- 참고 문서는 직접 열람한 것처럼 자연스럽게 인용. '제공된 정보에 따르면' 금지\n"
+            "- 웹 검색 결과가 제공되면 반드시 활용하여 최신 정보를 포함하세요"
         ),
     },
     "chat_synthesis": {
@@ -684,6 +702,42 @@ class Router:
             return ComplexityLevel.COMPLEX
         else:
             return ComplexityLevel.SIMPLE
+
+    def needs_realtime_info(self, user_input: str) -> bool:
+        """
+        실시간/최신 정보가 필요한 질문인지 판단
+        - True: 웹 검색 필수
+        - False: 내부 문서 또는 자체 지식으로 충분
+        """
+        user_input_lower = user_input.lower()
+
+        # 실시간 키워드
+        realtime_keywords = [
+            # 날씨·시간
+            "날씨", "기온", "온도", "비", "눈", "미세먼지",
+            # 시세·환율
+            "환율", "주가", "시세", "코스피", "코스닥", "비트코인", "나스닥",
+            # 뉴스·속보
+            "뉴스", "속보", "최근", "오늘", "어제", "이번 주", "지금",
+            # 스포츠·이벤트
+            "경기 결과", "스코어", "순위",
+        ]
+
+        for keyword in realtime_keywords:
+            if keyword in user_input_lower:
+                return True
+
+        # 시간 표현 패턴 (현재/최근 지시)
+        import re
+        time_patterns = [
+            r"지금\s", r"현재\s", r"오늘\s", r"방금\s",
+            r"최신\s", r"실시간\s", r"라이브\s",
+        ]
+        for pattern in time_patterns:
+            if re.search(pattern, user_input_lower):
+                return True
+
+        return False
     
     def route(self, user_input: str, user_id: Optional[str] = None) -> Dict[str, Any]:
         """라우팅 실행"""
@@ -698,7 +752,8 @@ class Router:
                 "complexity": complexity.value,
                 "routing_confidence": routing_confidence,
                 "user_input": user_input,
-                "user_id": user_id
+                "user_id": user_id,
+                "needs_realtime": self.needs_realtime_info(user_input)
             }
         finally:
             self.current_user_id = None
@@ -712,12 +767,14 @@ class Researcher:
     - 벡터 검색을 통한 유사도 기반 정보 추출
     """
     
-    def __init__(self, use_rag: bool = False):
+    def __init__(self, use_rag: bool = False, pipeline=None):
         """
         Args:
             use_rag: RAG 시스템 사용 여부 (개발 중에는 False, 배포 시 True)
+            pipeline: 중앙 Pipeline 인스턴스 참조 (call_llm 접근용)
         """
         self.use_rag = use_rag
+        self.pipeline = pipeline
         self.rag_searcher = None
         
         # RAGSearcher는 use_rag 초기값과 무관하게 일단 초기화 시도
@@ -891,17 +948,26 @@ class Researcher:
                 except Exception as e:
                     print(f"  ⚠️ 전체 텍스트 조회 실패: {e}")
             
-            try:
-                web_context, web_citations = self._web_search(user_input)
-            except Exception as e:
-                print(f"  ⚠️ 웹 검색 실패 (스킵): {e}")
+            # 실시간 정보 필요 여부에 따라 웹 검색 결정
+            needs_web = routing_result.get("needs_realtime", False)
+            if needs_web:
+                try:
+                    web_context, web_citations = self._web_search(user_input)
+                except Exception as e:
+                    print(f"  ⚠️ 웹 검색 실패 (스킵): {e}")
+            else:
+                print(f"  → 웹 검색 스킵 (실시간 정보 불필요)")
                 
         else:
-            # ──── Drive 참조 OFF: 웹 검색만 ────
-            try:
-                web_context, web_citations = self._web_search(user_input)
-            except Exception as e:
-                print(f"  ⚠️ 웹 검색 실패 (스킵): {e}")
+            # ──── Drive 참조 OFF ────
+            needs_web = routing_result.get("needs_realtime", False)
+            if needs_web:
+                try:
+                    web_context, web_citations = self._web_search(user_input)
+                except Exception as e:
+                    print(f"  ⚠️ 웹 검색 실패 (스킵): {e}")
+            else:
+                print(f"  → 웹 검색 스킵 (실시간 정보 불필요)")
             full_docs = []
         
         return {
@@ -912,6 +978,35 @@ class Researcher:
             "web_citations": web_citations,
         }
     
+    def _compress_query(self, user_input: str) -> str:
+        """
+        웹 검색 전 쿼리 압축 (긴 질문 → 핵심 키워드)
+        짧은 질문은 그대로 반환하여 불필요한 LLM 호출 방지
+        """
+        # 짧은 입력(50자 이하)은 압축 불필요
+        if len(user_input) <= 50:
+            return user_input
+
+        try:
+            llm_result = self.pipeline.call_llm(
+                task="chat_research",
+                prompt=user_input,
+                user_id=getattr(self, "current_user_id", None)
+            )
+            compressed = llm_result["content"].strip()
+
+            # 안전장치: 압축 결과가 비어있거나 너무 짧으면 원본 사용
+            if len(compressed) < 2:
+                print(f"  → 쿼리 압축 실패 (결과 너무 짧음), 원본 사용")
+                return user_input
+
+            print(f"  → 쿼리 압축: '{user_input[:30]}...' → '{compressed}'")
+            return compressed
+
+        except Exception as e:
+            print(f"  → 쿼리 압축 실패 ({e}), 원본 사용")
+            return user_input
+
     def _web_search(self, query: str) -> tuple:
         """
         Perplexity API를 통한 실시간 웹 검색
@@ -921,10 +1016,12 @@ class Researcher:
             각 citation: {"url": str, "title": str}
         """
         try:
-            print(f"  → 웹 검색 실행: {query[:30]}...")
+            # 쿼리 압축 (긴 질문 → 핵심 키워드)
+            compressed_query = self._compress_query(query)
+            print(f"  → 웹 검색 실행: {compressed_query[:50]}...")
             response = litellm.completion(
                 model="perplexity/sonar",
-                messages=[{"role": "user", "content": query}],
+                messages=[{"role": "user", "content": compressed_query}],
                 max_tokens=500,
             )
             result = response.choices[0].message.content or ""
@@ -1085,15 +1182,14 @@ class Reasoner:
                                    '\n참고하지 않은 문서는 절대 포함하지 마세요. 어떤 문서도 참고하지 않았다면: <!--USED_DOCS:[]-->'
         
         # 프롬프트 구성
+        # 프롬프트 구성 (데이터만 user message에, 행동 지시는 system_prompt에)
         prompt = f"""현재 시간: {time_str}
 
+[사용자 질문]
 {user_input}
 {web_context}
 {rag_context}
-
-위 정보를 바탕으로 정확하고 유용한 답변을 제공해주세요.
-[주의사항] 당신은 사용자의 내부 드라이브 시스템과 연동되어 문서를 읽을 능력이 있습니다. "직접 접근할 수 없다", "권한이 없다", "제공된 정보에 따르면" 같은 변명이나 사과를 절대 하지 말고, 위 참고 문서를 기반으로 자신이 직접 문서를 열람하고 답변하는 것처럼 자연스럽게 대답하세요.
-또한 내용이 길더라도 단순 나열을 피하고, 질문의 목적에 맞게 핵심 위주로 명확하게 요약 및 그룹화하여 시각적으로 읽기 편하게 정리해주세요.{used_docs_instruction}"""
+{used_docs_instruction}"""
         
         
         # [Agent] 시스템 프롬프트 적용
@@ -1148,27 +1244,29 @@ class Synthesizer:
         self.pipeline = pipeline  # 중앙 call_llm 접근용
     
     def format_response(self, reasoning_result: Dict[str, Any]) -> str:
-        """응답 포맷팅 (call_llm 위임)"""
+        """응답 포맷팅 (call_llm 위임, 짧은 답변은 바이패스)"""
         
         response = reasoning_result["response"]
-        user_input = reasoning_result.get("user_input", "")
-        intent = reasoning_result.get("intent", "")
-        
-        # 프롬프트 구성 (기존과 동일)
-        prompt = f"""다음 AI 답변을 사용자 친화적인 마크다운 형식으로 정리해주세요.
 
-사용자 질문: {user_input}
-의도: {intent}
+        # 짧은 답변(4문장 이하)은 Synthesizer를 스킵하여 비용/시간 절감
+        sentence_count = len([s for s in response.split('.') if s.strip()])
+        if sentence_count <= 4 and len(response) < 500:
+            print(f"  [Synthesizer] 짧은 답변 ({sentence_count}문장, {len(response)}자) → 바이패스")
+            # 기본 마크다운 정리만 수행 (LLM 호출 없이)
+            if hasattr(self.pipeline, 'guardrail'):
+                response = self.pipeline.guardrail.clean_markdown_formatting(response)
+            return response
+        
+        prompt = f"""아래 원본 답변에 마크다운 서식만 적용하세요. 내용을 절대 변경하지 마세요.
+
 원본 답변:
 {response}
 
-요구사항:
-1. 명확한 구조 (제목, 본문, 요약)
-2. 가독성 높은 마크다운 포맷
-3. 중요 정보 강조 (볼드, 이탤릭)
-4. 필요시 리스트나 표 사용
-
-마크다운 형식으로만 답변해주세요."""
+[서식 적용 기준]
+- 5문장 이상이면: 제목(##), 소제목(###), 리스트, 볼드 적용
+- 4문장 이하이면: 원본 그대로 반환 (서식 적용 금지)
+- 코드 블록·표가 있으면: 100% 원본 보존
+- 원본보다 길어지면 안 됩니다"""
 
         try:
             llm_result = self.pipeline.call_llm(
@@ -1464,7 +1562,7 @@ class Pipeline:
             use_rag: RAG 시스템 사용 여부 (기본값: False)
         """
         self.router = Router(pipeline=self)
-        self.researcher = Researcher(use_rag=use_rag)  # RAG 플래그 전달
+        self.researcher = Researcher(use_rag=use_rag, pipeline=self)  # RAG 플래그, 파이프라인 전달
         self.reasoner = Reasoner(pipeline=self)
         self.synthesizer = Synthesizer(pipeline=self)
         self.guardrail = Guardrail(pipeline=self)
