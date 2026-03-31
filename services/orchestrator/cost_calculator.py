@@ -24,70 +24,28 @@ class CostCalculator:
     """
     
     def __init__(self):
-        # 모델별 가격 테이블 (2026년 1월 기준 최신 가격)
+        # 모델별 가격 테이블 (2026년 3월 기준 최신 가격)
         self.pricing_table: Dict[str, ModelPricing] = {
-            # OpenAI GPT-5 시리즈
-            "gpt-5": ModelPricing(
-                input_price_per_1m=5.00,
-                output_price_per_1m=15.00,
-                provider="OpenAI"
-            ),
-            "gpt-4o-mini": ModelPricing(
-                input_price_per_1m=0.15,
-                output_price_per_1m=0.60,
-                provider="OpenAI"
-            ),
-            "gpt-3.5-turbo": ModelPricing(
-                input_price_per_1m=0.50,
-                output_price_per_1m=1.50,
-                provider="OpenAI"
-            ),
-            "openai/o1": ModelPricing(
-                input_price_per_1m=15.00,
-                output_price_per_1m=60.00,
-                provider="OpenAI"
-            ),
-            
-            # Anthropic Claude 4 시리즈
-            "claude-4-sonnet": ModelPricing(
-                input_price_per_1m=3.00,
-                output_price_per_1m=15.00,
-                provider="Anthropic"
-            ),
-            "claude-3-opus": ModelPricing(
-                input_price_per_1m=15.00,
-                output_price_per_1m=75.00,
-                provider="Anthropic"
-            ),
-            "claude-3-haiku": ModelPricing(
-                input_price_per_1m=0.25,
-                output_price_per_1m=1.25,
-                provider="Anthropic"
-            ),
-            
-            # Google Gemini 2.0 시리즈
-            "gemini/gemini-2.0-flash-exp": ModelPricing(
-                input_price_per_1m=0.075,
-                output_price_per_1m=0.30,
-                provider="Google"
-            ),
-            "gemini/gemini-2.0-pro-exp": ModelPricing(
-                input_price_per_1m=1.25,
-                output_price_per_1m=5.00,
-                provider="Google"
-            ),
-            
-            # Meta Llama 4 시리즈 (오픈소스 - 인프라 비용만)
-            "meta-llama/llama-4-8b": ModelPricing(
-                input_price_per_1m=0.10,
-                output_price_per_1m=0.10,
-                provider="Meta"
-            ),
-            "meta-llama/llama-4-70b": ModelPricing(
-                input_price_per_1m=0.80,
-                output_price_per_1m=0.80,
-                provider="Meta"
-            ),
+            # Perplexity (웹 검색)
+            "perplexity/sonar": ModelPricing(input_price_per_1m=1.0, output_price_per_1m=1.0, provider="Perplexity"),
+            "perplexity/sonar-pro": ModelPricing(input_price_per_1m=3.0, output_price_per_1m=15.0, provider="Perplexity"),
+
+            # Google Gemini 2.5 / 3 시리즈
+            "gemini/gemini-2.5-flash": ModelPricing(input_price_per_1m=0.30, output_price_per_1m=2.50, provider="Google"),
+            "gemini/gemini-2.5-flash-lite": ModelPricing(input_price_per_1m=0.10, output_price_per_1m=0.40, provider="Google"),
+            "gemini/gemini-3-flash-preview": ModelPricing(input_price_per_1m=0.50, output_price_per_1m=3.00, provider="Google"),
+            "gemini/gemini-3.1-pro-preview": ModelPricing(input_price_per_1m=2.00, output_price_per_1m=12.00, provider="Google"),
+
+            # OpenAI GPT-5 세부 모델
+            "gpt-5-nano": ModelPricing(input_price_per_1m=0.05, output_price_per_1m=0.40, provider="OpenAI"),
+            "gpt-5-mini": ModelPricing(input_price_per_1m=0.25, output_price_per_1m=2.00, provider="OpenAI"),
+            "gpt-5.2": ModelPricing(input_price_per_1m=1.75, output_price_per_1m=14.00, provider="OpenAI"),
+            "gpt-5.2-pro": ModelPricing(input_price_per_1m=21.00, output_price_per_1m=168.00, provider="OpenAI"),
+
+            # Anthropic Claude 4.5 / 4.6 시리즈
+            "claude-haiku-4.5": ModelPricing(input_price_per_1m=1.00, output_price_per_1m=5.00, provider="Anthropic"),
+            "claude-sonnet-4-6": ModelPricing(input_price_per_1m=3.00, output_price_per_1m=15.00, provider="Anthropic"),
+            "claude-opus-4-6": ModelPricing(input_price_per_1m=5.00, output_price_per_1m=25.00, provider="Anthropic"),
             
             # OpenAI Embedding 모델
             "text-embedding-3-small": ModelPricing(
@@ -178,9 +136,9 @@ class CostCalculator:
         """
         # 복잡도별 주 모델
         model_mapping = {
-            "simple": "gemini/gemini-2.0-flash-exp",
-            "complex": "gpt-5",
-            "bulk": "claude-4-sonnet"
+            "simple": "gemini/gemini-2.5-flash",
+            "complex": "claude-sonnet-4-6",
+            "bulk": "gemini/gemini-3-flash-preview"
         }
         
         primary_model = model_mapping.get(complexity, "gemini/gemini-2.0-flash-exp")
@@ -289,8 +247,8 @@ if __name__ == "__main__":
     print("=" * 80)
     
     # 1. 단일 모델 비용 계산
-    print("\n[테스트 1] GPT-5 비용 계산 (입력 1000토큰, 출력 500토큰)")
-    cost = calculator.calculate_cost("gpt-5", 1000, 500)
+    print("\n[테스트 1] GPT-5.2 비용 계산 (입력 1000토큰, 출력 500토큰)")
+    cost = calculator.calculate_cost("gpt-5.2", 1000, 500)
     print(f"모델: {cost['model']}")
     print(f"총 토큰: {cost['tokens']['total']}")
     print(f"비용 (USD): ${cost['cost_usd']['total']}")
@@ -305,7 +263,7 @@ if __name__ == "__main__":
     
     # 3. 모델 가격 정보 조회
     print("\n[테스트 3] 모델 가격 정보")
-    for model in ["gemini/gemini-2.0-flash-exp", "gpt-5", "claude-4-sonnet"]:
+    for model in ["gemini/gemini-3-flash-preview", "gpt-5.2", "claude-sonnet-4-6"]:
         info = calculator.get_pricing_info(model)
         if info:
             print(f"\n{model}:")

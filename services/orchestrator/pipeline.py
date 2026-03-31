@@ -881,8 +881,9 @@ class Researcher:
         """
         정보 검색 실행
         
-        - Drive 참조 ON (use_rag=True): Drive 문서 검색 → 관련 문서 전체 텍스트 조회
-        - Drive 참조 OFF (use_rag=False): 웹 검색만 실행
+        - Drive 참조 ON (use_rag=True): Drive 문서 검색 + 실시간 정보 필요 시 웹 검색 동시 실행
+        - Drive 참조 OFF (use_rag=False): 실시간 정보 필요 시 웹 검색만 실행
+        - 실시간 정보 필요 여부는 Router의 needs_realtime 플래그로 판단
         """
         user_input = routing_result["user_input"]
         
@@ -1025,6 +1026,22 @@ class Researcher:
                 max_tokens=500,
             )
             result = response.choices[0].message.content or ""
+            
+            # 웹 검색 비용 로깅
+            if self.pipeline and hasattr(response, 'usage') and response.usage:
+                ws_input = getattr(response.usage, 'prompt_tokens', 0) or 0
+                ws_output = getattr(response.usage, 'completion_tokens', 0) or 0
+                ws_cost = self.pipeline.cost_calculator.calculate_cost("perplexity/sonar", ws_input, ws_output)
+                self.pipeline.logger.log_model_usage("perplexity/sonar", ws_input, ws_output, ws_cost)
+                self.pipeline.cost_logger.log_llm_cost(
+                    task="web_search",
+                    model_name="perplexity/sonar",
+                    input_tokens=ws_input,
+                    output_tokens=ws_output,
+                    cost_usd=ws_cost.get("cost_usd", {}).get("total", 0),
+                    cost_krw=ws_cost.get("cost_krw", {}).get("total", 0),
+                    user_id=None
+                )
             
             # ── Perplexity API citations 강력 추출 (여러 경로 시도) ──
             raw_citations = []
