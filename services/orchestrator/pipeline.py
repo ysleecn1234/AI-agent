@@ -1071,25 +1071,91 @@ class Reasoner:
         """답변 생성 (Fallback 포함)"""
         return self.generate_response_with_fallback(context)
     
-    def verify(self, response: str, model_used: str, input_tokens: int, output_tokens: int, context: Dict[str, Any]) -> Dict[str, Any]:
-        """팩트체크 및 검증"""
-        is_verified = True
-        confidence_score = 0.95
-        
+    def verify(self, response: str) -> tuple:
+        """
+        Reasoner 출력의 경량 자가 검증 (LLM 호출 없음)
+        Returns: (is_verified: bool, confidence: float)
+        """
+        issues = []
+        confidence = 1.0
+        response_lower = response.lower()
+
+        # ── 1. 빈 응답 / 의미 없는 응답 ──
+        stripped = response.strip()
+        if len(stripped) < 10:
+            issues.append("응답이 너무 짧음")
+            confidence -= 0.5
+
+        # ── 2. LLM 거부 패턴 감지 ──
+        refusal_patterns = [
+            "죄송합니다만, 해당 요청",
+            "답변을 드리기 어렵",
+            "도움을 드리기 어렵",
+            "I cannot",
+            "I'm sorry, but I",
+            "As an AI",
+        ]
+        for pattern in refusal_patterns:
+            if pattern.lower() in response_lower:
+                issues.append(f"LLM 거부 패턴: '{pattern}'")
+                confidence -= 0.3
+                break
+
+        # ── 3. 반복 텍스트 감지 (LLM 루프) ──
+        # 같은 문장이 3번 이상 반복되면 생성 오류
+        sentences = [s.strip() for s in response.split('.') if len(s.strip()) > 10]
+        if len(sentences) > 3:
+            from collections import Counter
+            sentence_counts = Counter(sentences)
+            most_common_count = sentence_counts.most_common(1)[0][1] if sentence_counts else 0
+            if most_common_count >= 3:
+                issues.append(f"반복 텍스트 감지 ({most_common_count}회 반복)")
+                confidence -= 0.4
+
+        # ── 4. 언어 불일치 감지 ──
+        # 한국어 입력인데 영어로만 답변한 경우 (간단 휴리스틱)
+        korean_chars = sum(1 for c in response if '\uac00' <= c <= '\ud7a3')
+        total_alpha = sum(1 for c in response if c.isalpha())
+        if total_alpha > 50 and korean_chars / max(total_alpha, 1) < 0.1:
+            # 알파벳 50자 이상인데 한국어 비율 10% 미만
+            issues.append("영어 위주 응답 (한국어 입력 예상)")
+            confidence -= 0.2
+
+        # ── 결과 ──
+        # 이슈가 하나라도 있으면 is_verified = False
+        is_verified = len(issues) == 0
+        confidence = max(0.0, min(1.0, confidence))
+
+        if issues:
+            print(f"  [Reasoner.verify] 이슈 {len(issues)}건: {issues} (confidence={confidence:.2f})")
+
+        return is_verified, confidence
+
+    def reason(self, research_result: Dict[str, Any]) -> Dict[str, Any]:
+        """추론 실행"""
+        response, model_used, input_tokens, output_tokens = self.generate_response(research_result)
+        is_verified, confidence = self.verify(response)
+
+        # 검증 실패 시 (심각한 오류: confidence <= 0.5) 1회 재생성 시도
+        if not is_verified and confidence <= 0.5:
+            print(f"  [Reasoner] 검증 실패 및 신뢰도 낮음 (confidence={confidence:.2f}), 재생성 시도")
+            response2, model_used2, input_tokens2, output_tokens2 = self.generate_response(research_result)
+            is_verified, confidence = self.verify(response2)
+            
+            response = response2
+            model_used = f"{model_used} -> {model_used2}"
+            input_tokens += input_tokens2
+            output_tokens += output_tokens2
+
         return {
-            **context,
+            **research_result,
             "response": response,
             "model_used": model_used,
             "input_tokens": input_tokens,
             "output_tokens": output_tokens,
             "verified": is_verified,
-            "confidence": confidence_score
+            "confidence": confidence
         }
-    
-    def reason(self, research_result: Dict[str, Any]) -> Dict[str, Any]:
-        """추론 실행"""
-        response, model_used, input_tokens, output_tokens = self.generate_response(research_result)
-        return self.verify(response, model_used, input_tokens, output_tokens, research_result)
 
 
 # ==================== Step 4: Synthesizer ====================
