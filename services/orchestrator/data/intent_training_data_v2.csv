@@ -1,770 +1,849 @@
 text,label
-DB 마이그레이션 스크립트 작성,GENERATION
-고객 여정 분석,ANALYSIS
-먼저 가볼게요,CASUAL
-이따가,CASUAL
-김대리가 올린 자료 찾아줘,SEARCH
-출퇴근 시간 몇 시야,QUESTION
-히스토리 찾아줘,SEARCH
-더 자세히,CASUAL
-코딩 테스트 문제 찾아줘,SEARCH
-투자 제안서 초안 작성,GENERATION
-좋아요,CASUAL
-스프린트 번다운 분석,ANALYSIS
-서비스 제안서 만들어줘,GENERATION
-회사 와이파이 비번 뭐야,QUESTION
-마케팅 전략 문서 찾아줘,SEARCH
-이탈률 증가 원인이 뭐야,ANALYSIS
-걍,CASUAL
-코드 리뷰 소요시간 분석,ANALYSIS
-알았어,CASUAL
-프로젝트 기획안 작성,GENERATION
-랜딩페이지 문구 만들어줘,GENERATION
-두 기간의 실적 비교 분석해줘,ANALYSIS
-eloun 연간 매출 알려줘,QUESTION
-성장률 전망 분석,ANALYSIS
-인프라 구성도 찾아줘,SEARCH
-홍보 문구 만들어줘,GENERATION
-번역해줘,GENERATION
-CS 분석 자료 찾아,SEARCH
-온보딩 문서 검색해줘,SEARCH
-다음 분기 전망 분석,ANALYSIS
-미들웨어 코드 만들어줘,GENERATION
-이상치 분석해줘,ANALYSIS
-업무 효율성 분석해줘,ANALYSIS
-배포 가이드 찾아줘,SEARCH
-엑셀로 만들어줘,GENERATION
-비트코인 가격 알려줘,QUESTION
-지난달 데이터 가져와서 추세 분석해줘,ANALYSIS
-디자인팀 작업물 검색,SEARCH
-상관관계 분석해줘,ANALYSIS
-배포 가이드 만들어줘,GENERATION
-데모 시나리오 작성해줘,GENERATION
-유의수준 분석해줘,ANALYSIS
-기술 보고서 작성,GENERATION
-그 문서 어디 있어,SEARCH
-입찰 제안서 만들어줘,GENERATION
-ㅎㅎ,CASUAL
-5 Forces 분석,ANALYSIS
-제품 A와 B의 시장 점유율 비교,ANALYSIS
-API 문서 찾아줘,SEARCH
-RAG가 뭐야,QUESTION
-월별 매출 데이터 찾아줘,SEARCH
-의존성 리스크 분석,ANALYSIS
-투자 리스크 평가해줘,ANALYSIS
-LTV 분석해줘,ANALYSIS
-영문 이메일 작성해줘,GENERATION
-프로젝트 템플릿 만들어줘,GENERATION
-개발 가이드 문서 조회,SEARCH
-다음 릴리스 언제야,QUESTION
-장애 났어?,QUESTION
-이번 주 날씨 어때,QUESTION
-오늘 코스피 어때,QUESTION
-그래그래,CASUAL
-월요병이야,CASUAL
-주간 미팅 기록 찾아줘,SEARCH
-잘 지냈어요?,CASUAL
-개인정보처리방침 만들어줘,GENERATION
-오늘 무슨 요일이야,QUESTION
-완벽해,CASUAL
-이벤트 안내문 작성,GENERATION
-문서 정리해서 만들어줘,GENERATION
-피드백 데이터 분석해줘,ANALYSIS
-액션 아이템 정리해줘,GENERATION
-이 단어 뜻이 뭐야,QUESTION
-택배 보관함 어디야,QUESTION
-라이선스 문서 작성,GENERATION
-배너 카피 만들어줘,GENERATION
-올해 매출 목표 달성률,QUESTION
-마일스톤 정리해줘,GENERATION
-고객 만족도 어때,QUESTION
-모니터링 설정 문서 찾아줘,SEARCH
-데모데이 언제야,QUESTION
-지난 3개월 매출 변화 분석,ANALYSIS
-존댓말로 바꿔줘,QUESTION
-월간 리포트 분석해줘,ANALYSIS
-됐어,CASUAL
-커밋 메시지 작성해줘,GENERATION
-트렌드 리포트 찾아줘,SEARCH
-수고하세요,CASUAL
-실적 보고서 초안 작성,GENERATION
-기술 스펙 문서 작성해줘,GENERATION
-회의 내용 분석해서 회의록 작성해줘,GENERATION
-핵심 정리해줘,GENERATION
-워크플로우 병목 분석해줘,ANALYSIS
-접근 권한 매뉴얼 조회,SEARCH
-회사 복지 뭐 있어,QUESTION
-기획서 타당성 분석,ANALYSIS
-A/B 테스트 결과 분석해줘,ANALYSIS
-파이썬이 뭐야,QUESTION
-아 진짜,CASUAL
-레전드,CASUAL
-지금 기온 몇 도야,QUESTION
-SVM이 뭔가요,QUESTION
-보고서 있나? 찾아봐줘,SEARCH
-오랜만이에요,CASUAL
-고객 피드백 데이터로 만족도 요인 분석해줘,ANALYSIS
-견적서 만들어줘,GENERATION
-고객 발표용 슬라이드 작성,GENERATION
-추가로?,CASUAL
-기술 블로그 글 작성해줘,GENERATION
-물가 상승률 어때,QUESTION
-SQL 쿼리 작성해줘,GENERATION
-최근 트렌드 뭐야,QUESTION
-AI 관련 최신 소식,QUESTION
-우리 회사 기술 스택 뭐야,QUESTION
-전환율 분석해줘,ANALYSIS
-VPN 설정 가이드 검색해줘,SEARCH
-제안서 평가 분석,ANALYSIS
-DB 스키마 문서 조회,SEARCH
-서비스 장애 원인 분석,ANALYSIS
-추석 연휴 며칠이야,QUESTION
-달러 환율 알려줘,QUESTION
-ㅇㅈ,CASUAL
-응,CASUAL
-환율 얼마야,QUESTION
-트래픽 얼마나 돼,QUESTION
-QA 일정 알려줘,QUESTION
-이번 달 급여일 언제야,QUESTION
-고마워요,CASUAL
-SNS 포스트 작성해줘,GENERATION
-머신러닝이랑 딥러닝 차이가 뭐야,QUESTION
-보안 취약점 분석,ANALYSIS
-우리 서비스랑 경쟁사 서비스 비교 분석,ANALYSIS
-재택근무 가능해?,QUESTION
-졸려,CASUAL
-회의실 예약 어떻게 해,QUESTION
-오늘도 열심히,CASUAL
-초안 버전 조회,SEARCH
-영어로 뭐라고 해,QUESTION
-마케팅팀장이 올린 자료,SEARCH
-코드 품질 메트릭 분석,ANALYSIS
-테스트 코드 작성해줘,GENERATION
-코호트 분석해줘,ANALYSIS
-프린터 어디 있어,QUESTION
-PEST 분석 자료 찾아줘,SEARCH
-됐습니다,CASUAL
-마이크로서비스 아키텍처가 뭐야,QUESTION
-이거 문서로 만들어줘,GENERATION
-KPI 달성률 분석,ANALYSIS
-우리 서비스 UX 분석해줘,ANALYSIS
-힘들다,CASUAL
-이탈률 얼마야,QUESTION
-왜 전환율이 낮아졌지,ANALYSIS
-코드 프리즈 언제야,QUESTION
-hey,CASUAL
-다음에 또 물어볼게요,CASUAL
-경쟁사 전략 분석해줘,ANALYSIS
-데이터 파이프라인 코드 만들어줘,GENERATION
-알겠어,CASUAL
-CEO가 공유한 문서 찾아줘,SEARCH
-매출 추세 어떤가요? 알려줘,ANALYSIS
-쏘쏘,CASUAL
-최선/최악 케이스 분석,ANALYSIS
-라이선스 계약서 검색,SEARCH
-고객 불만 원인 파악해줘,ANALYSIS
-오늘 날씨 어때,QUESTION
-잘했어,CASUAL
-자료 좀 찾아줄 수 있어?,SEARCH
-인사팀에서 공유한 자료 찾아줘,SEARCH
-만족해,CASUAL
-도움 됐어요,CASUAL
-리스크 시나리오 분석,ANALYSIS
-그냥,CASUAL
-시장 규모 예측,ANALYSIS
-회의 아젠다 작성해줘,GENERATION
-마케팅 보고서 작성해줘,GENERATION
-회사 설립일 언제야,QUESTION
-다음 회의 언제야,QUESTION
-와,CASUAL
-음,CASUAL
-메모리 사용률 알려줘,QUESTION
-POC 결과 자료 찾아줘,SEARCH
-지난주 회의록 찾아줘,SEARCH
-CPA 추이 분석,ANALYSIS
-다른 건?,CASUAL
-이메일 마케팅 효과 분석해줘,ANALYSIS
-프로젝트 일정 알려줘,QUESTION
-계약서 조건 비교 분석,ANALYSIS
-헐,CASUAL
-현재 금 시세,QUESTION
-대표이사 누구야,QUESTION
-그렇지,CASUAL
-인프라 비용 최적화 분석,ANALYSIS
-데이터 기반으로 평가해줘,ANALYSIS
-마케팅팀 팀장 누구야,QUESTION
-발표 자료 만들어줘,GENERATION
-법인카드 한도 얼마야,QUESTION
-PPT로 정리해줘,GENERATION
-에러 핸들링 코드 짜줘,GENERATION
-프롬프트 엔지니어링이 뭐야,QUESTION
+보통이에요,CASUAL
+CPU 사용률 알려줘,QUESTION
+사용성 테스트 결과 분석,ANALYSIS
+실업률 얼마야,QUESTION
 설날 언제야,QUESTION
+매출 분석해서 보고서 만들어줘,GENERATION
+서버 비용이 왜 늘었는지 분석해줘,ANALYSIS
 벨로시티 추이 분석해줘,ANALYSIS
-스탠드업 회의록 정리,GENERATION
-GPT 새 버전 나왔어?,QUESTION
-연령별 사용 패턴 분석,ANALYSIS
-작동 되나?,CASUAL
-고객 유입 경로 분석,ANALYSIS
-트레이닝 매뉴얼 찾아,SEARCH
-이 보고서 내용 분석해줘,ANALYSIS
-내일 서울 날씨,QUESTION
-두 제품 장단점 비교,ANALYSIS
-수정 전 기획서 검색,SEARCH
-로드맵 작성해줘,GENERATION
-전환율 몇 프로야,QUESTION
-프로젝트 보고서 작성해줘,GENERATION
-리텐션 어때,QUESTION
-이해했어,CASUAL
-진짜?,CASUAL
-추세가 어떻게 되는지 설명해줘,ANALYSIS
-1:1 미팅 노트 찾아줘,SEARCH
-코드 하나 짜줄래,GENERATION
-기획팀 기획서 조회,SEARCH
-SLA 문서 찾아줘,SEARCH
-CI/CD 파이프라인 작성해줘,GENERATION
-React 컴포넌트 만들어줘,GENERATION
-쿠버네티스가 뭐야,QUESTION
-배고파,CASUAL
-설문 결과 문서 검색,SEARCH
-광고 카피 작성해줘,GENERATION
-대단하다,CASUAL
-마케팅 캠페인 효과 분석해줘,ANALYSIS
-신규 사업 문서 검색,SEARCH
-수고하셨습니다,CASUAL
-자원 활용률 분석,ANALYSIS
-임베딩이 뭐야,QUESTION
-경쟁사 상황 설명해줘 분석 포함해서,ANALYSIS
-ㄴㄴ,CASUAL
-안내 메일 작성해줘,GENERATION
-매출 자료 찾아서 발표 자료 만들어줘,GENERATION
-사용자 가이드 만들어줘,GENERATION
-경쟁 환경 분석해줘,ANALYSIS
-팀별 생산성 비교 분석,ANALYSIS
-야근수당 얼마야,QUESTION
-보고서 좀 만들어줄래,GENERATION
-스프레드시트 찾아줘,SEARCH
-서비스 계약서 검색,SEARCH
-이용약관 문서 조회,SEARCH
-세미나 발표 자료 만들어줘,GENERATION
-땡큐,CASUAL
-부서별 예산 사용 현황 분석,ANALYSIS
-김대리 전화번호 뭐야,QUESTION
-쓸만하다,CASUAL
-그럭저럭,CASUAL
-인력 리스크 분석,ANALYSIS
-지연 발생 원인 파악해줘,ANALYSIS
-교육비 지원 가능해?,QUESTION
-퍼널 분석해줘,ANALYSIS
-아무것도 아니야,CASUAL
-경쟁사 자료 참고해서 우리 전략 분석해줘,ANALYSIS
-문서 간 차이점 분석해줘,ANALYSIS
-지난 분기 실적 자료 검색,SEARCH
-코딩 컨벤션 문서 조회,SEARCH
-ㅎㅇㅎㅇ,CASUAL
-좋은 아침,CASUAL
-아 그래?,CASUAL
-2025년 사업계획서 찾아줘,SEARCH
-재무제표 분석해줘,ANALYSIS
-재무 리스크 분석,ANALYSIS
-채용 시장 분석해줘,ANALYSIS
-파이썬 스크립트 만들어줘,GENERATION
-REST API가 뭐야,QUESTION
-버그 발생 원인 분석,ANALYSIS
-올려둔 자료 찾아줘,SEARCH
-매출 예측해줘,ANALYSIS
-뭐 더 있어?,CASUAL
-팀별 성과 비교해줘,ANALYSIS
-기획서 작성해줘,GENERATION
-프로젝트 킥오프 회의록 찾아,SEARCH
-3줄 요약 만들어줘,GENERATION
-Slack 채널 링크 알려줘,QUESTION
-서비스 기획 문서 만들어줘,GENERATION
-운영팀 SOP 검색,SEARCH
-올해 목표 매출이 뭐야,QUESTION
-인건비 대비 매출 분석,ANALYSIS
-내일 비 와?,QUESTION
-우리팀 파이팅,CASUAL
-오 좋은데,CASUAL
-어제 올린 매출 보고서 찾아서 내용 알려줘,SEARCH
-개발팀 리드가 작성한 문서,SEARCH
-계약서 초안 작성해줘,GENERATION
-성장 전망 분석해줘,ANALYSIS
-데이터 기반으로 어떤지 알려줘,ANALYSIS
-반응 빠르다,CASUAL
-온보딩 체크리스트 찾아줘,SEARCH
-직원 만족도 분석해줘,ANALYSIS
-사무실 주소 알려줘,QUESTION
-법무팀 문서 찾아줘,SEARCH
-표로 정리해서 만들어줘,GENERATION
-이사회 회의록 조회,SEARCH
-오늘 회의 내용 정리해줘,GENERATION
-예산 계획서 조회,SEARCH
-Jira 보드 어디야,QUESTION
-우리 회사 매출 얼마야,QUESTION
-필요없어,CASUAL
-WBS 만들어줘,GENERATION
-오늘 환율이랑 어제 환율 차이 얼마야,QUESTION
-패스,CASUAL
-포터 분석 자료 검색,SEARCH
-블로그 글 만들어줘,GENERATION
-덕분에 해결됐어요,CASUAL
-MVP 관련 문서 조회,SEARCH
-최근 업로드된 문서 보여줘,SEARCH
-CHANGELOG 만들어줘,GENERATION
-지난달 매출 보고서 찾아줘,SEARCH
-오,CASUAL
-ㄹㅇ,CASUAL
-시장 규모 데이터 찾아줘,SEARCH
+보안 정책 문서 찾아줘,SEARCH
+우리 서비스 UX 분석해줘,ANALYSIS
+개발팀 인원 몇 명이야,QUESTION
+이번 스프린트 언제 끝나,QUESTION
 나스닥 지수 알려줘,QUESTION
-매출 하락 원인 분석해줘,ANALYSIS
-크롤링 코드 짜줘,GENERATION
-뉴스레터 작성해줘,GENERATION
-이번 달 지표 어떤지 분석해서 알려줘,ANALYSIS
-시간 소요 분석,ANALYSIS
-아니야,CASUAL
-포지셔닝 분석해줘,ANALYSIS
-스테이징 환경 URL 알려줘,QUESTION
-매출 시나리오 분석,ANALYSIS
-매출 왜 떨어졌는지 알려줘,ANALYSIS
-ㄱㅅ,CASUAL
-고마워,CASUAL
-SNS 캠페인 성과 분석,ANALYSIS
+흠,CASUAL
+회고 미팅 언제야,QUESTION
+히스토리 찾아줘,SEARCH
+머신러닝이랑 딥러닝 차이가 뭐야,QUESTION
+알았어,CASUAL
 마케팅 퍼널 분석,ANALYSIS
 MOU 찾아줘,SEARCH
-트러블슈팅 가이드 작성,GENERATION
-인센티브 기준이 뭐야,QUESTION
-MAU 알려줘,QUESTION
-사용성 테스트 결과 분석,ANALYSIS
-ISOR 테스트,CASUAL
-에러율 어때,QUESTION
-LLM이 뭐야,QUESTION
-프로세스 개선 포인트 분석,ANALYSIS
-유닛 테스트 만들어줘,GENERATION
-yo,CASUAL
-데드라인이 언제야,QUESTION
-클로드 업데이트 있었어?,QUESTION
-이거 맞춤법 맞아?,QUESTION
-연도별 매출 추이 분석,ANALYSIS
-이유가 뭔지 분석해줘,ANALYSIS
-방가방가,CASUAL
-보도자료 초안 만들어줘,GENERATION
-1분기 매출 자료 검색해줘,SEARCH
-투자 수익률 분석해줘,ANALYSIS
-좋은 저녁이에요,CASUAL
-월간 리포트 작성해줘,GENERATION
-파일럿 프로젝트 문서 검색,SEARCH
-Git rebase랑 merge 차이,QUESTION
-모르겠어,CASUAL
-DB 커넥션 몇 개야,QUESTION
-그리고?,CASUAL
-반갑습니다,CASUAL
-그 다음은?,CASUAL
-API 호출량 추이 분석,ANALYSIS
-웅,CASUAL
-허,CASUAL
-작년 연간 보고서 찾아줘,SEARCH
-시장 규모 분석,ANALYSIS
-오늘 기분 좋다,CASUAL
-1분기 실적 어때,QUESTION
-넵,CASUAL
-롤백 가이드 검색,SEARCH
-오픈소스 트렌드 뭐야,QUESTION
-분기별 매출 비교해줘,ANALYSIS
-통신비 지원돼?,QUESTION
-시스템 아키텍처 문서 찾아줘,SEARCH
-새로 추가된 자료 조회,SEARCH
-기술 부채 현황 분석,ANALYSIS
-재밌네,CASUAL
-유가 얼마야,QUESTION
-굿모닝,CASUAL
-계속해줘,CASUAL
-재무팀 자료 검색해줘,SEARCH
-실업률 얼마야,QUESTION
-실험 결과 해석해줘,ANALYSIS
-엔화 환율 얼마야,QUESTION
-디자인팀 몇 명이야,QUESTION
-전사 공유 문서 조회,SEARCH
-뭐해,CASUAL
-인수인계 문서 만들어줘,GENERATION
-고생했어,CASUAL
-인구 몇 명이야,QUESTION
+니가 추천해줘,QUESTION
 클라우드 비용 비교 분석해줘,ANALYSIS
-NPS 추이 분석,ANALYSIS
-사용자 행동 패턴 분석,ANALYSIS
-이소르 잘 돌아가?,CASUAL
-코드 작성해줘,GENERATION
-기준금리 얼마야,QUESTION
-GitHub Actions 워크플로우 만들어줘,GENERATION
-사용자 리서치 자료 찾아줘,SEARCH
-영어로 번역해줘,GENERATION
-흠,CASUAL
-회사 비전이 뭐야,QUESTION
-API 레이턴시 어때,QUESTION
-퇴근할게요,CASUAL
-경쟁사 소식 있어?,QUESTION
-파트너십 제안서 작성,GENERATION
-어디 저장했더라 찾아줘,SEARCH
-변경 이력 정리해줘,GENERATION
-프레젠테이션 파일 검색,SEARCH
-자동화 스크립트 만들어줘,GENERATION
-경영진 보고서 작성해줘,GENERATION
-주간 보고서 만들어줘,GENERATION
-hello,CASUAL
-규제 리스크 평가해줘,ANALYSIS
-미쳤다,CASUAL
-매출 감소 원인 분석해줘,ANALYSIS
-현금흐름 분석해줘,ANALYSIS
-모니터링 대시보드 코드 짜줘,GENERATION
-PPT 파일 찾아줘,SEARCH
-좀 더 알려줘,CASUAL
-우리 회사 매출 추세 분석해줘,ANALYSIS
-별거 아니야,CASUAL
-분기 리뷰 회의록 검색,SEARCH
-설치 가이드 만들어줘,GENERATION
-서비스 계약서 초안,GENERATION
-농담 하나 해줘,CASUAL
-우리 팀 KPI 뭐야,QUESTION
-ㅇㅇ,CASUAL
-주말 잘 보내세요,CASUAL
-CSV 데이터 파일 찾아줘,SEARCH
-애플 신제품 뭐야,QUESTION
-잘 됐네,CASUAL
-기술 평가 문서 찾아줘,SEARCH
-파인튜닝이 뭐야,QUESTION
-장애 대응 매뉴얼 찾아줘,SEARCH
-신규 프로젝트 제안서 검색,SEARCH
-최고야,CASUAL
-2024년 결산 보고서 찾아,SEARCH
-스프린트 계획 작성해줘,GENERATION
-인터뷰 스크립트 만들어줘,GENERATION
-이탈 요인 분석해줘,ANALYSIS
-Docker Compose 파일 만들어줘,GENERATION
-장애 보고서 만들어줘,GENERATION
-gRPC가 뭐야,QUESTION
-수요 예측 분석해줘,ANALYSIS
-마이크로서비스 문서 조회,SEARCH
-한 페이지로 정리해줘,GENERATION
-일정표 만들어줘,GENERATION
-주간 데이터 분석,ANALYSIS
-연봉 협상 언제야,QUESTION
-실적이 왜 이래? 원인 좀 알려줘,ANALYSIS
-3개 업체 견적 비교 분석,ANALYSIS
-디자인 가이드라인 찾아줘,SEARCH
-심심해,CASUAL
-페이지 로딩 속도 분석,ANALYSIS
-개발 프로세스 효율성 분석,ANALYSIS
-엑셀 파일 찾아줘,SEARCH
-설문지 작성해줘,GENERATION
-차트 분석해줘,ANALYSIS
-ARPU 알려줘,QUESTION
-리스크 분석해줘,ANALYSIS
-배포 스크립트 작성해줘,GENERATION
-스톡옵션 조건 알려줘,QUESTION
-A안과 B안 비교해줘,ANALYSIS
-최신 문서 목록,SEARCH
-연간 보고서 초안,GENERATION
-체크리스트 만들어줘,GENERATION
-NDA 문서 조회해줘,SEARCH
-ㅋㅋ,CASUAL
-포스트모템 문서 작성해줘,GENERATION
-요약문 작성해줘,GENERATION
-비용 구조 분석해줘,ANALYSIS
-토큰이 뭐야,QUESTION
-이번 분기 목표 달성률이랑 지난 분기 비교하면 어때,QUESTION
-잘 자요,CASUAL
-사업 기획서 만들어줘,GENERATION
-NPS 점수 얼마야,QUESTION
-ㅎㅎㅎㅎ,CASUAL
-제안서 작성해줘,GENERATION
-에러 로그 패턴 분석해줘,ANALYSIS
-감사합니다,CASUAL
-Confluence 페이지 주소,QUESTION
-효과 크기 분석,ANALYSIS
-릴리스 노트 만들어줘,GENERATION
-시장 동향 분석해줘,ANALYSIS
-가격 대비 성능 비교해줘,ANALYSIS
-어텐션 메커니즘이 뭐야,QUESTION
-개발 가이드 만들어줘,GENERATION
-경쟁사 분석 자료 찾아줘,SEARCH
-영업 제안서 검색해줘,SEARCH
-디자인 시스템 문서 찾아줘,SEARCH
-네,CASUAL
-고객 세그먼트 분석해줘,ANALYSIS
-기술 스펙 문서 검색,SEARCH
-M&A 자료 검색,SEARCH
-오류 없지?,CASUAL
-A사 계약서 검색해줘,SEARCH
-ㅎㅎㅎ,CASUAL
-안녕,CASUAL
-오키,CASUAL
-PRD 문서 만들어줘,GENERATION
-알겠습니다,CASUAL
-소개 이메일 작성해줘,GENERATION
-회사 근처 주차장 어디야,QUESTION
-FAQ 문서 작성해줘,GENERATION
-지난주 회의록 찾아서 핵심만 정리해줘,SEARCH
-좋은 하루 되세요,CASUAL
-TF-IDF가 뭐야,QUESTION
-API 스펙 문서 검색,SEARCH
-부서 자료 목록 찾아줘,SEARCH
-정규표현식 만들어줘,GENERATION
-하이,CASUAL
-프로젝트A 관련 자료 찾아줘,SEARCH
-채널별 마케팅 성과 비교,ANALYSIS
-마크다운 문서 찾아줘,SEARCH
-김대리가 작성한 기획서 찾아서 요약해줘,SEARCH
-경비 정산 어떻게 해,QUESTION
-이 내용 요약해줘,GENERATION
-마케팅 기획서 초안,GENERATION
-인터뷰 결과 문서 검색,SEARCH
-드라이브 내 회의록 조회,SEARCH
-ㅇㅋ,CASUAL
-건강검진 언제야,QUESTION
 간트차트 만들어줘,GENERATION
-JSON 파일 검색해줘,SEARCH
-결산 자료 찾아줘,SEARCH
-팀 발표 자료 정리,GENERATION
-이전 버전 문서 찾아줘,SEARCH
-산업 분석 문서 찾아줘,SEARCH
-시장 조사 보고서 검색,SEARCH
-읽었어,CASUAL
-평가표 작성해줘,GENERATION
-이전에 올린 거 찾아줘,SEARCH
-손익분기점 분석,ANALYSIS
-회고 문서 작성해줘,GENERATION
-배포 프로세스 문서 찾아줘,SEARCH
-고객 피드백 보고서 조회,SEARCH
-지금은 괜찮아,CASUAL
-브랜드 인지도 분석해줘,ANALYSIS
-웃기다,CASUAL
-배포 파이프라인 병목 분석해줘,ANALYSIS
-나쁘지 않네,CASUAL
-기술 교육 자료 찾아줘,SEARCH
-저장된 보고서 찾아줘,SEARCH
-응답 시간 몇 초야,QUESTION
-오늘 올라온 자료 찾아줘,SEARCH
-프레임워크 성능 비교,ANALYSIS
-업계 동향 어때,QUESTION
-내가 올린 문서 찾아줘,SEARCH
-점심 맛있게 드세요,CASUAL
-테스트 계획서 작성,GENERATION
-공유된 문서 목록 보여줘,SEARCH
+포터 분석 자료 검색,SEARCH
+GitHub Actions 워크플로우 만들어줘,GENERATION
+연간 보고서 초안,GENERATION
+카페 추천해줘,QUESTION
 고객 여정 맵 찾아줘,SEARCH
-CS팀 매뉴얼 찾아줘,SEARCH
-기술 스택 비교 분석해줘,ANALYSIS
-주식 시장 어때,QUESTION
-ㅎㅇ,CASUAL
-이용자 통계 분석해줘,ANALYSIS
-확인 테스트,CASUAL
-API 문서 작성해줘,GENERATION
-eloun 브랜딩 자료 검색,SEARCH
-경쟁사 대비 우리 장점 분석,ANALYSIS
-보통이에요,CASUAL
-해외 진출 관련 문서 찾아줘,SEARCH
-CPU 사용률 알려줘,QUESTION
-테스트 케이스 작성해줘,GENERATION
-팔로업 이메일 만들어줘,GENERATION
-내부 문서 중 제안서 검색,SEARCH
-그래서?,CASUAL
-비용 절감 포인트 분석,ANALYSIS
-감사해요,CASUAL
-반차 신청 방법 알려줘,QUESTION
-더 없어?,CASUAL
-전년 대비 매출 성장률,QUESTION
-컴포넌트 가이드 검색,SEARCH
-오케이,CASUAL
-기온이 몇 도야,QUESTION
-PR 설명 만들어줘,GENERATION
-A안과 B안을 비교해서 장단점 정리해줘,ANALYSIS
-드라이브에서 매출 자료 찾아줘,SEARCH
-개발팀 인원 몇 명이야,QUESTION
-고객 데이터 자료 찾아줘,SEARCH
-양식 만들어줘,GENERATION
-hi,CASUAL
-MOU 초안 만들어줘,GENERATION
-괜찮아,CASUAL
-장애 대응 매뉴얼 검색,SEARCH
-추세선 분석해줘,ANALYSIS
-휴가 신청 어떻게 해,QUESTION
-온보딩 가이드 만들어줘,GENERATION
-PoC 결과서 조회해줘,SEARCH
-고정비 변동비 분석해줘,ANALYSIS
-경쟁사 제품 비교 자료 검색,SEARCH
-별로야,CASUAL
-전사 미팅 회의록 조회,SEARCH
-기술 부채 분석해줘,ANALYSIS
-최근 뉴스 알려줘,QUESTION
-이메일 하나 써줘,GENERATION
-고객 만족도 요인 분석,ANALYSIS
-README 파일 작성해줘,GENERATION
-계약서 찾아줘,SEARCH
-프레젠테이션 초안 작성,GENERATION
-VOC 자료 찾아줘,SEARCH
-좋네,CASUAL
-스타일 가이드 찾아줘,SEARCH
-이 데이터에서 인사이트 뽑아줘,ANALYSIS
-다들 수고,CASUAL
-운영 리스크 평가,ANALYSIS
-쉘 스크립트 작성해줘,GENERATION
-우리 팀 성과가 어때? 데이터로 분석해줘,ANALYSIS
-일본어로 번역해줘,QUESTION
-이직률 원인 분석,ANALYSIS
-투자 보고서 만들어줘,GENERATION
-인사 규정 문서 찾아줘,SEARCH
-신입사원 이름 뭐야,QUESTION
-Q3 실적 자료 찾아줘,SEARCH
-코드 리뷰 코멘트 작성해줘,GENERATION
-ㅋㅋㅋ,CASUAL
-통계적으로 유의미한 차이 있어?,ANALYSIS
-인보이스 작성해줘,GENERATION
-원달러 환율,QUESTION
-NDA 문서 작성해줘,GENERATION
-서버 비용이 지난달보다 얼마나 늘었어,QUESTION
-지표 변동 원인 분석,ANALYSIS
-리뉴얼 프로젝트 자료 조회,SEARCH
-면접 가이드 문서 검색,SEARCH
-업로드한 파일 검색해줘,SEARCH
-유저 스토리 만들어줘,GENERATION
-배포 상태 어때,QUESTION
-좋은 아침이에요,CASUAL
-미팅 노트 작성해줘,GENERATION
-업계 리포트 조회,SEARCH
-지난 분기 순이익 얼마야,QUESTION
-회의록 작성해줘,GENERATION
-이전에 작성한 거 조회해줘,SEARCH
-SWOT 분석해줘,ANALYSIS
-이과장이 작성한 기획서 찾아줘,SEARCH
-시장 진입 타당성 분석,ANALYSIS
-대박,CASUAL
-안녕하세요,CASUAL
-SLA 문서 만들어줘,GENERATION
-로그 분석 스크립트 작성,GENERATION
-싫어요,CASUAL
-야근 택시비 지원돼?,QUESTION
-매뉴얼 작성해줘,GENERATION
-ISOR 프로젝트 관련 문서 찾아줘,SEARCH
-리뷰 체크리스트 작성,GENERATION
-QA 시나리오 만들어줘,GENERATION
-이용약관 초안 작성,GENERATION
-업계 트렌드 분석,ANALYSIS
-비용 현황 어때? 분석 좀,ANALYSIS
-재밌는 거 없어?,CASUAL
-깔끔하게 문서화해줘,GENERATION
-사용자 세션 분석해줘,ANALYSIS
-그냥 궁금해서,CASUAL
-면접 질문 리스트 만들어줘,GENERATION
-지난달 데이터 기반으로 월간 리포트 만들어줘,GENERATION
-보안 정책 문서 찾아줘,SEARCH
-점심 먹었어?,CASUAL
-내일 봐요,CASUAL
+작동 되나?,CASUAL
 리뷰 감성 분석해줘,ANALYSIS
-백로그 아이템 작성해줘,GENERATION
-커피 한잔 하자,CASUAL
-CTO 누구야,QUESTION
-일본어로 작성해줘,GENERATION
-서버 상태 괜찮아?,QUESTION
-공지 메일 작성해줘,GENERATION
-오늘 미세먼지 어때,QUESTION
-회의 결과 문서화해줘,GENERATION
-다음에,CASUAL
-경쟁사 분석 자료 있으면 찾아서 보여줘,SEARCH
-지금 몇 시야,QUESTION
-내년 트렌드 전망 분석해줘,ANALYSIS
-이번 주 공휴일 있어?,QUESTION
-원본 문서 찾아줘,SEARCH
-잘 되네,CASUAL
-프로젝트 성과 평가해줘,ANALYSIS
-파트너 계약 문서 찾아줘,SEARCH
-통계 검정 결과 분석,ANALYSIS
-상품 설명 작성해줘,GENERATION
-환경변수 설정 파일 만들어줘,GENERATION
-고객 피드백 정리해서 개선 제안서 만들어줘,GENERATION
-벤치마킹 자료 조회,SEARCH
+지난달 매출 보고서 찾아줘,SEARCH
+유가 얼마야,QUESTION
+네,CASUAL
+고객 만족도 요인 분석,ANALYSIS
+리뉴얼 프로젝트 자료 조회,SEARCH
+코드 프리즈 언제야,QUESTION
+리텐션 어때,QUESTION
+자동화 스크립트 만들어줘,GENERATION
+아까 그 자료 어디 있어,SEARCH
+이과장이 작성한 기획서 찾아줘,SEARCH
+마케팅 기획서 초안,GENERATION
+재무제표 분석해줘,ANALYSIS
+사용자 세션 분석해줘,ANALYSIS
+최선/최악 케이스 분석,ANALYSIS
+NPS 점수 얼마야,QUESTION
+좋네,CASUAL
+회의 아젠다 작성해줘,GENERATION
+장애 대응 매뉴얼 찾아줘,SEARCH
+택배 보관함 어디야,QUESTION
+두 기간의 실적 비교 분석해줘,ANALYSIS
+3개 업체 견적 비교 분석,ANALYSIS
+우리팀 파이팅,CASUAL
+모르겠어,CASUAL
+ARPU 알려줘,QUESTION
+ㄱㅅ,CASUAL
+나중에,CASUAL
+페이지 로딩 속도 분석,ANALYSIS
+경영진 보고서 작성해줘,GENERATION
+페르소나 문서 조회,SEARCH
+파인튜닝이 뭐야,QUESTION
+프로젝트 킥오프 회의록 찾아,SEARCH
+변경 이력 정리해줘,GENERATION
+연차 며칠 남았어,QUESTION
+전에 올린 거 어디 있지,SEARCH
+작년 연간 보고서 찾아줘,SEARCH
+에러 핸들링 코드 짜줘,GENERATION
+소개 이메일 작성해줘,GENERATION
+최근 뉴스 알려줘,QUESTION
+Q3 실적 자료 찾아줘,SEARCH
+ㅎㅇㅎㅇ,CASUAL
+저장된 보고서 찾아줘,SEARCH
+기술 교육 자료 찾아줘,SEARCH
+써줄 수 있어?,GENERATION
+안녕하세요 환율 좀 알려주세요,QUESTION
 관련 자료 좀 보여줘,SEARCH
-출시일 알려줘,QUESTION
-운영 매뉴얼 작성해줘,GENERATION
-이번 달 매출 알려줘,QUESTION
+레전드 그래서 어떻게 됐어,QUESTION
+포지셔닝 분석해줘,ANALYSIS
+시장 규모 분석,ANALYSIS
+번역해줘,GENERATION
+경영지원팀 연락처,QUESTION
+테스트,CASUAL
+오늘 미세먼지 어때,QUESTION
+인력 리스크 분석,ANALYSIS
+버그 발생 원인 분석,ANALYSIS
+이벤트 안내문 작성,GENERATION
+오늘 회의 내용 정리해줘,GENERATION
+웅,CASUAL
+1분기 매출 자료 검색해줘,SEARCH
+덕분에 해결됐어요,CASUAL
+월요병이야,CASUAL
+디자인 가이드라인 찾아줘,SEARCH
+채용 시장 분석해줘,ANALYSIS
+벡터 DB가 뭐야,QUESTION
+경쟁사 전략 분석해줘,ANALYSIS
+2025년 사업계획서 찾아줘,SEARCH
+CPA 추이 분석,ANALYSIS
+CS 분석 자료 찾아,SEARCH
+SNS 포스트 작성해줘,GENERATION
+오 그러면 보고서로 만들어줘,GENERATION
+지난 분기 실적 자료 검색,SEARCH
+자료 좀 찾아줄 수 있어?,SEARCH
+경쟁 환경 분석해줘,ANALYSIS
+테스트 케이스 작성해줘,GENERATION
+프로젝트 기획안 작성,GENERATION
+체크리스트 만들어줘,GENERATION
 신입사원 교육 자료 찾아,SEARCH
-DAU 얼마야,QUESTION
-프로덕션 DB 주소 뭐야,QUESTION
-영업이익률 어때,QUESTION
+2024년 결산 보고서 찾아,SEARCH
+MOU 초안 만들어줘,GENERATION
+공급망 리스크 분석,ANALYSIS
+매출 감소 원인 분석해줘,ANALYSIS
+재밌네,CASUAL
+하이 오늘 날씨 어때,QUESTION
+두 제품 장단점 비교,ANALYSIS
+그리고?,QUESTION
+이 데이터 해석해줘,ANALYSIS
+우리 회사 기술 스택 뭐야,QUESTION
+다음 분기 전망 분석,ANALYSIS
+분기 리뷰 회의록 검색,SEARCH
+비트코인 가격 알려줘,QUESTION
 초안 하나 뽑아줘,GENERATION
+핵심 정리해줘,GENERATION
+오늘 날씨 어때,QUESTION
+매출 자료 찾아서 발표 자료 만들어줘,GENERATION
+유연근무제 어떻게 해,QUESTION
+SLA 문서 만들어줘,GENERATION
+Jira 보드 어디야,QUESTION
+WBS 만들어줘,GENERATION
+사용자 가이드 만들어줘,GENERATION
+안녕 우리 팀 KPI 뭐야,QUESTION
+엔화 환율 얼마야,QUESTION
+오늘 무슨 요일이야,QUESTION
+개발팀 리드가 작성한 문서,SEARCH
+내일 봐요,CASUAL
+ISOR 프로젝트 관련 문서 찾아줘,SEARCH
+라이선스 문서 작성,GENERATION
+GPT 새 버전 나왔어?,QUESTION
+내일 서울 날씨,QUESTION
+내부 문서 중 제안서 검색,SEARCH
+안녕,CASUAL
+투자 리스크 평가해줘,ANALYSIS
+보안 취약점 분석,ANALYSIS
+와,CASUAL
+더 자세히,QUESTION
+인프라 비용 최적화 분석,ANALYSIS
+재무 리스크 분석,ANALYSIS
+이 보고서 내용 분석해줘,ANALYSIS
+안녕 점심 메뉴 추천좀,QUESTION
+거래처 답변 메일 작성해줘,GENERATION
+Slack 채널 링크 알려줘,QUESTION
+하이 이번 달 성과 분석해줘,ANALYSIS
+양식 만들어줘,GENERATION
+배포 가이드 만들어줘,GENERATION
+잘했어,CASUAL
+이해했어,CASUAL
+정리 좀 해줘,GENERATION
+CI/CD가 뭐예요,QUESTION
+내일 비 와?,QUESTION
+마케팅팀 팀장 누구야,QUESTION
+일정표 만들어줘,GENERATION
+어디서 해,QUESTION
+설문지 작성해줘,GENERATION
+오 좋은데 더 알려줘,QUESTION
+이직률 원인 분석,ANALYSIS
+엑셀로 만들어줘,GENERATION
+마일스톤 정리해줘,GENERATION
+파트너 계약 문서 찾아줘,SEARCH
+유닛 테스트 만들어줘,GENERATION
+사용성 테스트 결과 찾아줘,SEARCH
+프롬프트 엔지니어링이 뭐야,QUESTION
+현금흐름 분석해줘,ANALYSIS
+수고하셨습니다,CASUAL
+이탈 요인 분석해줘,ANALYSIS
+경쟁사 자료 참고해서 우리 전략 분석해줘,ANALYSIS
+데모 시나리오 작성해줘,GENERATION
+회사 비전이 뭐야,QUESTION
+문서 정리해서 만들어줘,GENERATION
+식대 얼마야,QUESTION
+JSON 파일 검색해줘,SEARCH
+안녕 연차 며칠 남았어?,QUESTION
+API 호출량 추이 분석,ANALYSIS
+작년 영업이익 얼마였어,QUESTION
+매출 추세 어떤가요? 알려줘,ANALYSIS
+드라이브에서 매출 자료 찾아줘,SEARCH
+농담 하나 해줘,CASUAL
+A사 계약서 검색해줘,SEARCH
+그냥,CASUAL
+한글 문서 조회,SEARCH
+쏘쏘,CASUAL
+PPT로 정리해줘,GENERATION
+POC 결과 자료 찾아줘,SEARCH
+고객 데이터 자료 찾아줘,SEARCH
+기술 스펙 문서 작성해줘,GENERATION
+확인했습니다,CASUAL
+이전에 올린 거 찾아줘,SEARCH
+hi,CASUAL
+휴가 신청 어떻게 해,QUESTION
+시장 조사 보고서 검색,SEARCH
+TF-IDF가 뭐야,QUESTION
+프로젝트 보고서 작성해줘,GENERATION
+기술 보고서 작성,GENERATION
+API 레이턴시 어때,QUESTION
+프로젝트 템플릿 만들어줘,GENERATION
+뭐가 좋을까,QUESTION
+실적이 왜 이래? 원인 좀 알려줘,ANALYSIS
+확인 테스트,CASUAL
+팀 회의 기록 찾아줘,SEARCH
+내가 올린 문서 찾아줘,SEARCH
+ISOR 테스트,CASUAL
+기온이 몇 도야,QUESTION
+인센티브 기준이 뭐야,QUESTION
+백로그 아이템 작성해줘,GENERATION
+비용 절감 포인트 분석,ANALYSIS
+달러 환율 알려줘,QUESTION
+고생했어,CASUAL
+초안 버전 조회,SEARCH
+규제 리스크 평가해줘,ANALYSIS
+채널별 마케팅 성과 비교,ANALYSIS
+오 좋은데,CASUAL
+우리 팀 KPI 뭐야,QUESTION
+gRPC가 뭐야,QUESTION
+고객 유입 경로 분석,ANALYSIS
+잘 자요,CASUAL
+성장률 전망 분석,ANALYSIS
+연도별 매출 추이 분석,ANALYSIS
+경쟁사 분석 자료 있으면 찾아서 보여줘,SEARCH
+먼저 가볼게요,CASUAL
+인프라 구성도 찾아줘,SEARCH
+피드백 데이터 분석해줘,ANALYSIS
+제품 A와 B의 시장 점유율 비교,ANALYSIS
+오픈소스 트렌드 뭐야,QUESTION
+내년 트렌드 전망 분석해줘,ANALYSIS
+최근 업로드된 문서 보여줘,SEARCH
+월간 리포트 작성해줘,GENERATION
+파이썬 스크립트 만들어줘,GENERATION
+헐 그러면 누가 담당이야,QUESTION
+매출 보고서 찾아서 비교 분석해줘,ANALYSIS
+아무거나 추천해봐,QUESTION
+전년 대비 매출 성장률,QUESTION
+최근 트렌드 뭐야,QUESTION
+신청서 양식 만들어줘,GENERATION
+주말에 비 온대?,QUESTION
+수정 전 기획서 검색,SEARCH
+NPS 추이 분석,ANALYSIS
+더 없어?,QUESTION
+오류 없지?,CASUAL
+어텐션 메커니즘이 뭐야,QUESTION
+마케팅 캠페인 효과 분석해줘,ANALYSIS
+A안과 B안을 비교해서 장단점 정리해줘,ANALYSIS
+우리 서비스랑 경쟁사 서비스 비교 분석,ANALYSIS
+저장해둔 파일 검색해줘,SEARCH
+보도자료 초안 만들어줘,GENERATION
+회사 복지 뭐 있어,QUESTION
+최신 문서 목록,SEARCH
+이용자 통계 분석해줘,ANALYSIS
+오랜만이에요,CASUAL
+리스크 분석해줘,ANALYSIS
+PPT 파일 찾아줘,SEARCH
+그거 얼만데,QUESTION
+이메일 하나 써줘,GENERATION
+걍,CASUAL
+대박 계속해봐,QUESTION
+고객 피드백 보고서 조회,SEARCH
+지난주 회의록 찾아줘,SEARCH
+경비 정산 어떻게 해,QUESTION
+비용 현황 어때? 분석 좀,ANALYSIS
+헐 그 자료 어디 있어? 찾아줘,SEARCH
+대박이다 그럼 일정 알려줘,QUESTION
+미쳤다 그러면 비용은 얼마야,QUESTION
+효과 크기 분석,ANALYSIS
+다음에 또 물어볼게요,CASUAL
+영업 제안서 검색해줘,SEARCH
+사용자 행동 패턴 분석,ANALYSIS
+이번 주 등록된 문서 검색,SEARCH
+기술 부채 현황 분석,ANALYSIS
+스프린트 회고 회의록 검색,SEARCH
+1:1 미팅 노트 찾아줘,SEARCH
+쓸만하다,CASUAL
+오늘 환율이랑 어제 환율 차이 얼마야,QUESTION
+모니터링 설정 문서 찾아줘,SEARCH
+경쟁사 대비 우리 장점 분석,ANALYSIS
+월별 매출 데이터 찾아줘,SEARCH
+코호트 분석해줘,ANALYSIS
+산업 구조 분석해줘,ANALYSIS
+릴리스 노트 만들어줘,GENERATION
+이번 달 급여일 언제야,QUESTION
+영업이익률 어때,QUESTION
+MAU 알려줘,QUESTION
+보고서 좀 만들어줄래,GENERATION
+됐어,CASUAL
+프로세스 개선 포인트 분석,ANALYSIS
+안녕하세요 매출 알려주세요,QUESTION
+김대리 전화번호 뭐야,QUESTION
+배포 스크립트 작성해줘,GENERATION
+반갑습니다 프로젝트 일정 알려주세요,QUESTION
+SNS 캠페인 성과 분석,ANALYSIS
+계약서 찾아줘,SEARCH
+투자 보고서 만들어줘,GENERATION
+결산 자료 찾아줘,SEARCH
+현재 금 시세,QUESTION
+추세가 어떻게 되는지 설명해줘,ANALYSIS
+배고파,CASUAL
+Redis 캐시 뭐야,QUESTION
+다들 수고,CASUAL
+분기 보고서 초안 만들어줘,GENERATION
+싫어요,CASUAL
+장애 났어?,QUESTION
+기술 부채 분석해줘,ANALYSIS
+M&A 자료 검색,SEARCH
+ㅎㅎㅎ,CASUAL
+운영팀 SOP 검색,SEARCH
+퍼널 분석해줘,ANALYSIS
+지표 변동 원인 분석,ANALYSIS
+다음 회의 언제야,QUESTION
+진짜?,CASUAL
+설문 결과 문서 검색,SEARCH
+이전 버전 문서 찾아줘,SEARCH
+팀 공유 자료 검색,SEARCH
+SLA 문서 찾아줘,SEARCH
+몇 명이야,QUESTION
+대박 그러면 얼마야,QUESTION
+멋지다,CASUAL
+고마워,CASUAL
+프로젝트A 관련 자료 찾아줘,SEARCH
+견적서 만들어줘,GENERATION
+팔로업 이메일 만들어줘,GENERATION
+포스트모템 문서 작성해줘,GENERATION
+트렌드 리포트 찾아줘,SEARCH
+LLM이 뭐야,QUESTION
+REST API가 뭐야,QUESTION
+필요없어,CASUAL
+우리 회사 매출이랑 경쟁사 매출 차이 얼마야,QUESTION
+어제 올린 매출 보고서 찾아서 내용 알려줘,SEARCH
+투자 수익률 분석해줘,ANALYSIS
+실적 보고서 초안 작성,GENERATION
+로그 분석 스크립트 작성,GENERATION
+코딩 테스트 문제 찾아줘,SEARCH
+인사팀에서 공유한 자료 찾아줘,SEARCH
+RAG가 뭐야,QUESTION
+혹시 관련 문서 있어?,SEARCH
+사업 기획서 만들어줘,GENERATION
+괜찮은데,CASUAL
+유저 스토리 만들어줘,GENERATION
+토큰이 뭐야,QUESTION
+추세선 분석해줘,ANALYSIS
+졸려,CASUAL
+수요 예측 분석해줘,ANALYSIS
+PoC 결과서 조회해줘,SEARCH
+언제까지야,QUESTION
+hello,CASUAL
+쿠버네티스가 뭐야,QUESTION
+가능해?,QUESTION
+점심 먹었어?,CASUAL
+유의수준 분석해줘,ANALYSIS
+미쳤다 이거 왜 이런지 분석해줘,ANALYSIS
+운영 리스크 평가,ANALYSIS
+DB 커넥션 몇 개야,QUESTION
+회사 근처 주차장 어디야,QUESTION
+ㅇㅋ,CASUAL
+DAU 얼마야,QUESTION
+대박 이걸로 제안서 작성해줘,GENERATION
+클레임 증가 이유 분석해줘,ANALYSIS
+패스,CASUAL
+쉘 스크립트 작성해줘,GENERATION
+이용약관 문서 조회,SEARCH
+장애 대응 매뉴얼 검색,SEARCH
+FastAPI 라우터 코드 짜줘,GENERATION
+영업이익률 추이 분석해줘,ANALYSIS
+헐 진짜? 더 자세히 알려줘,QUESTION
+마크다운 문서 찾아줘,SEARCH
+뉴스레터 작성해줘,GENERATION
+계약서 조건 비교 분석,ANALYSIS
+오 그거 문서 있었는데 검색해줘,SEARCH
+AI 관련 최신 소식,QUESTION
+반갑습니다,CASUAL
+라이선스 계약서 검색,SEARCH
+지난주 회의록 찾아서 핵심만 정리해줘,SEARCH
+회사 와이파이 비번 뭐야,QUESTION
+테스트 코드 작성해줘,GENERATION
+전환율 몇 프로야,QUESTION
+정말 감사합니다,CASUAL
+트러블슈팅 가이드 작성,GENERATION
+배포 가이드 찾아줘,SEARCH
+레전드,CASUAL
+예산 계획서 조회,SEARCH
+VOC 자료 찾아줘,SEARCH
+로드맵 작성해줘,GENERATION
+Confluence 페이지 주소,QUESTION
+LTV 분석해줘,ANALYSIS
+입찰 제안서 만들어줘,GENERATION
+웃기다,CASUAL
+업계 동향 어때,QUESTION
+랜딩페이지 문구 만들어줘,GENERATION
+기획서 작성해줘,GENERATION
+드라이브 내 회의록 조회,SEARCH
+기준금리 얼마야,QUESTION
+감사감사,CASUAL
+좋은 저녁이에요,CASUAL
+해외 진출 관련 문서 찾아줘,SEARCH
+미들웨어 코드 만들어줘,GENERATION
+주식 시장 어때,QUESTION
+오 더 알려줘,QUESTION
+리뷰 체크리스트 작성,GENERATION
+저녁 메뉴 추천,QUESTION
+회사 설립일 언제야,QUESTION
+코드 리뷰 소요시간 분석,ANALYSIS
+프레젠테이션 파일 검색,SEARCH
+부서 자료 목록 찾아줘,SEARCH
+퇴근할게요,CASUAL
+그냥 궁금해서,CASUAL
+도움 됐어요,CASUAL
+응답 시간 몇 초야,QUESTION
+환율 얼마야,QUESTION
+데이터 기반으로 평가해줘,ANALYSIS
+업계 리포트 조회,SEARCH
+와 진짜? 그럼 언제야,QUESTION
+이 데이터에서 인사이트 뽑아줘,ANALYSIS
+벤치마킹 자료 조회,SEARCH
+이소르 잘 돌아가?,CASUAL
+괜찮아,CASUAL
+데드라인이 언제야,QUESTION
+매출 예측해줘,ANALYSIS
+대단하다,CASUAL
+안녕 보고서 하나 만들어줘,GENERATION
+인터뷰 결과 문서 검색,SEARCH
+지금 기온 몇 도야,QUESTION
+보고서 있나? 찾아봐줘,SEARCH
+미팅 노트 작성해줘,GENERATION
+힘들다,CASUAL
+전사 미팅 회의록 조회,SEARCH
+팀별 성과 비교해줘,ANALYSIS
+회의실 예약 어떻게 해,QUESTION
+대표이사 누구야,QUESTION
+팀별 생산성 비교 분석,ANALYSIS
+NDA 문서 조회해줘,SEARCH
+지금은 괜찮아,CASUAL
+전환율 분석해줘,ANALYSIS
+안녕하세요 경쟁사 비교 분석 부탁해요,ANALYSIS
+개발 프로세스 효율성 분석,ANALYSIS
+인수인계 문서 만들어줘,GENERATION
+도커가 뭔가요,QUESTION
+이 단어 뜻이 뭐야,QUESTION
+최고야,CASUAL
+이메일 초안 만들어줘,GENERATION
+주간 미팅 기록 찾아줘,SEARCH
+ㄴㄴ,CASUAL
+어디 저장했더라 찾아줘,SEARCH
+피곤하다,CASUAL
+ㅎㅇ,CASUAL
+데모데이 언제야,QUESTION
+시장 동향 분석해줘,ANALYSIS
+엘라운 화이팅,CASUAL
+이번 주 날씨 어때,QUESTION
+미팅 요청 메일 작성,GENERATION
+한국 GDP 성장률 알려줘,QUESTION
+왜 안돼,QUESTION
+책 추천해줘,QUESTION
+ㅋㅋㅋ 근데 진짜 되는 거야?,QUESTION
+직원 만족도 분석해줘,ANALYSIS
+오,CASUAL
+이따가,CASUAL
+이용약관 초안 작성,GENERATION
+마이크로서비스 아키텍처가 뭐야,QUESTION
+안녕 서버 상태 어때,QUESTION
+회의 내용 분석해서 회의록 작성해줘,GENERATION
+대박,CASUAL
+땡큐,CASUAL
+되나 안되나,QUESTION
+나쁘지 않네,CASUAL
+엑셀 파일 찾아줘,SEARCH
+지난 3개월 매출 변화 분석,ANALYSIS
+작성 좀 해줘,GENERATION
+추석 연휴 며칠이야,QUESTION
+이사회 회의록 조회,SEARCH
+그거 어디 있어,SEARCH
+안녕 지난달 보고서 찾아줘,SEARCH
+스프린트 번다운 분석,ANALYSIS
+이거 맞춤법 맞아?,QUESTION
+누가 담당이야,QUESTION
+데이터 파이프라인 코드 만들어줘,GENERATION
+개발 가이드 만들어줘,GENERATION
+CEO가 공유한 문서 찾아줘,SEARCH
+됐습니다,CASUAL
+이탈률 증가 원인이 뭐야,ANALYSIS
+감사해요,CASUAL
+이전에 작성한 거 조회해줘,SEARCH
+코드 품질 메트릭 분석,ANALYSIS
+모니터링 대시보드 코드 짜줘,GENERATION
+새로 추가된 자료 조회,SEARCH
+좋아요,CASUAL
+오키,CASUAL
+얼마나 걸려,QUESTION
+FAQ 문서 작성해줘,GENERATION
+CHANGELOG 만들어줘,GENERATION
+이번 주 공휴일 있어?,QUESTION
+그 문서 어디 있어,SEARCH
+거절 메일 작성해줘,GENERATION
+다른 건?,QUESTION
+경쟁사 상황 설명해줘 분석 포함해서,ANALYSIS
+신규 사업 문서 검색,SEARCH
+경쟁사 제품 비교 자료 검색,SEARCH
+지금 몇 시야,QUESTION
+면접 질문 리스트 만들어줘,GENERATION
+광고 ROI 분석해줘,ANALYSIS
+지연 발생 원인 파악해줘,ANALYSIS
+별거 아니야,CASUAL
+안내 메일 작성해줘,GENERATION
+영문 이메일 작성해줘,GENERATION
+SQL 쿼리 작성해줘,GENERATION
+월간 리포트 분석해줘,ANALYSIS
+좋은 하루 되세요,CASUAL
+고객 만족도 어때,QUESTION
+점심 맛있게 드세요,CASUAL
+좋은 아침이에요,CASUAL
+잘 지냈어요?,CASUAL
+파이썬이 뭐야,QUESTION
+KPI 달성률 분석,ANALYSIS
+커밋 메시지 작성해줘,GENERATION
+트레이닝 매뉴얼 찾아,SEARCH
+상품 설명 작성해줘,GENERATION
+경쟁사 분석 자료 찾아줘,SEARCH
+최부장 발표 자료 조회,SEARCH
+서버 상태 괜찮아?,QUESTION
+김대리가 올린 자료 찾아줘,SEARCH
+마케팅팀장이 올린 자료,SEARCH
+음,CASUAL
+오늘 코스피 어때,QUESTION
+협력 요청 메일 만들어줘,GENERATION
+스테이징 환경 URL 알려줘,QUESTION
+일본어로 번역해줘,QUESTION
+뽑아줘,GENERATION
+문서 간 차이점 분석해줘,ANALYSIS
+굿모닝,CASUAL
+다음 릴리스 언제야,QUESTION
+실험 결과 해석해줘,ANALYSIS
+React 컴포넌트 만들어줘,GENERATION
+API 문서 작성해줘,GENERATION
+계약서 초안 작성해줘,GENERATION
+CS팀 매뉴얼 찾아줘,SEARCH
+API 스펙 문서 검색,SEARCH
+메모리 사용률 알려줘,QUESTION
+eloun 연간 매출 알려줘,QUESTION
+매뉴얼 작성해줘,GENERATION
+손익분기점 분석,ANALYSIS
+알겠습니다,CASUAL
+API 엔드포인트 코드 짜줘,GENERATION
+안녕 매출 추이 분석해줘,ANALYSIS
+재무팀 자료 검색해줘,SEARCH
+영어로 번역해줘,GENERATION
+추가로?,QUESTION
+마이크로서비스 문서 조회,SEARCH
+응,CASUAL
+고객 불만 원인 파악해줘,ANALYSIS
+그래서?,QUESTION
+아 진짜,CASUAL
+도구 추천해줘,QUESTION
+신규 프로젝트 제안서 검색,SEARCH
+서비스 계약서 초안,GENERATION
+출시일 알려줘,QUESTION
+이탈률 얼마야,QUESTION
+QA 시나리오 만들어줘,GENERATION
+산업 분석 문서 찾아줘,SEARCH
+왜 전환율이 낮아졌지,ANALYSIS
+기술 블로그 글 작성해줘,GENERATION
+통계 검정 결과 분석,ANALYSIS
+이메일 마케팅 효과 분석해줘,ANALYSIS
+좋은 아침,CASUAL
+공지 메일 작성해줘,GENERATION
+기획팀 기획서 조회,SEARCH
+부서별 예산 사용 현황 분석,ANALYSIS
+롤백 가이드 검색,SEARCH
+올해 매출 목표 달성률,QUESTION
+NDA 문서 작성해줘,GENERATION
+지난 분기 순이익 얼마야,QUESTION
+회고 문서 작성해줘,GENERATION
+PEST 분석 자료 찾아줘,SEARCH
+업계 트렌드 분석,ANALYSIS
+제안서 평가 분석,ANALYSIS
+왜 매출이 떨어졌어,ANALYSIS
+트래픽 얼마나 돼,QUESTION
+ㅎㅎㅎㅎ,CASUAL
+기술 스택 비교 분석해줘,ANALYSIS
+그 다음은?,QUESTION
+뭐해,CASUAL
+하이,CASUAL
+원본 문서 찾아줘,SEARCH
+ㄹㅇ,CASUAL
+PRD 문서 만들어줘,GENERATION
+별로야,CASUAL
+업로드한 파일 검색해줘,SEARCH
+차트 분석해줘,ANALYSIS
+출퇴근 시간 몇 시야,QUESTION
+디자인팀 몇 명이야,QUESTION
+DB 마이그레이션 스크립트 작성,GENERATION
+코딩 컨벤션 문서 조회,SEARCH
+이번 분기 목표 달성률 어때,QUESTION
+CTO 누구야,QUESTION
+에러율 어때,QUESTION
+세미나 발표 자료 만들어줘,GENERATION
+감사합니다,CASUAL
+우리 회사 매출 추세 분석해줘,ANALYSIS
+프레젠테이션 초안 작성,GENERATION
+크롤링 코드 짜줘,GENERATION
+가격 대비 성능 비교해줘,ANALYSIS
+만족해,CASUAL
+Git rebase랑 merge 차이,QUESTION
+개발 가이드 문서 조회,SEARCH
+디자인팀 작업물 검색,SEARCH
+대박 그럼 비교 분석해줘,ANALYSIS
+프로젝트 성과 평가해줘,ANALYSIS
+이상치 분석해줘,ANALYSIS
+영어로 뭐라고 해,QUESTION
+비용 구조 분석해줘,ANALYSIS
+어떤 게 나을까,QUESTION
+주간 보고서 만들어줘,GENERATION
+클로드 업데이트 있었어?,QUESTION
+마케팅 전략 문서 찾아줘,SEARCH
+에러 로그 패턴 분석해줘,ANALYSIS
+월요일 미팅 노트 검색,SEARCH
+회의 결과 문서화해줘,GENERATION
+프레임워크 성능 비교,ANALYSIS
+배포 파이프라인 병목 분석해줘,ANALYSIS
+개인정보처리방침 찾아줘,SEARCH
+연봉 협상 언제야,QUESTION
+요약문 작성해줘,GENERATION
+업무 효율성 분석해줘,ANALYSIS
+서울 날씨 알려줘,QUESTION
+신입사원 이름 뭐야,QUESTION
+배너 카피 만들어줘,GENERATION
+A안과 B안 비교해줘,ANALYSIS
+온보딩 체크리스트 찾아줘,SEARCH
+연령별 사용 패턴 분석,ANALYSIS
+인구 몇 명이야,QUESTION
+사용자 리서치 자료 찾아줘,SEARCH
+프로젝트 지연 원인 분석해줘,ANALYSIS
+경쟁사 비교 분석한 제안서 작성해줘,GENERATION
+올해 목표 매출이 뭐야,QUESTION
+법무팀 문서 찾아줘,SEARCH
+재밌는 거 없어?,CASUAL
+시스템 아키텍처 문서 찾아줘,SEARCH
+허,CASUAL
+인사팀 위치 어디야,QUESTION
+이번 달 매출 알려줘,QUESTION
+어디 저장됐어,SEARCH
+yo,CASUAL
+고객 여정 분석,ANALYSIS
+심심해,CASUAL
+QA 일정 알려줘,QUESTION
+안녕하십니까,CASUAL
+야근 택시비 지원돼?,QUESTION
+시장 진입 타당성 분석,ANALYSIS
+고객 세그먼트 분석해줘,ANALYSIS
+인건비 대비 매출 분석,ANALYSIS
+성장 전망 분석해줘,ANALYSIS
+안녕하세요 회의록 검색해주세요,SEARCH
+API 문서 찾아줘,SEARCH
+뭐가 달라,QUESTION
+점심 추천좀,QUESTION
+좋은 거 하나 골라줘,QUESTION
+랜덤으로 추천해줘,QUESTION
+커피 한잔 하자,CASUAL
+기술 스펙 문서 검색,SEARCH
+ERD 문서 찾아줘,SEARCH
+중국어 버전 만들어줘,GENERATION
+코드 하나 짜줄래,GENERATION
+면접 가이드 문서 검색,SEARCH
+A/B 테스트 결과 분석해줘,ANALYSIS
+블로그 글 만들어줘,GENERATION
+물가 상승률 어때,QUESTION
+그렇지,CASUAL
+프린터 어디 있어,QUESTION
+아무것도 아니야,CASUAL
+와 그래서 어떻게 됐어,QUESTION
+통신비 지원돼?,QUESTION
+그럭저럭,CASUAL
+홍보 문구 만들어줘,GENERATION
+워크플로우 병목 분석해줘,ANALYSIS
+hey,CASUAL
+코드 리뷰 코멘트 작성해줘,GENERATION
+헐 그러면 원인 분석해봐,ANALYSIS
+미쳤다,CASUAL
+미쳤다 그럼 다른 부서 매출은 어때?,QUESTION
+ㅋㅋㅋ,CASUAL
+MVP 관련 문서 조회,SEARCH
+애플 신제품 뭐야,QUESTION
+ㅋㅋ 더 자세히 말해줘,QUESTION
+하나 만들어줄래,GENERATION
+읽었어,CASUAL
+Docker Compose 파일 만들어줘,GENERATION
+SVM이 뭔가요,QUESTION
+고마워요,CASUAL
+데이터 기반으로 어떤지 알려줘,ANALYSIS
+운영 매뉴얼 작성해줘,GENERATION
+미쳤다 코드로 짜줘,GENERATION
+사무실 주소 알려줘,QUESTION
+아니야,CASUAL
+시장 규모 데이터 찾아줘,SEARCH
+3줄 요약 만들어줘,GENERATION
+고객 피드백 정리해서 개선 제안서 만들어줘,GENERATION
+CI/CD 파이프라인 작성해줘,GENERATION
+ㅇㅇ,CASUAL
+추천 좀 해줄래,QUESTION
+기획서 타당성 분석,ANALYSIS
+이유가 뭔지 분석해줘,ANALYSIS
+온보딩 가이드 만들어줘,GENERATION
+ㅇㅈ,CASUAL
+ㅋㅋ,CASUAL
+맞아,CASUAL
+투자 제안서 초안 작성,GENERATION
+평가표 작성해줘,GENERATION
+주간 데이터 분석,ANALYSIS
+서비스 제안서 만들어줘,GENERATION
+아 그래?,CASUAL
+교육비 지원 가능해?,QUESTION
+통계적으로 유의미한 차이 있어?,ANALYSIS
+오늘도 열심히,CASUAL
+인터뷰 스크립트 만들어줘,GENERATION
+PR 설명 만들어줘,GENERATION
+스프레드시트 찾아줘,SEARCH
+README 파일 작성해줘,GENERATION
+스프린트 계획 작성해줘,GENERATION
+감사 이메일 만들어줘,GENERATION
+SWOT 분석해줘,ANALYSIS
+원달러 환율,QUESTION
+넵,CASUAL
+서버 비용이 지난달보다 얼마나 늘었어,QUESTION
+지난달 데이터 가져와서 추세 분석해줘,ANALYSIS
+회의록 작성해줘,GENERATION
+하이 코드 좀 짜줘,GENERATION
+팀 발표 자료 정리,GENERATION
+잘 됐네,CASUAL
+수고하세요,CASUAL
+1분기 2분기 실적 비교해서 원인 분석해줘,ANALYSIS
+고정비 변동비 분석해줘,ANALYSIS
+개인정보처리방침 만들어줘,GENERATION
+전사 공유 문서 조회,SEARCH
+기술 평가 문서 찾아줘,SEARCH
+상관관계 분석해줘,ANALYSIS
+헐,CASUAL
+서비스 계약서 검색,SEARCH
+구글 뭐 발표했어?,QUESTION
+반응 빠르다,CASUAL
+온보딩 문서 검색해줘,SEARCH
+CSV 데이터 파일 찾아줘,SEARCH
+매출 시나리오 분석,ANALYSIS
+PDF 자료 검색해줘,SEARCH
+건강검진 언제야,QUESTION
+법인카드 한도 얼마야,QUESTION
+광고 카피 작성해줘,GENERATION
+디자인 시스템 문서 찾아줘,SEARCH
+오케이,CASUAL
+설치 가이드 만들어줘,GENERATION
+ㅋㅋ 이거 추세 분석 좀 해줘,ANALYSIS
+일본어로 작성해줘,GENERATION
+매출 왜 떨어졌는지 알려줘,ANALYSIS
+파일 어디갔지,SEARCH
+배포 프로세스 문서 찾아줘,SEARCH
+뭐 좋은 거 추천해줘,QUESTION
+이거 문서로 만들어줘,GENERATION
+오늘 올라온 자료 찾아줘,SEARCH
+인보이스 작성해줘,GENERATION
+eloun 브랜딩 자료 검색,SEARCH
+스탠드업 회의록 정리,GENERATION
+너무 고마워,CASUAL
+박팀장 보고서 검색,SEARCH
+리스크 시나리오 분석,ANALYSIS
+장애 보고서 만들어줘,GENERATION
+DB 스키마 문서 조회,SEARCH
+ㅎㅎ,CASUAL
+이미지 파일 찾아줘,SEARCH
+경쟁사 소식 있어?,QUESTION
+안녕하세요 회의 언제예요?,QUESTION
+하이 이번 스프린트 언제 끝나,QUESTION
+자원 활용률 분석,ANALYSIS
+그저 그래,CASUAL
+서비스 기획 문서 만들어줘,GENERATION
+코드 작성해줘,GENERATION
+시장 규모 예측,ANALYSIS
+하이 API 문서 찾아줘,SEARCH
+테스트 중,CASUAL
+성과 평가 분석해줘,ANALYSIS
+고객 발표용 슬라이드 작성,GENERATION
+이 내용 요약해줘,GENERATION
+다음에,CASUAL
+오늘 우산 필요해?,QUESTION
+마케팅 보고서 작성해줘,GENERATION
+테스트 계획서 작성,GENERATION
+추천해달라고,QUESTION
+그래그래,CASUAL
+이슈 발생 원인 분석해줘,ANALYSIS
+스톡옵션 조건 알려줘,QUESTION
+깔끔하게 문서화해줘,GENERATION
+컴포넌트 가이드 검색,SEARCH
+뭐 추천할 만한 거 없어?,QUESTION
+1분기 실적 어때,QUESTION
+브랜드 인지도 분석해줘,ANALYSIS
+제안서 작성해줘,GENERATION
+발표 자료 만들어줘,GENERATION
+5 Forces 분석,ANALYSIS
+환경변수 설정 파일 만들어줘,GENERATION
+존댓말로 바꿔줘,QUESTION
+매출 하락 원인 분석해줘,ANALYSIS
+우리 회사 매출 얼마야,QUESTION
+이번 분기 목표 달성률이랑 지난 분기 비교하면 어때,QUESTION
+좀 더 알려줘,QUESTION
+시간 소요 분석,ANALYSIS
+프로젝트 일정 알려줘,QUESTION
+한 페이지로 정리해줘,GENERATION
+주말 잘 보내세요,CASUAL
+분기별 매출 비교해줘,ANALYSIS
+의존성 리스크 분석,ANALYSIS
 ㅂㅂ,CASUAL
 경조사비 얼마야,QUESTION
-ERD 문서 찾아줘,SEARCH
-괜찮은데,CASUAL
-서버 비용이 왜 늘었는지 분석해줘,ANALYSIS
-클레임 증가 이유 분석해줘,ANALYSIS
-연차 며칠 남았어,QUESTION
-Redis 캐시 뭐야,QUESTION
-사용성 테스트 결과 찾아줘,SEARCH
-이 데이터 해석해줘,ANALYSIS
-이번 분기 목표 달성률 어때,QUESTION
-왜 매출이 떨어졌어,ANALYSIS
-피곤하다,CASUAL
-협력 요청 메일 만들어줘,GENERATION
-스프린트 회고 회의록 검색,SEARCH
-이번 스프린트 언제 끝나,QUESTION
-한글 문서 조회,SEARCH
-CI/CD가 뭐예요,QUESTION
-감사 이메일 만들어줘,GENERATION
-거절 메일 작성해줘,GENERATION
-감사감사,CASUAL
-저장해둔 파일 검색해줘,SEARCH
-맞아,CASUAL
-회고 미팅 언제야,QUESTION
-산업 구조 분석해줘,ANALYSIS
-이번 주 등록된 문서 검색,SEARCH
-인사팀 위치 어디야,QUESTION
-테스트 중,CASUAL
-거래처 답변 메일 작성해줘,GENERATION
-확인했습니다,CASUAL
-분기 보고서 초안 만들어줘,GENERATION
-이메일 초안 만들어줘,GENERATION
-팀 회의 기록 찾아줘,SEARCH
-FastAPI 라우터 코드 짜줘,GENERATION
-도커가 뭔가요,QUESTION
-우리 회사 매출이랑 경쟁사 매출 차이 얼마야,QUESTION
-주말에 비 온대?,QUESTION
-안녕하십니까,CASUAL
-이슈 발생 원인 분석해줘,ANALYSIS
-오늘 우산 필요해?,QUESTION
-최부장 발표 자료 조회,SEARCH
-경쟁사 비교 분석한 제안서 작성해줘,GENERATION
-테스트,CASUAL
-그저 그래,CASUAL
-영업이익률 추이 분석해줘,ANALYSIS
-구내식당 메뉴 뭐야,QUESTION
-월요일 미팅 노트 검색,SEARCH
-정말 감사합니다,CASUAL
-PDF 자료 검색해줘,SEARCH
-멋지다,CASUAL
-1분기 2분기 실적 비교해서 원인 분석해줘,ANALYSIS
-이미지 파일 찾아줘,SEARCH
-박팀장 보고서 검색,SEARCH
-한국 GDP 성장률 알려줘,QUESTION
-성과 평가 분석해줘,ANALYSIS
-엘라운 화이팅,CASUAL
-팀 공유 자료 검색,SEARCH
-신청서 양식 만들어줘,GENERATION
-개인정보처리방침 찾아줘,SEARCH
-경영지원팀 연락처,QUESTION
-중국어 버전 만들어줘,GENERATION
+잘 되네,CASUAL
 배포 서버 IP 뭐야,QUESTION
-식대 얼마야,QUESTION
-페르소나 문서 조회,SEARCH
-광고 ROI 분석해줘,ANALYSIS
-유연근무제 어떻게 해,QUESTION
-미팅 요청 메일 작성,GENERATION
-혹시 관련 문서 있어?,SEARCH
-공급망 리스크 분석,ANALYSIS
-작년 영업이익 얼마였어,QUESTION
-매출 보고서 찾아서 비교 분석해줘,ANALYSIS
-구글 뭐 발표했어?,QUESTION
-벡터 DB가 뭐야,QUESTION
-프로젝트 지연 원인 분석해줘,ANALYSIS
-API 엔드포인트 코드 짜줘,GENERATION
-매출 분석해서 보고서 만들어줘,GENERATION
-서울 날씨 알려줘,QUESTION
-너무 고마워,CASUAL
-나중에,CASUAL
+구내식당 메뉴 뭐야,QUESTION
+김대리가 작성한 기획서 찾아서 요약해줘,SEARCH
+지난달 데이터 기반으로 월간 리포트 만들어줘,GENERATION
+파트너십 제안서 작성,GENERATION
+액션 아이템 정리해줘,GENERATION
+VPN 설정 가이드 검색해줘,SEARCH
+임베딩이 뭐야,QUESTION
+오 그럼 다른 건 어때,QUESTION
+파일럿 프로젝트 문서 검색,SEARCH
+접근 권한 매뉴얼 조회,SEARCH
+계속해줘,QUESTION
+방가방가,CASUAL
+고객 피드백 데이터로 만족도 요인 분석해줘,ANALYSIS
+표로 정리해서 만들어줘,GENERATION
+스타일 가이드 찾아줘,SEARCH
+오늘 기분 좋다,CASUAL
+배포 상태 어때,QUESTION
+완벽해,CASUAL
+인사 규정 문서 찾아줘,SEARCH
+반차 신청 방법 알려줘,QUESTION
+야근수당 얼마야,QUESTION
+재택근무 가능해?,QUESTION
+안녕하세요 이메일 초안 부탁드려요,GENERATION
+정규표현식 만들어줘,GENERATION
+프로덕션 DB 주소 뭐야,QUESTION
+올려둔 자료 찾아줘,SEARCH
+공유된 문서 목록 보여줘,SEARCH
+뭐 더 있어?,QUESTION
+알겠어,CASUAL
+우리 팀 성과가 어때? 데이터로 분석해줘,ANALYSIS
+안녕하세요,CASUAL
+서비스 장애 원인 분석,ANALYSIS
+ㅋㅋ 그래서 결과가 어때,QUESTION
+이번 달 지표 어떤지 분석해서 알려줘,ANALYSIS
