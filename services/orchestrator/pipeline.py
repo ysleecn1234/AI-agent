@@ -792,8 +792,23 @@ class Researcher:
                 except Exception as e:
                     print(f"  ⚠️ 전체 텍스트 조회 실패: {e}")
             
-            # 실시간 정보 필요 여부에 따라 웹 검색 결정
-            needs_web = routing_result.get("needs_realtime", False)
+            # 의도 검출 결과에 따라 웹 검색 결정
+            intent = routing_result.get("intent")
+            needs_realtime = routing_result.get("needs_realtime", False)
+
+            if intent == "casual":
+                needs_web = False
+            elif intent == "analysis":
+                needs_web = True
+            elif intent == "question":
+                needs_web = True
+            elif intent == "generation":
+                needs_web = needs_realtime
+            elif intent == "search":
+                needs_web = needs_realtime
+            else:
+                needs_web = needs_realtime
+
             if needs_web:
                 try:
                     web_context, web_citations = self._web_search(user_input)
@@ -802,9 +817,23 @@ class Researcher:
             else:
                 print(f"  → 웹 검색 스킵 (실시간 정보 불필요)")
                 
-        else:
             # ──── Drive 참조 OFF ────
-            needs_web = routing_result.get("needs_realtime", False)
+            intent = routing_result.get("intent")
+            needs_realtime = routing_result.get("needs_realtime", False)
+
+            if intent == "casual":
+                needs_web = False
+            elif intent == "analysis":
+                needs_web = True
+            elif intent == "question":
+                needs_web = True
+            elif intent == "generation":
+                needs_web = needs_realtime
+            elif intent == "search":
+                needs_web = needs_realtime
+            else:
+                needs_web = needs_realtime
+
             if needs_web:
                 try:
                     web_context, web_citations = self._web_search(user_input)
