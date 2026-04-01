@@ -506,7 +506,11 @@ class Router:
     
     def __init__(self, pipeline=None):
         self.pipeline = pipeline
-        
+        self._load_model()
+        self.last_confidence = 0.0  # 방금 처리한 요청의 확신도 저장
+
+    def _load_model(self):
+        """pkl 파일에서 모델 로딩"""
         import joblib
         import os
         base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -521,8 +525,12 @@ class Router:
             print(f"  [Router] ML 모델 로드 실패: {e}")
             self.tfidf = None
             self.svm = None
-            
-        self.last_confidence = 0.0  # 방금 처리한 요청의 확신도 저장
+
+    def reload_model(self):
+        """재학습 후 새 모델을 메모리에 즉시 반영"""
+        print("  [Router] 모델 리로딩 시작...")
+        self._load_model()
+        print("  [Router] 모델 리로딩 완료 → 다음 요청부터 새 모델 적용")
 
     def classify_intent_with_llm(self, user_input: str) -> IntentType:
         """LLM을 사용한 의도 분류 폴백 (ML 확신도 부족 시)"""

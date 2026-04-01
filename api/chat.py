@@ -36,6 +36,12 @@ class ChatResponse(BaseModel):
 class RenameRequest(BaseModel):
     title: str
 
+class MisclassificationFeedback(BaseModel):
+    user_input: str
+    predicted_label: str
+    correct_label: str
+    confidence: Optional[float] = None
+
 # 2. Helper to get current user
 def get_current_user_id(token: str = Depends(oauth2_scheme)):
     payload = decode_access_token(token)
@@ -85,6 +91,37 @@ async def chat_endpoint(
         "web_searched": result.get("web_searched", False),
         "web_citations": result.get("web_citations", []),
     }
+
+
+@router.post("/feedback/misclassification")
+async def report_misclassification(
+    req: MisclassificationFeedback,
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id)
+):
+    """사용자가 분류 오류를 신고하는 엔드포인트"""
+    from services.orchestrator.db.tables import MisclassificationLog
+    from services.orchestrator.retrainer import trigger_retrain
+    
+    log = MisclassificationLog(
+        user_input=req.user_input,
+        predicted_label=req.predicted_label,
+        correct_label=req.correct_label,
+        confidence=req.confidence,
+    )
+    db.add(log)
+    db.commit()
+
+    # 미사용 오분류 건수 확인
+    unused_count = db.query(MisclassificationLog).filter(
+        MisclassificationLog.is_used == False
+    ).count()
+
+    # 100건 도달 시 재학습 트리거
+    if unused_count >= 100:
+        trigger_retrain(db)
+
+    return {"status": "logged", "unused_count": unused_count}
 
 
 @router.get("/sessions")
