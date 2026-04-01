@@ -7,7 +7,7 @@ echo "====== [ISOR AI Platform] Starting Deployment ======"
 
 # 1. Pull Latest Code
 echo "1. Pulling latest changes from git..."
-git pull origin main
+git pull origin develop
 
 # 2. Build Docker Images
 # Pointing to docker/docker-compose.yml
