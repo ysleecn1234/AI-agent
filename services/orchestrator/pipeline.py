@@ -38,17 +38,44 @@ TASK_MODEL_CONFIG = {
         "max_tokens": 10,
         "description": "의도 분류 및 복잡도 판단 (Router)",
         "system_prompt": (
-            "당신은 사용자 의도 분류기입니다. 반드시 QUERY, SEARCH, ANALYSIS, GENERATION 중 하나만 출력하세요.\n"
+            "당신은 사용자 의도 분류기입니다. 반드시 CASUAL, QUESTION, SEARCH, ANALYSIS, GENERATION 중 하나만 출력하세요.\n"
             "\n"
             "[판단 기준]\n"
+            "- 인사, 감정표현, 짧은 확인('네', 'ㅇㅇ') → CASUAL\n"
             "- 복합 의도 시 핵심 동사 기준으로 분류 (예: '분석해서 보고서 만들어줘' → ANALYSIS)\n"
-            "- 인사·감사·확인('네','ㅇㅇ')·후속 질문('더 자세히') → QUERY\n"
+            "- 단순 질의, 팩트 확인, 후속 질문('더 자세히') → QUESTION\n"
             "- '검색해줘','찾아줘','조회' → SEARCH\n"
             "- '만들어','작성해','생성해','코드 짜줘' → GENERATION\n"
             "- '분석','비교','평가','왜','원인' → ANALYSIS\n"
-            "- 판단 불가 시 → QUERY\n"
+            "- 판단 불가 시 → QUESTION\n"
             "\n"
             "[금지] 설명, 이유, 문장 출력 금지. 단어 하나만 출력."
+        ),
+    },
+    "casual_chat": {
+        "models": ["gemini/gemini-2.5-flash-lite", "gpt-5-nano"],
+        "temperature": 0.9,
+        "max_tokens": 200,
+        "description": "잡담/인사 Fast-Track 응답",
+        "system_prompt": (
+            "당신은 기업 내부에서 사용되는 AI 어시스턴트입니다.\n"
+            "\n"
+            "[톤 & 스타일]\n"
+            "- 한국어 존댓말 사용. 밝고 친근한 톤\n"
+            "- 1~2문장 이내로 짧고 가볍게 응대\n"
+            "- 이모지 사용 금지\n"
+            "\n"
+            "[행동 원칙]\n"
+            "- 인사에는 인사로, 감사에는 감사로, 확인에는 확인으로 응대\n"
+            "- 'ㅇㅇ', '넵', 'ㅋㅋ' 같은 짧은 입력에도 자연스럽게 반응\n"
+            "- 구체적인 정보나 사실을 묻는 것처럼 보이면, '궁금한 점이 있으시면 편하게 질문해주세요!'처럼 안내하세요\n"
+            "\n"
+            "[금지]\n"
+            "- 'AI로서', '제 능력 밖' 등 AI 자기 언급 표현\n"
+            "- 불필요하게 긴 답변이나 설명\n"
+            "- 질문을 분석하거나 의도를 파악하려는 시도\n"
+            "- 마크다운 서식 사용 금지 (볼드, 리스트, 제목 등)\n"
+            "- 모르는 내용을 추측하거나 꾸며내는 행위"
         ),
     },
     "chat_research": {
@@ -435,7 +462,8 @@ class ComplexityLevel(Enum):
 
 class IntentType(Enum):
     """사용자 의도 분류"""
-    QUERY = "query"              # 단순 질의
+    CASUAL = "casual"            # 잡담, 단순 응답
+    QUESTION = "question"        # 단순 질의 (기존 QUERY 통합)
     ANALYSIS = "analysis"        # 분석 요청
     GENERATION = "generation"    # 생성 요청
     SEARCH = "search"            # 검색 요청
@@ -444,313 +472,123 @@ class IntentType(Enum):
 # ==================== Step 1: Router ====================
 class Router:
     """
-    의도 분류 및 복잡도 판단
-    - 사용자 요청의 의도를 파악
-    - 복잡도에 따라 적절한 LLM 선택
+    ML 모델 기반 의도 분류 및 복잡도 판단
     """
     
     def __init__(self, pipeline=None):
-        self.pipeline = pipeline  # 중앙 call_llm 접근용
+        self.pipeline = pipeline
         
-        # 의도별 키워드 사전 (확장)
-        self.intent_keywords = {
-            IntentType.QUERY: [
-                # 날씨/환경
-                "날씨", "온도", "기온", "기상", "비", "눈", "맑음", "흐림", "바람",
-                # 시간/상황
-                "오늘", "지금", "현재", "최근", "요즘", "언제", "몇시", "몇월", "몇일",
-                # 질문형 표현 0ms
-                
-                "뭐야", "뭔가요", "뭐예요", "뭐지", "어때", "어떤가요", "어떤거야",
-                "알려줘", "알려주세요", "설명해줘", "설명해주세요",
-                "무엇", "무슨", "어디", "누가", "어떻게 되",
-                # 일반 질의
-                "뭐가 좋", "추천해줘", "추천해주세요", "어느게", "어떤게",
-                "가능해", "할 수 있어", "맞아", "맞나요", "사실이야",
-            ],
-            IntentType.SEARCH: [
-                "검색", "찾아", "찾기", "조회", "확인",
-                "보여줘", "있어", "있나요", "찾아줘"
-            ],
-            IntentType.ANALYSIS: [
-                "분석", "비교", "평가", "검토", "조사", "연구",
-                "파악", "추세", "경향", "통계", "데이터", "인사이트",
-                "왜", "이유", "원인", "결과", "영향"
-            ],
-            IntentType.GENERATION: [
-                "생성", "만들어", "작성", "제작", "개발", "구현",
-                "설계", "기획", "초안", "문서", "보고서", "제안서",
-                "코드", "프로그램", "시스템"
-            ]
-        }
-        
-        # 복잡도 판단 키워드
-        self.complexity_keywords = {
-            "high": [
-                "상세", "자세히", "깊이", "심층", "종합", "전체",
-                "모든", "전반", "다각도", "다양한", "복합", "통합"
-            ],
-            "low": [
-                "간단히", "요약", "개요", "핵심", "주요", "빠르게",
-                "짧게", "간략히"
-            ]
-        }
-    
-    def calculate_confidence(self, user_input: str, intent: IntentType) -> float:
-        """
-        키워드 기반 분류의 신뢰도 계산
-        
-        Returns:
-            0.0 ~ 1.0 사이의 신뢰도 점수
-        """
-        user_input_lower = user_input.lower()
-        
-        # 해당 의도의 키워드 매칭 개수
-        matched_keywords = 0
-        if intent in self.intent_keywords:
-            for keyword in self.intent_keywords[intent]:
-                if keyword in user_input_lower:
-                    matched_keywords += 1
-        
-        # 다른 의도의 키워드 매칭 개수
-        other_matches = 0
-        for other_intent, keywords in self.intent_keywords.items():
-            if other_intent != intent:
-                for keyword in keywords:
-                    if keyword in user_input_lower:
-                        other_matches += 1
-        
-        # 신뢰도 계산
-        if matched_keywords == 0:
-            return 0.3  # 키워드 매칭 없음 (기본값 QUERY)
-        
-        total_matches = matched_keywords + other_matches
-        if total_matches == 0:
-            return 0.5
-        
-        # 매칭 비율 기반 신뢰도
-        confidence = matched_keywords / (matched_keywords + other_matches * 0.5)
-        
-        # 입력 길이에 따른 보정 (짧은 입력은 신뢰도 낮춤)
-        if len(user_input) < 20:
-            confidence *= 0.8
-        
-        return min(confidence, 1.0)
-    
-    def classify_intent_with_llm(self, user_input: str) -> IntentType:
-        """
-        LLM을 사용한 의도 분류 (신뢰도가 낮을 때만 사용)
-        
-        Uses Gemini Flash for fast and accurate intent classification.
-        """
-        
-        prompt = f'''다음 사용자 요청의 의도를 정확히 하나만 선택하세요:
-"{user_input}"
-
-선택지:
-- QUERY: 단순 질문이나 정보 요청
-- SEARCH: 특정 정보나 문서 검색
-- ANALYSIS: 데이터 분석, 비교, 평가
-- GENERATION: 문서나 콘텐츠 생성
-
-답변은 위 4가지 중 하나만 출력하세요 (QUERY, SEARCH, ANALYSIS, GENERATION).'''
+        import joblib
+        import os
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        tfidf_path = os.path.join(base_dir, "data", "tfidf_vectorizer.pkl")
+        svm_path = os.path.join(base_dir, "data", "svm_classifier.pkl")
         
         try:
+            self.tfidf = joblib.load(tfidf_path)
+            self.svm = joblib.load(svm_path)
+            print("  [Router] ML 분류 모델 로딩 성공 (TF-IDF, SVM)")
+        except Exception as e:
+            print(f"  [Router] ML 모델 로드 실패: {e}")
+            self.tfidf = None
+            self.svm = None
+            
+        self.last_confidence = 0.0  # 방금 처리한 요청의 확신도 저장
+
+    def classify_intent_with_llm(self, user_input: str) -> IntentType:
+        """LLM을 사용한 의도 분류 폴백 (ML 확신도 부족 시)"""
+        prompt = f'''다음 사용자 요청의 의도를 하나만 선택하세요: "{user_input}"
+선택지:
+- CASUAL: 인사, 짧은 잡담, 리액션
+- QUESTION: 단순 질문이나 짧은 정보 요청
+- SEARCH: 특정 파일, 문서, 과거 기록 겁색 조회
+- ANALYSIS: 데이터 분석, 비교, 평가, 추이 판단
+- GENERATION: 문서나 콘텐츠, 보고서, 코드 생성
+
+답변은 (CASUAL, QUESTION, SEARCH, ANALYSIS, GENERATION) 중 하나만 출력하세요.'''
+        try:
             llm_result = self.pipeline.call_llm(
-                task="chat_routing",
-                prompt=prompt,
-                user_id=getattr(self, "current_user_id", None)  # 파이프라인 컨텍스트에서 주입된 user_id 사용
+                task="chat_routing", prompt=prompt, user_id=getattr(self, "current_user_id", None)
             )
             result = llm_result["content"].strip().upper()
             
-            # 결과 매핑
             intent_map = {
-                "QUERY": IntentType.QUERY,
+                "CASUAL": IntentType.CASUAL,
+                "QUESTION": IntentType.QUESTION,
                 "SEARCH": IntentType.SEARCH,
                 "ANALYSIS": IntentType.ANALYSIS,
                 "GENERATION": IntentType.GENERATION
             }
-            
-            # 부분 매칭 지원 (예: "SEARCH입니다" -> SEARCH)
-            for key in intent_map.keys():
-                if key in result:
-                    print(f"  [LLM 분류] {user_input[:30]}... → {key}")
-                    return intent_map[key]
-            
-            # 매핑 실패 시 기본값
-            print(f"  [LLM 분류] 매핑 실패 (응답: {result}), QUERY로 폴백")
-            return IntentType.QUERY
-            
+            for k, v in intent_map.items():
+                if k in result:
+                    print(f"  [LLM 폴백 분류] {v.name}")
+                    return v
+                    
+            return IntentType.QUESTION
         except Exception as e:
-            # LLM 실패 시 키워드 기반으로 폴백
-            print(f"  [LLM 분류 실패] {str(e)}, 키워드 기반으로 폴백")
-            return self.classify_intent_keyword(user_input)
-    
-    def classify_intent_keyword(self, user_input: str) -> IntentType:
-        """
-        키워드 기반 의도 분류 (기존 로직)
-        """
-        user_input_lower = user_input.lower()
-        scores = {intent: 0 for intent in IntentType}
-        
-        # 각 의도별 키워드 매칭 점수 계산
-        for intent, keywords in self.intent_keywords.items():
-            for keyword in keywords:
-                if keyword in user_input_lower:
-                    scores[intent] += 1
-        
-        # 점수가 가장 높은 의도 선택
-        max_score = max(scores.values())
-        
-        if max_score == 0:
-            # 키워드가 없으면 기본값
-            return IntentType.QUERY
-        
-        # 동점인 경우 우선순위: ANALYSIS > GENERATION > SEARCH > QUERY
-        priority = [IntentType.ANALYSIS, IntentType.GENERATION, IntentType.SEARCH, IntentType.QUERY]
-        for intent in priority:
-            if scores[intent] == max_score:
-                return intent
-        
-        return IntentType.QUERY
-    
+            print(f"  [LLM 폴백 오류] {e}, QUESTION으로 처리")
+            return IntentType.QUESTION
+
     def classify_intent(self, user_input: str) -> IntentType:
-        """
-        하이브리드 의도 분류
-        - 1차: 키워드 기반 분류
-        - 신뢰도 < 0.7: LLM 기반 분류 (비용 절감)
-        """
-        # 1차: 키워드 기반 분류
-        keyword_intent = self.classify_intent_keyword(user_input)
-        
-        # 신뢰도 계산
-        confidence = self.calculate_confidence(user_input, keyword_intent)
-        
-        # 신뢰도가 높으면 키워드 결과 사용
-        if confidence >= 0.7:
-            print(f"  [키워드 분류] 신뢰도: {confidence:.2f}")
-            return keyword_intent
-        
-        # 신뢰도가 낮으면 LLM 사용
-        print(f"  [키워드 분류] 신뢰도 낮음: {confidence:.2f}, LLM으로 재분류")
-        return self.classify_intent_with_llm(user_input)
-    
+        """ML 예측 후 신뢰도 < 0.6 이면 LLM 폴백"""
+        if not self.tfidf or not self.svm:
+            self.last_confidence = 0.5
+            return self.classify_intent_with_llm(user_input)
+            
+        try:
+            vec = self.tfidf.transform([user_input])
+            probas = self.svm.predict_proba(vec)[0]
+            max_idx = probas.argmax()
+            confidence = probas[max_idx]
+            self.last_confidence = confidence
+            
+            label_str = self.svm.classes_[max_idx].lower()
+            try:
+                intent = IntentType(label_str)
+            except ValueError:
+                intent = IntentType.QUESTION
+                
+            print(f"  [ML 분류] {intent.name} (확신도: {confidence:.2f})")
+            
+            if confidence >= 0.6:
+                return intent
+            else:
+                print("  [ML 분류] 확신도 낮음, LLM 재분류 진행")
+                return self.classify_intent_with_llm(user_input)
+                
+        except Exception as e:
+            print(f"  [ML 모델 에러] {e}")
+            self.last_confidence = 0.5
+            return self.classify_intent_with_llm(user_input)
+
     def determine_complexity(self, user_input: str, intent: IntentType) -> ComplexityLevel:
-        """
-        복잡도 판단 (개선된 버전)
-        - 다차원 분석: 길이, 의도, 키워드, 구조
-        """
-        user_input_lower = user_input.lower()
-        
-        # 1. 길이 기반 점수 (0-4점)
-        input_length = len(user_input)
-        if input_length > 500:
-            length_score = 4
-        elif input_length > 300:
-            length_score = 3
-        elif input_length > 150:
-            length_score = 2
-        elif input_length > 80:
-            length_score = 1
-        else:
-            length_score = 0
-        
-        # 2. 의도 기반 점수 (0-2점)
-        intent_score = 0
-        if intent == IntentType.ANALYSIS:
-            intent_score = 2
-        elif intent == IntentType.GENERATION:
-            intent_score = 1
-        
-        # 3. 복잡도 키워드 점수 (-2 ~ +3점)
-        keyword_score = 0
-        for keyword in self.complexity_keywords["high"]:
-            if keyword in user_input_lower:
-                keyword_score += 1
-        for keyword in self.complexity_keywords["low"]:
-            if keyword in user_input_lower:
-                keyword_score -= 1
-        
-        # 4. 구조 복잡도 점수 (0-3점)
-        structure_score = 0
-        
-        # 문장 개수 (마침표, 물음표 기준)
-        sentence_count = user_input.count(".") + user_input.count("。") + \
-                        user_input.count("?") + user_input.count("？") + \
-                        user_input.count("!") + user_input.count("！")
-        if sentence_count > 5:
-            structure_score += 2
-        elif sentence_count > 3:
-            structure_score += 1
-        
-        # 질문이 여러 개인 경우
-        question_marks = user_input.count("?") + user_input.count("？")
-        if question_marks > 2:
-            structure_score += 1
-        
-        # 조건문이 있는 경우
-        if any(word in user_input_lower for word in ["만약", "경우", "조건", "if", "when"]):
-            structure_score += 1
-        
-        # 총점 계산
-        total_score = length_score + intent_score + keyword_score + structure_score
-        
-        # 복잡도 결정 (임계값 조정)
-        if total_score >= 7:
-            return ComplexityLevel.BULK
-        elif total_score >= 3:
-            return ComplexityLevel.COMPLEX
-        else:
+        """의도 기반 단순 복잡도 매핑"""
+        if intent in [IntentType.CASUAL, IntentType.QUESTION, IntentType.SEARCH]:
             return ComplexityLevel.SIMPLE
+        else:
+            return ComplexityLevel.COMPLEX
 
     def needs_realtime_info(self, user_input: str) -> bool:
-        """
-        실시간/최신 정보가 필요한 질문인지 판단
-        - True: 웹 검색 필수
-        - False: 내부 문서 또는 자체 지식으로 충분
-        """
+        """실시간/최신 정보 여부 예측 (유지)"""
         user_input_lower = user_input.lower()
-
-        # 실시간 키워드
         realtime_keywords = [
-            # 날씨·시간
-            "날씨", "기온", "온도", "비", "눈", "미세먼지",
-            # 시세·환율
-            "환율", "주가", "시세", "코스피", "코스닥", "비트코인", "나스닥",
-            # 뉴스·속보
-            "뉴스", "속보", "최근", "오늘", "어제", "이번 주", "지금",
-            # 스포츠·이벤트
-            "경기 결과", "스코어", "순위",
+            "날씨", "기온", "온도", "비", "미세먼지", "환율", "주가", "시세", 
+            "비트코인", "뉴스", "속보", "최근", "오늘", "지금", "스코어"
         ]
-
         for keyword in realtime_keywords:
-            if keyword in user_input_lower:
-                return True
-
-        # 시간 표현 패턴 (현재/최근 지시)
-        import re
-        time_patterns = [
-            r"지금\s", r"현재\s", r"오늘\s", r"방금\s",
-            r"최신\s", r"실시간\s", r"라이브\s",
-        ]
-        for pattern in time_patterns:
-            if re.search(pattern, user_input_lower):
-                return True
-
+            if keyword in user_input_lower: return True
         return False
     
-    def route(self, user_input: str, user_id: Optional[str] = None) -> Dict[str, Any]:
-        """라우팅 실행"""
+    def route(self, user_input: str, user_id: str = None) -> dict:
         self.current_user_id = user_id
         try:
             intent = self.classify_intent(user_input)
             complexity = self.determine_complexity(user_input, intent)
-            routing_confidence = self.calculate_confidence(user_input, intent)
             
             return {
                 "intent": intent.value,
                 "complexity": complexity.value,
-                "routing_confidence": routing_confidence,
+                "routing_confidence": self.last_confidence,
                 "user_input": user_input,
                 "user_id": user_id,
                 "needs_realtime": self.needs_realtime_info(user_input)
@@ -1908,6 +1746,44 @@ class Pipeline:
             self.logger.log_step("Router", routing_result, step_duration)
             print(f"  ✓ Router 완료: {step_duration:.0f}ms | intent={routing_result.get('intent')} complexity={routing_result.get('complexity')} confidence={routing_result.get('routing_confidence', 0):.2f}")
             
+            # --- [FAST TRACK] CASUAL 의도인 경우 파이프라인 우회 ---
+            if routing_result.get("intent") == IntentType.CASUAL.value:
+                print(f"\n[Fast-Track] CASUAL 의도 감지 - 나머지 파이프라인 우회")
+                step_start = time.time()
+                
+                llm_res = self.call_llm(
+                    task="casual_chat", 
+                    prompt=user_input, 
+                    user_id=user_id
+                )
+                
+                casual_response = llm_res["content"].strip()
+                step_duration = (time.time() - step_start) * 1000
+                print(f"  ✓ Fast-Track 답변 생성 완료: {step_duration:.0f}ms")
+                
+                final_result = {
+                    "response": casual_response,
+                    "session_id": session_id,
+                    "used_model": "gemini-2.5-flash-lite",
+                    "sources": [],
+                    "web_searched": False,
+                    "web_citations": [],
+                    "metadata": {
+                        "intent": routing_result.get("intent"),
+                        "complexity": routing_result.get("complexity"),
+                        "confidence": routing_result.get("routing_confidence", 1.0)
+                    },
+                    "is_safe": True,
+                    "quality_verified": True,
+                    "routing_result": routing_result
+                }
+                pipeline_duration = (time.time() - pipeline_start) * 1000
+                self.logger.end_session(final_result=final_result, success=True)
+                print(f"\n[{datetime.datetime.now().strftime('%H:%M:%S')}] 파이프라인 Fast-Track 종료 (소요시간: {pipeline_duration:.0f}ms)")
+                print(f"{'='*60}\n")
+                return final_result
+            # -----------------------------------------------------
+
             # Step 2: Researcher
             print(f"\n[Step 2/5] Researcher - RAG 기반 문서 검색")
             step_start = time.time()
