@@ -125,7 +125,13 @@ TASK_MODEL_CONFIG = {
             "- 질문을 되묻는 것 (주어진 정보 내에서 최선의 답변 제공)\n"
             "- 마크다운 과다 사용 (볼드·리스트 최소한으로)\n"
             "- '제공된 정보에 따르면', '직접 접근할 수 없다' 같은 변명 표현\n"
-            "- 웹 검색 결과가 제공되면 반드시 활용하여 최신 정보를 포함하세요"
+            "- 웹 검색 결과가 제공되면 반드시 활용하여 최신 정보를 포함하세요\n"
+            "\n"
+            "[웹 검색 결과 활용 규칙]\n"
+            "- 검색 결과에 포함된 구체적 수치, 날짜, 고유명사는 반드시 원문 그대로 포함하세요\n"
+            "- 검색 결과가 표 형태로 정리 가능하면 마크다운 표로 제공하세요\n"
+            "- \"약\", \"~경\", \"일반적으로\" 같은 모호한 표현 대신 검색된 정확한 정보를 사용하세요\n"
+            "- 검색 결과의 출처가 명확하면 답변 말미에 출처를 간단히 표기하세요"
         ),
     },
     "chat_complex": {
@@ -156,7 +162,13 @@ TASK_MODEL_CONFIG = {
             "- 한국어 존댓말, 전문적이고 객관적인 톤\n"
             "- 'AI로서' 등 자기 언급 금지\n"
             "- 참고 문서는 직접 열람한 것처럼 자연스럽게 인용. '제공된 정보에 따르면' 금지\n"
-            "- 웹 검색 결과가 제공되면 반드시 활용하여 최신 정보를 포함하세요"
+            "- 웹 검색 결과가 제공되면 반드시 활용하여 최신 정보를 포함하세요\n"
+            "\n"
+            "[웹 검색 결과 활용 규칙]\n"
+            "- 검색 결과에 포함된 구체적 수치, 날짜, 고유명사는 반드시 원문 그대로 포함하세요\n"
+            "- 검색 결과가 표 형태로 정리 가능하면 마크다운 표로 제공하세요\n"
+            "- \"약\", \"~경\", \"일반적으로\" 같은 모호한 표현 대신 검색된 정확한 정보를 사용하세요\n"
+            "- 검색 결과의 출처가 명확하면 답변 말미에 출처를 간단히 표기하세요"
         ),
     },
     "chat_bulk": {
@@ -185,7 +197,13 @@ TASK_MODEL_CONFIG = {
             "- 한국어 존댓말, 전문적 톤\n"
             "- 'AI로서' 등 자기 언급 금지\n"
             "- 참고 문서는 직접 열람한 것처럼 자연스럽게 인용. '제공된 정보에 따르면' 금지\n"
-            "- 웹 검색 결과가 제공되면 반드시 활용하여 최신 정보를 포함하세요"
+            "- 웹 검색 결과가 제공되면 반드시 활용하여 최신 정보를 포함하세요\n"
+            "\n"
+            "[웹 검색 결과 활용 규칙]\n"
+            "- 검색 결과에 포함된 구체적 수치, 날짜, 고유명사는 반드시 원문 그대로 포함하세요\n"
+            "- 검색 결과가 표 형태로 정리 가능하면 마크다운 표로 제공하세요\n"
+            "- \"약\", \"~경\", \"일반적으로\" 같은 모호한 표현 대신 검색된 정확한 정보를 사용하세요\n"
+            "- 검색 결과의 출처가 명확하면 답변 말미에 출처를 간단히 표기하세요"
         ),
     },
     "chat_reasoning": {
@@ -217,7 +235,13 @@ TASK_MODEL_CONFIG = {
             "- 한국어 존댓말, 분석적이고 신중한 톤\n"
             "- 'AI로서' 등 자기 언급 금지\n"
             "- 참고 문서는 직접 열람한 것처럼 자연스럽게 인용. '제공된 정보에 따르면' 금지\n"
-            "- 웹 검색 결과가 제공되면 반드시 활용하여 최신 정보를 포함하세요"
+            "- 웹 검색 결과가 제공되면 반드시 활용하여 최신 정보를 포함하세요\n"
+            "\n"
+            "[웹 검색 결과 활용 규칙]\n"
+            "- 검색 결과에 포함된 구체적 수치, 날짜, 고유명사는 반드시 원문 그대로 포함하세요\n"
+            "- 검색 결과가 표 형태로 정리 가능하면 마크다운 표로 제공하세요\n"
+            "- \"약\", \"~경\", \"일반적으로\" 같은 모호한 표현 대신 검색된 정확한 정보를 사용하세요\n"
+            "- 검색 결과의 출처가 명확하면 답변 말미에 출처를 간단히 표기하세요"
         ),
     },
     "chat_synthesis": {
@@ -568,10 +592,19 @@ class Router:
 
     def determine_complexity(self, user_input: str, intent: IntentType) -> ComplexityLevel:
         """의도 기반 단순 복잡도 매핑"""
-        if intent in [IntentType.CASUAL, IntentType.QUESTION, IntentType.SEARCH]:
+        if intent in [IntentType.CASUAL]:
             return ComplexityLevel.SIMPLE
-        else:
+        elif intent in [IntentType.ANALYSIS, IntentType.GENERATION]:
             return ComplexityLevel.COMPLEX
+        elif intent in [IntentType.QUESTION, IntentType.SEARCH]:
+            # 복합 주제 감지: 접속사 패턴 또는 긴 문장
+            compound_patterns = ["하고", "그리고", "랑", "이랑", "또", "함께", "같이", "겸"]
+            has_compound = any(p in user_input for p in compound_patterns)
+            is_long = len(user_input) > 80
+            if has_compound or is_long:
+                return ComplexityLevel.COMPLEX
+            return ComplexityLevel.SIMPLE
+        return ComplexityLevel.SIMPLE
 
     def needs_realtime_info(self, user_input: str) -> bool:
         """실시간/최신 정보 여부 예측 (유지)"""
@@ -895,7 +928,7 @@ class Researcher:
             response = litellm.completion(
                 model="perplexity/sonar",
                 messages=[{"role": "user", "content": compressed_query}],
-                max_tokens=500,
+                max_tokens=2000,
             )
             result = response.choices[0].message.content or ""
             
@@ -1055,7 +1088,12 @@ class Reasoner:
         # 웹 검색 컨텍스트 구성
         web_context = ""
         if context.get("web_context"):
-            web_context = f"\n\n웹 검색 결과:\n{context['web_context']}"
+            web_context = (
+                f"\n\n[웹 검색 결과 — 아래 정보를 반드시 활용하세요]\n"
+                f"중요: 검색 결과에 있는 정확한 수치, 날짜, 이름, 전문 용어를 답변에 그대로 포함하세요. "
+                f"임의로 요약하거나 반올림하지 마세요.\n\n"
+                f"{context['web_context']}"
+            )
         
         # 현재 시간 주입 (KST)
         from datetime import timezone, timedelta as _td
