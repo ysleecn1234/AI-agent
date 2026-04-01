@@ -65,7 +65,8 @@ class Orchestrator:
             result = self.pipeline.process(
                 user_input=user_input, 
                 user_id=user_id,
-                system_prompt=system_prompt  # [New] Inject Agent Persona
+                system_prompt=system_prompt,  # [New] Inject Agent Persona
+                session_id=context_id
             )
         else:
             result = self.pipeline.process_premium(
@@ -73,7 +74,8 @@ class Orchestrator:
                 model_type=model_type,
                 use_rag=use_rag,
                 user_id=user_id,
-                system_prompt=system_prompt  # [New] Inject Agent Persona
+                system_prompt=system_prompt,  # [New] Inject Agent Persona
+                session_id=context_id
             )
         
         # 활동 로그

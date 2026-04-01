@@ -1125,7 +1125,13 @@ class Reasoner:
             options["system_prompt"] = context.get("system_prompt")
             
         # call_llm이 Fallback + 토큰 추출 + 비용 로깅 전부 처리
-        llm_result = self.pipeline.call_llm(task=task, prompt=prompt, options=options, user_id=context.get("user_id"))
+        llm_result = self.pipeline.call_llm(
+            task=task,
+            prompt=prompt,
+            options=options,
+            user_id=context.get("user_id"),
+            conversation_history=context.get("conversation_history")
+        )
         
         return (
             llm_result["content"],
@@ -1563,7 +1569,7 @@ class Pipeline:
         self.cost_calculator = get_cost_calculator()
         self.cost_logger = get_cost_logger()
 
-    def call_llm(self, task: str, prompt: str, options: dict = None, user_id: Optional[str] = None) -> dict:
+    def call_llm(self, task: str, prompt: str, options: dict = None, user_id: Optional[str] = None, conversation_history: list = None) -> dict:
         """
         중앙 LLM 호출 메서드 (모든 LLM 호출의 단일 진입점)
         
@@ -1609,6 +1615,11 @@ class Pipeline:
         messages = []
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
+            
+        # 대화 히스토리 삽입 (시스템 프롬프트 뒤, 현재 질문 앞)
+        if conversation_history:
+            messages.extend(conversation_history)
+            
         messages.append({"role": "user", "content": prompt})
         
         # 4. Fallback 체인 실행
@@ -1865,12 +1876,29 @@ class Pipeline:
         import re
         return re.sub(r'\s*<!--USED_DOCS:\[.*?\]-->\s*', '', response).strip()
 
-    def process(self, user_input: str, user_id: Optional[str] = None, system_prompt: Optional[str] = None) -> Dict[str, Any]:
+    def process(self, user_input: str, user_id: Optional[str] = None, system_prompt: Optional[str] = None, session_id: Optional[str] = None) -> Dict[str, Any]:
         """전체 파이프라인 실행"""
         pipeline_start = time.time()
         print(f"\n{'='*60}")
         print(f"[Pipeline] 처리 시작: {user_input[:50]}...")
         print(f"{'='*60}")
+        
+        # 대화 히스토리 조회
+        conversation_history = []
+        if session_id:
+            from services.orchestrator.db.tables import ChatLog
+            from application.database import SessionLocal
+            db = SessionLocal()
+            try:
+                recent_logs = db.query(ChatLog).filter(
+                    ChatLog.session_id == session_id
+                ).order_by(ChatLog.created_at.desc()).limit(5).all()
+
+                for log in reversed(recent_logs):
+                    conversation_history.append({"role": "user", "content": log.user_input})
+                    conversation_history.append({"role": "assistant", "content": log.ai_response})
+            finally:
+                db.close()
         
         # 세션 시작
         session_id = self.logger.start_session(user_input, user_id)
@@ -1892,7 +1920,8 @@ class Pipeline:
                 llm_res = self.call_llm(
                     task="casual_chat", 
                     prompt=user_input, 
-                    user_id=user_id
+                    user_id=user_id,
+                    conversation_history=conversation_history
                 )
                 
                 casual_response = llm_res["content"].strip()
@@ -1940,6 +1969,8 @@ class Pipeline:
             # Step 3: Reasoner
             print(f"\n[Step 3/5] Reasoner - 논리적 답변 생성 및 검증")
             step_start = time.time()
+            
+            research_result["conversation_history"] = conversation_history
             reasoning_result = self.reasoner.reason(research_result)
             
             # USED_DOCS 태그 추출 (Synthesizer 전에 파싱)
@@ -2045,7 +2076,7 @@ class Pipeline:
                 "status": "failed"
             }
 
-    def process_premium(self, user_input: str, model_type: str, use_rag: bool = False, user_id: Optional[str] = None, system_prompt: Optional[str] = None) -> Dict[str, Any]:
+    def process_premium(self, user_input: str, model_type: str, use_rag: bool = False, user_id: Optional[str] = None, system_prompt: Optional[str] = None, session_id: Optional[str] = None) -> Dict[str, Any]:
         '''
         프리미엄 모델 직접 호출 (5단계 파이프라인 bypass)
         
@@ -2070,6 +2101,23 @@ class Pipeline:
         
         model_config = PREMIUM_MODELS[model_type]
         model_name = model_config["model"]
+        
+        # 대화 히스토리 조회
+        conversation_history = []
+        if session_id:
+            from services.orchestrator.db.tables import ChatLog
+            from application.database import SessionLocal
+            db = SessionLocal()
+            try:
+                recent_logs = db.query(ChatLog).filter(
+                    ChatLog.session_id == session_id
+                ).order_by(ChatLog.created_at.desc()).limit(5).all()
+
+                for log in reversed(recent_logs):
+                    conversation_history.append({"role": "user", "content": log.user_input})
+                    conversation_history.append({"role": "assistant", "content": log.ai_response})
+            finally:
+                db.close()
         
         # 세션 시작
         session_id = self.logger.start_session(user_input, user_id)
@@ -2142,10 +2190,10 @@ class Pipeline:
             else:
                 final_system_prompt = base_prompt
 
-            messages = [
-                {"role": "system", "content": final_system_prompt},
-                {"role": "user", "content": user_prompt}
-            ]
+            messages = [{"role": "system", "content": final_system_prompt}]
+            if conversation_history:
+                messages.extend(conversation_history)
+            messages.append({"role": "user", "content": user_prompt})
             
             # GPT-5, o1 등 temperature 미지원 모델 대응
             completion_kwargs = {
