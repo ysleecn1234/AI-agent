@@ -22,6 +22,7 @@ from .cost_calculator import get_cost_calculator
 from services.common.cost_logger import get_cost_logger
 import uuid
 import datetime
+import re
 
 # 환경 변수 로드
 load_dotenv()
