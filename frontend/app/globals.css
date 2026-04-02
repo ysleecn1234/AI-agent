@@ -138,29 +138,7 @@
     @apply bg-background text-foreground;
   }
 
-  /* ── 마크다운 코드 블록 표시 픽스 ── */
-  /* 클로드 스타일: 라이트 모드에서는 페이지 배경과 어울리는 부드러운 밝은 회색 배경 + 어두운 텍스트 */
-  pre {
-    background-color: #f4f4f5 !important;
-    /* 라이트 그레이 */
-    color: #1e293b !important;
-    /* 가독성 높은 다크 슬레이트 폰트 */
-    border: 1px solid #e2e8f0 !important;
-    /* 깔끔한 옅은 테두리 */
-  }
-
-  pre code {
-    background-color: transparent !important;
-    color: inherit !important;
-  }
-
-  /* 다크 테마 시 코드 블록 (다크톤 터미널 형태 유지) */
-  .dark pre {
-    background-color: #1e1e1e !important;
-    color: #f8fafc !important;
-    border: 1px solid #334155 !important;
-  }
-
+  /* ── 인라인 코드 스타일 ── */
   /* 문장 중간에 들어가는 짧은 인라인 코드는 주변 텍스트와 대비되게 강조 */
   :not(pre)>code {
     background-color: var(--muted) !important;

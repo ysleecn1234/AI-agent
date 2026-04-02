@@ -7,6 +7,7 @@ import type { ChatSession } from '@/types/api';
 import { useRouter } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { CodeBlock } from '@/components/code-block';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -573,10 +574,27 @@ function ChatContent() {
                                             prose-li:my-0.5
                                             prose-strong:font-semibold
                                             prose-code:bg-gray-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-code:font-mono
-                                            prose-pre:bg-gray-900 prose-pre:text-gray-100 prose-pre:p-3 prose-pre:rounded prose-pre:my-2 prose-pre:overflow-x-auto
+                                            prose-pre:bg-transparent prose-pre:p-0 prose-pre:my-0 prose-pre:overflow-visible
                                             prose-blockquote:border-l-2 prose-blockquote:border-gray-300 prose-blockquote:pl-3 prose-blockquote:italic prose-blockquote:text-gray-700
                                             prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline">
-                                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+                                                    <ReactMarkdown
+                                                        remarkPlugins={[remarkGfm]}
+                                                        components={{
+                                                            pre({ node }) {
+                                                                // pre로 감싸진 건 무조건 코드 블록 (``` 사용)
+                                                                const codeEl = (node as any)?.children?.[0];
+                                                                const className = codeEl?.properties?.className?.[0] || '';
+                                                                const match = /language-(\w+)/.exec(className);
+                                                                const text = codeEl?.children?.[0]?.value || '';
+                                                                const codeStr = text.replace(/\n$/, '');
+                                                                return <CodeBlock language={match?.[1]}>{codeStr}</CodeBlock>;
+                                                            },
+                                                            code({ className, children, ...props }) {
+                                                                // pre 없이 단독으로 온 건 인라인 코드 (`백틱 한 개`)
+                                                                return <code className={className} {...props}>{children}</code>;
+                                                            }
+                                                        }}
+                                                    >{msg.content}</ReactMarkdown>
                                                 </div>
                                             ) : (
                                                 <p className="whitespace-pre-wrap">{msg.content}</p>
