@@ -33,14 +33,15 @@ class CostCalculator:
             # Google Gemini 2.5 / 3 시리즈
             "gemini/gemini-2.5-flash": ModelPricing(input_price_per_1m=0.30, output_price_per_1m=2.50, provider="Google"),
             "gemini/gemini-2.5-flash-lite": ModelPricing(input_price_per_1m=0.10, output_price_per_1m=0.40, provider="Google"),
-            "gemini/gemini-3-flash-preview": ModelPricing(input_price_per_1m=0.50, output_price_per_1m=3.00, provider="Google"),
+            "gemini/gemini-3.1-flash-lite-preview": ModelPricing(input_price_per_1m=0.25, output_price_per_1m=1.50, provider="Google"),
             "gemini/gemini-3.1-pro-preview": ModelPricing(input_price_per_1m=2.00, output_price_per_1m=12.00, provider="Google"),
 
             # OpenAI GPT-5 세부 모델
-            "gpt-5-nano": ModelPricing(input_price_per_1m=0.05, output_price_per_1m=0.40, provider="OpenAI"),
-            "gpt-5-mini": ModelPricing(input_price_per_1m=0.25, output_price_per_1m=2.00, provider="OpenAI"),
-            "gpt-5.2": ModelPricing(input_price_per_1m=1.75, output_price_per_1m=14.00, provider="OpenAI"),
-            "gpt-5.2-pro": ModelPricing(input_price_per_1m=21.00, output_price_per_1m=168.00, provider="OpenAI"),
+
+            "gpt-5.4-nano": ModelPricing(input_price_per_1m=0.20, output_price_per_1m=1.25, provider="OpenAI"),
+            "gpt-5.4-mini": ModelPricing(input_price_per_1m=0.75, output_price_per_1m=4.50, provider="OpenAI"),
+            "gpt-5.4": ModelPricing(input_price_per_1m=2.50, output_price_per_1m=15.00, provider="OpenAI"),
+            "gpt-5.4-pro": ModelPricing(input_price_per_1m=30.00, output_price_per_1m=180.00, provider="OpenAI"),
 
             # Anthropic Claude 4.5 / 4.6 시리즈
             "claude-haiku-4.5": ModelPricing(input_price_per_1m=1.00, output_price_per_1m=5.00, provider="Anthropic"),

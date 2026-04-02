@@ -33,7 +33,7 @@ X_train_tfidf = vectorizer.fit_transform(X_train)
 X_test_tfidf = vectorizer.transform(X_test)
 
 # SVM 학습
-svm = SVC(kernel='linear', C=1.0, probability=True, random_state=42)
+svm = SVC(kernel='linear', C=1.0, probability=True, random_state=42, class_weight='balanced')
 svm.fit(X_train_tfidf, y_train)
 
 # 5-Fold 교차 검증

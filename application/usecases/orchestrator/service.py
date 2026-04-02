@@ -28,7 +28,7 @@ class Orchestrator:
             user_input: 사용자 입력
             user_id: 사용자 ID
             context_id: 대화 컨텍스트 ID
-            model_type: "AUTO" 또는 프리미엄 모델 키 (GPT_5_2, GEMINI_3_PRO, PERPLEXITY, OPUS_4_6)
+            model_type: "AUTO" 또는 프리미엄 모델 키 (GPT_5_4_PRO, GEMINI_3_PRO, PERPLEXITY, OPUS_4_6)
             use_rag: RAG 검색 사용 여부
         '''
         start = time.time()

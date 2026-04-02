@@ -815,7 +815,7 @@ function ChatContent() {
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="AUTO">⚡ Auto (자동 선택)</SelectItem>
-                                        <SelectItem value="GPT_5_2">GPT 5.2 (Thinking)</SelectItem>
+                                        <SelectItem value="GPT_5_4_PRO">GPT 5.4 Pro (Thinking)</SelectItem>
                                         <SelectItem value="GEMINI_3_PRO">Gemini 3.1 Pro</SelectItem>
                                         <SelectItem value="PERPLEXITY">Perplexity Sonar Pro</SelectItem>
                                         <SelectItem value="OPUS_4_6">Claude Opus 4.6</SelectItem>

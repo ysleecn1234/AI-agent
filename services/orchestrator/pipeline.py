@@ -33,7 +33,7 @@ TASK_MODEL_CONFIG = {
     
     # ── 채팅 파이프라인 (5단계) ──
     "chat_routing": {
-        "models": ["gemini/gemini-2.5-flash-lite", "gpt-5-nano"],
+        "models": ["gemini/gemini-2.5-flash-lite", "gpt-5.4-nano"],
         "temperature": 0.1,
         "max_tokens": 10,
         "description": "의도 분류 및 복잡도 판단 (Router)",
@@ -58,7 +58,7 @@ TASK_MODEL_CONFIG = {
         ),
     },
     "casual_chat": {
-        "models": ["gemini/gemini-2.5-flash-lite", "gpt-5-nano"],
+        "models": ["gemini/gemini-2.5-flash-lite", "gpt-5.4-nano"],
         "temperature": 0.9,
         "max_tokens": 200,
         "description": "잡담/인사 Fast-Track 응답",
@@ -84,7 +84,7 @@ TASK_MODEL_CONFIG = {
         ),
     },
     "chat_research": {
-        "models": ["gpt-5-mini", "claude-haiku-4.5"],
+        "models": ["gpt-5.4-mini", "claude-haiku-4.5"],
         "temperature": 0.2,
         "max_tokens": 500,
         "description": "검색 쿼리 생성 및 검증 (Researcher)",
@@ -102,7 +102,7 @@ TASK_MODEL_CONFIG = {
         ),
     },
     "chat_simple": {
-        "models": ["gemini/gemini-2.5-flash", "gpt-5-mini"],
+        "models": ["gemini/gemini-2.5-flash", "gpt-5.4-mini"],
         "temperature": 0.7,
         "max_tokens": 4000,
         "description": "단순 질의 답변 생성 (Reasoner - SIMPLE)",
@@ -135,7 +135,7 @@ TASK_MODEL_CONFIG = {
         ),
     },
     "chat_complex": {
-        "models": ["claude-sonnet-4-6", "gpt-5.2"],
+        "models": ["claude-sonnet-4-6", "gpt-5.4"],
         "temperature": 0.1,
         "max_tokens": 4000,
         "description": "정밀 분석 답변 생성 (Reasoner - COMPLEX)",
@@ -172,7 +172,7 @@ TASK_MODEL_CONFIG = {
         ),
     },
     "chat_bulk": {
-        "models": ["gemini/gemini-3-flash-preview", "gemini/gemini-2.5-flash"],
+        "models": ["gemini/gemini-3.1-flash-lite-preview", "gemini/gemini-2.5-flash"],
         "temperature": 0.1,
         "max_tokens": 4000,
         "description": "대량 문서 분석 답변 생성 (Reasoner - BULK)",
@@ -207,7 +207,7 @@ TASK_MODEL_CONFIG = {
         ),
     },
     "chat_reasoning": {
-        "models": ["gpt-5.2-pro", "claude-opus-4-6"],
+        "models": ["gpt-5.4-pro", "claude-opus-4-6"],
         "temperature": 0.1,
         "max_tokens": 4000,
         "description": "문맥 기반 답변 생성 (Reasoner)",
@@ -274,7 +274,7 @@ TASK_MODEL_CONFIG = {
         ),
     },
     "chat_guardrail": {
-        "models": ["claude-haiku-4.5", "gpt-5.2"],
+        "models": ["gemini/gemini-2.5-flash-lite", "gpt-5.4-nano"],
         "temperature": 0.1,
         "max_tokens": 2000,
         "description": "품질 검수 및 팩트체크 (Guardrail)",
@@ -295,7 +295,7 @@ TASK_MODEL_CONFIG = {
 
     # ── 에이전트 허브 (Phase 2~3) ──
     "agent_draft": {
-        "models": ["gpt-5.2", "claude-sonnet-4-6"],
+        "models": ["gpt-5.4", "claude-sonnet-4-6"],
         "temperature": 0.3,
         "max_tokens": 2000,
         "description": "대화 분석 → 에이전트 생성 템플릿 채우기 (Pull-Fill)",
@@ -322,7 +322,7 @@ TASK_MODEL_CONFIG = {
         ),
     },
     "agent_recommend": {
-        "models": ["gemini/gemini-3.1-pro-preview", "gpt-5-mini"],
+        "models": ["gemini/gemini-3.1-pro-preview", "gpt-5.4-mini"],
         "temperature": 0.2,
         "max_tokens": 500,
         "description": "실시간 에이전트 추천을 위한 의도/주제/키워드 분석",
@@ -345,7 +345,7 @@ TASK_MODEL_CONFIG = {
 
     # ── AI Drive (문서 관리) ──
     "tagging": {
-        "models":    ["gemini/gemini-2.5-flash", "gpt-5-mini"],
+        "models":    ["gemini/gemini-2.5-flash", "gpt-5.4-mini"],
         "temperature": 0.1,
         "max_tokens": 500,
         "description": "문서 자동 태깅 - 태그/키워드/문서유형 추출",
@@ -365,7 +365,7 @@ TASK_MODEL_CONFIG = {
         ),
     },
     "title_gen": {
-        "models": ["gpt-5-mini", "claude-haiku-4.5"],
+        "models": ["gpt-5.4-mini", "claude-haiku-4.5"],
         "temperature": 0.3,
         "max_tokens": 500,
         "description": "채팅/에이전트 결과 저장 시 제목·설명 자동 생성",
@@ -384,7 +384,7 @@ TASK_MODEL_CONFIG = {
         ),
     },
     "doc_chat": {
-        "models": ["claude-opus-4-6", "gpt-5.2"],
+        "models": ["claude-opus-4-6", "gpt-5.4"],
         "temperature": 0.3,
         "max_tokens": 4000,
         "description": "문서별 채팅 - 특정 문서 기반 질의응답",
@@ -400,7 +400,7 @@ TASK_MODEL_CONFIG = {
         ),
     },
     "doc_format": { 
-        "models": ["gpt-5-mini", "gemini/gemini-2.5-flash-lite"],
+        "models": ["gpt-5.4-mini", "gemini/gemini-2.5-flash-lite"],
         "temperature": 0.3,
         "max_tokens": 4000,
         "description": "채팅/에이전트 대화를 구조화된 문서로 변환",
@@ -418,9 +418,9 @@ TASK_MODEL_CONFIG = {
 }
 
 PREMIUM_MODELS = {
-    "GPT_5_2": {
-        "model": "gpt-5.2",
-        "display_name": "GPT 5.2 (Thinking)",
+    "GPT_5_4_PRO": {
+        "model": "gpt-5.4-pro",
+        "display_name": "GPT 5.4 Pro (Thinking)",
         "max_tokens": 4000,
         "temperature": 0.3,
     },
@@ -774,6 +774,7 @@ class Researcher:
         documents = []
         web_context = ""
         web_citations = []
+        full_docs = []
         
         if self.use_rag:
             # ──── Drive 참조 ON: Drive 문서 검색 → 관련 문서 전체 텍스트 가져오기 ────
@@ -1334,12 +1335,14 @@ class Guardrail:
         try:
             from application.database import SessionLocal, UserSettings
             db = SessionLocal()
-            settings = db.query(UserSettings).filter(
-                UserSettings.user_id == user_id
-            ).first()
-            db.close()
-            if settings and settings.detection_items:
-                return settings.detection_items
+            try:
+                settings = db.query(UserSettings).filter(
+                    UserSettings.user_id == user_id
+                ).first()
+                if settings and hasattr(settings, 'detection_items') and settings.detection_items:
+                    return settings.detection_items
+            finally:
+                db.close()
         except Exception:
             pass
         # 기본값: 전체 활성화
@@ -1368,12 +1371,17 @@ class Guardrail:
     
     def verify_quality(self, synthesis_result: Dict[str, Any]) -> Dict[str, Any]:
         """품질 검수 (복잡도에 따라 차등 적용)"""
-        
+        # Reasoner가 이슈를 발견한 경우 → SIMPLE이라도 스킵하지 않고 검증 수행
+        reasoner_verified = synthesis_result.get("verified", True)
+        if not reasoner_verified:
+            print(f"  → [Reasoner 검증 실패] 강제 경량 검수 진행")
+            return self._verify_fallback(synthesis_result)
+            
         complexity = synthesis_result.get("complexity")
         
         # SIMPLE 작업 처리
         if complexity == ComplexityLevel.SIMPLE.value:
-            routing_confidence = synthesis_result.get("routing_confidence", 1.0)
+            routing_confidence = synthesis_result.get("routing_confidence", 0.0)
             
             if routing_confidence >= 0.7:
                 # Router가 SIMPLE이라고 확신 → 신뢰하고 스킵
@@ -1478,6 +1486,19 @@ AI 답변:
         if missing_info:
             quality_issues.extend(missing_info)
             
+        # 4. 사실 주장 감지 (숫자+단위가 포함된 답변은 할루시네이션 위험)
+        fact_patterns = [
+            r'\d+[\.\,]?\d*\s*[%조억만원달러]',  # "2.3%", "432조원"
+            r'\d{4}년',                          # "2025년"
+        ]
+        has_factual_claim = any(re.search(p, response) for p in fact_patterns)
+        
+        # 사실 주장이 있는데 참고 문서나 웹 검색 결과가 없으면 위험
+        has_source = bool(synthesis_result.get("web_context")) or bool(synthesis_result.get("retrieved_documents"))
+        if has_factual_claim and not has_source:
+            quality_issues.append("검증되지 않은 수치/사실 포함 가능성 (참고 출처 없음)")
+            
+
         quality_score = max(0.0, 1.0 - (len(quality_issues) * 0.2))
         needs_regeneration = quality_score < 0.6
         
@@ -1524,30 +1545,23 @@ AI 답변:
     def guard(self, synthesis_result: Dict[str, Any]) -> Dict[str, Any]:
         """가드레일 실행"""
         formatted_response = synthesis_result["formatted_response"]
-        
-        # 1. 품질 검수 (복잡한 작업에 대해)
-        quality_result = self.verify_quality(synthesis_result)
-        
-        # 2. 민감 정보 마스킹 (사용자 설정 반영)
+
+        # 1. 민감 정보 마스킹 먼저 (외부 LLM 전송 전에)
         user_id = synthesis_result.get("user_id")
         safe_response = self.mask_sensitive_info(formatted_response, user_id=user_id)
-        
+        synthesis_result["formatted_response"] = safe_response
+
+        # 2. 품질 검수 (마스킹된 텍스트로 검수)
+        quality_result = self.verify_quality(synthesis_result)
+
         # 3. 안전성 검사
         is_safe = self.check_safety(safe_response)
-        
+
         # 재생성 필요 시 경고 메시지 추가
         if quality_result["needs_regeneration"]:
-            safe_response = f"""[!] 품질 검수 경고
-다음 이슈가 발견되었습니다:
-{chr(10).join(f'- {issue}' for issue in quality_result['quality_issues'])}
+            print(f"  [!] 품질 경고: {quality_result['quality_issues']}")
+            safe_response = f"※ 이 답변은 정확도가 낮을 수 있습니다. 중요한 수치는 원본 자료를 확인해주세요.\n\n{safe_response}"
 
-재생성을 권장합니다.
-
----
-
-{safe_response}
-"""
-        
         return {
             **synthesis_result,
             **quality_result,
@@ -2093,7 +2107,7 @@ class Pipeline:
         
         Args:
             user_input: 사용자 입력
-            model_type: 프리미엄 모델 키 (GPT_5_2, GEMINI_3_PRO, PERPLEXITY, OPUS_4_6)
+            model_type: 프리미엄 모델 키 (GPT_5_4_PRO, GEMINI_3_PRO, PERPLEXITY, OPUS_4_6)
             use_rag: RAG 검색 사용 여부
             user_id: 사용자 ID
             system_prompt: [New] 에이전트 전용 시스템 프롬프트 (None이면 기본값 사용)
