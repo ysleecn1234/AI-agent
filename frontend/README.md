@@ -125,7 +125,7 @@ npm run dev
   - 카테고리 필터 추가 (생산성, 마케팅, 개발, 기획, 영업, 인사, 재무, 기타)
   - Agent 카드 UI 개선 (카테고리 배지, 공개범위 표시)
   - 채팅 페이지에 프리미엄 모델 선택 추가
-    - GPT 5.2 (Thinking), Gemini 3 Pro, Perplexity Sonar Pro, Claude Opus 4.6
+    - GPT 5.4 Pro (Thinking), Gemini 3.1 Pro, Perplexity Sonar Pro, Claude Opus 4.6
   - User 메뉴 추가 (헤더 우측 상단)
 - **merge: develop 브랜치 병합 (2026-02-12)**
   - 백엔드 최신 업데이트 반영 (프리미엄 모델, 문서 메타데이터 수정 등)

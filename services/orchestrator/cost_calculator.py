@@ -139,7 +139,7 @@ class CostCalculator:
         model_mapping = {
             "simple": "gemini/gemini-2.5-flash",
             "complex": "claude-sonnet-4-6",
-            "bulk": "gemini/gemini-3-flash-preview"
+            "bulk": "gemini/gemini-3.1-flash-lite-preview"
         }
         
         primary_model = model_mapping.get(complexity, "gemini/gemini-2.0-flash-exp")
@@ -248,8 +248,8 @@ if __name__ == "__main__":
     print("=" * 80)
     
     # 1. 단일 모델 비용 계산
-    print("\n[테스트 1] GPT-5.2 비용 계산 (입력 1000토큰, 출력 500토큰)")
-    cost = calculator.calculate_cost("gpt-5.2", 1000, 500)
+    print("\n[테스트 1] GPT-5.4 비용 계산 (입력 1000토큰, 출력 500토큰)")
+    cost = calculator.calculate_cost("gpt-5.4", 1000, 500)
     print(f"모델: {cost['model']}")
     print(f"총 토큰: {cost['tokens']['total']}")
     print(f"비용 (USD): ${cost['cost_usd']['total']}")
@@ -264,7 +264,7 @@ if __name__ == "__main__":
     
     # 3. 모델 가격 정보 조회
     print("\n[테스트 3] 모델 가격 정보")
-    for model in ["gemini/gemini-3-flash-preview", "gpt-5.2", "claude-sonnet-4-6"]:
+    for model in ["gemini/gemini-3.1-pro-preview", "gpt-5.4", "claude-sonnet-4-6"]:
         info = calculator.get_pricing_info(model)
         if info:
             print(f"\n{model}:")

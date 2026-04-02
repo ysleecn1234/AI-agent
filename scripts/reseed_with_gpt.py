@@ -141,7 +141,7 @@ ESSENTIAL_AGENTS = [
 ]
 
 async def reseed_with_gpt():
-    print("[ReSeed] 🚀 Starting GPT-5.2 Agent Generation Master Script...")
+    print("[ReSeed] 🚀 Starting GPT-5.4 Agent Generation Master Script...")
     
     db = SessionLocal()
     orchestrator = Orchestrator()

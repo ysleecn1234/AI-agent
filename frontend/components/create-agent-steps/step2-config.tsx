@@ -114,12 +114,12 @@ export function Step2Config({ draft, setDraft, onBack, onComplete }: Step2Config
                                     <SelectItem value="AUTO">⚡ Auto (자동 선택)</SelectItem>
                                     <SelectItem value="gemini/gemini-2.5-flash-lite">Gemini 2.5 Flash Lite</SelectItem>
                                     <SelectItem value="gemini/gemini-2.5-flash">Gemini 2.5 Flash</SelectItem>
-                                    <SelectItem value="gemini/gemini-3-flash-preview">Gemini 3 Flash</SelectItem>
+                                    <SelectItem value="gemini/gemini-3.1-flash-lite-preview">Gemini 3.1 Flash Lite</SelectItem>
                                     <SelectItem value="gemini/gemini-3.1-pro-preview">Gemini 3.1 Pro</SelectItem>
-                                    <SelectItem value="gpt-5-nano">GPT-5 Nano</SelectItem>
-                                    <SelectItem value="gpt-5-mini">GPT-5 Mini</SelectItem>
-                                    <SelectItem value="gpt-5.2">GPT-5.2</SelectItem>
-                                    <SelectItem value="gpt-5.2-pro">GPT-5.2 Pro</SelectItem>
+                                    <SelectItem value="gpt-5.4-nano">GPT-5.4 Nano</SelectItem>
+                                    <SelectItem value="gpt-5.4-mini">GPT-5.4 Mini</SelectItem>
+                                    <SelectItem value="gpt-5.4">GPT-5.4</SelectItem>
+                                    <SelectItem value="gpt-5.4-pro">GPT-5.4 Pro</SelectItem>
                                     <SelectItem value="claude-haiku-4.5">Claude Haiku 4.5</SelectItem>
                                     <SelectItem value="claude-sonnet-4-6">Claude Sonnet 4.6</SelectItem>
                                     <SelectItem value="claude-opus-4-6">Claude Opus 4.6</SelectItem>

@@ -156,7 +156,7 @@ response = litellm.completion(
 )
 
 response = litellm.completion(
-    model="gemini/gemini-3-flash",  # GOOGLE_API_KEY 자동 사용
+    model="gemini/gemini-3.1-flash-lite-preview",  # GOOGLE_API_KEY 자동 사용
     messages=[{"role": "user", "content": "Hello"}]
 )
 
@@ -175,16 +175,16 @@ response = litellm.completion(
 ```python
 class Router:
     def __init__(self):
-        self.model = "gemini/gemini-3-flash"  # GOOGLE_API_KEY 사용
+        self.model = "gemini/gemini-3.1-flash-lite-preview"  # GOOGLE_API_KEY 사용
 ```
 
 ### 2. Reasoner (GPT-5, Gemini 3)
 **파일:** `core/pipeline.py` Line 470-586
 ```python
 model_mapping = {
-    ComplexityLevel.SIMPLE.value: "gemini/gemini-3-flash",  # GOOGLE_API_KEY
+    ComplexityLevel.SIMPLE.value: "gemini/gemini-3.1-flash-lite-preview",  # GOOGLE_API_KEY
     ComplexityLevel.COMPLEX.value: "gpt-5",                 # OPENAI_API_KEY
-    ComplexityLevel.BULK.value: "gemini/gemini-3-pro"       # GOOGLE_API_KEY
+    ComplexityLevel.BULK.value: "gemini/gemini-3.1-pro-preview"       # GOOGLE_API_KEY
 }
 ```
 
