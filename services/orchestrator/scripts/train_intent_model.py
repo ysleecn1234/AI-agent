@@ -11,7 +11,7 @@ import joblib
 import os
 
 # 데이터 로드
-DATA_PATH = os.path.join(os.path.dirname(__file__), "../data/intent_training_data_v2.csv")
+DATA_PATH = os.path.join(os.path.dirname(__file__), "../data/intent_training_data_v4.csv")
 MODEL_DIR = os.path.join(os.path.dirname(__file__), "../data")
 
 df = pd.read_csv(DATA_PATH)
