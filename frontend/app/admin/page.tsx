@@ -358,7 +358,7 @@ export default function AdminPage() {
                                                     <div className="grid grid-cols-2 gap-4">
                                                         {/* 프리미엄 */}
                                                         <div>
-                                                            <p className="text-xs font-medium text-purple-600 mb-2">⚡ 프리미엄</p>
+                                                            <p className="text-xs font-medium text-purple-600 mb-2">프리미엄</p>
                                                             {(!summary?.top_models_premium || summary.top_models_premium.length === 0) ? (
                                                                 <p className="text-xs text-gray-400 text-center py-3">사용 없음</p>
                                                             ) : (
@@ -368,13 +368,13 @@ export default function AdminPage() {
                                                                         const badgeColors = ['bg-purple-600', 'bg-purple-500', 'bg-purple-400', 'bg-purple-300', 'bg-purple-200'];
                                                                         return (
                                                                             <div key={idx} className="flex items-center justify-between px-2 py-1.5 bg-purple-50 rounded-lg">
-                                                                                <div className="flex items-center gap-1.5">
-                                                                                    <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold text-white ${badgeColors[idx]}`}>
+                                                                                <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                                                                                    <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold text-white flex-shrink-0 ${badgeColors[idx]}`}>
                                                                                         {idx + 1}
                                                                                     </div>
-                                                                                    <span className="text-xs text-gray-700 font-medium truncate max-w-[80px]">{displayName}</span>
+                                                                                    <span className="text-xs text-gray-700 font-medium truncate">{displayName}</span>
                                                                                 </div>
-                                                                                <div className="text-right">
+                                                                                <div className="text-right flex-shrink-0">
                                                                                     <span className="text-xs font-semibold text-gray-900">₩{Math.round(item.cost_krw).toLocaleString()}</span>
                                                                                     <span className="text-[10px] text-gray-400 ml-1">{item.count}건</span>
                                                                                 </div>
@@ -386,7 +386,7 @@ export default function AdminPage() {
                                                         </div>
                                                         {/* Auto */}
                                                         <div>
-                                                            <p className="text-xs font-medium text-blue-600 mb-2">🤖 Auto</p>
+                                                            <p className="text-xs font-medium text-blue-600 mb-2">Auto</p>
                                                             {(!summary?.top_models_auto || summary.top_models_auto.length === 0) ? (
                                                                 <p className="text-xs text-gray-400 text-center py-3">사용 없음</p>
                                                             ) : (
@@ -396,13 +396,13 @@ export default function AdminPage() {
                                                                         const badgeColors = ['bg-blue-600', 'bg-blue-500', 'bg-blue-400', 'bg-blue-300', 'bg-blue-200'];
                                                                         return (
                                                                             <div key={idx} className="flex items-center justify-between px-2 py-1.5 bg-blue-50 rounded-lg">
-                                                                                <div className="flex items-center gap-1.5">
-                                                                                    <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold text-white ${badgeColors[idx]}`}>
+                                                                                <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                                                                                    <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold text-white flex-shrink-0 ${badgeColors[idx]}`}>
                                                                                         {idx + 1}
                                                                                     </div>
-                                                                                    <span className="text-xs text-gray-700 font-medium truncate max-w-[80px]">{displayName}</span>
+                                                                                    <span className="text-xs text-gray-700 font-medium truncate">{displayName}</span>
                                                                                 </div>
-                                                                                <div className="text-right">
+                                                                                <div className="text-right flex-shrink-0">
                                                                                     <span className="text-xs font-semibold text-gray-900">₩{Math.round(item.cost_krw).toLocaleString()}</span>
                                                                                     <span className="text-[10px] text-gray-400 ml-1">{item.count}건</span>
                                                                                 </div>
