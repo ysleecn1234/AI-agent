@@ -1,132 +1,86 @@
-# AI-agent  
-🚀 on7 기반 비용 최적화형 AI 에이전트 프로토타입  
-기존 '인세븐(IN7)'의 업무 워크플로우를 벤치마킹하여, 초저비용 오케스트레이션과 고효율 RAG 엔진을 결합한 차세대 AI 업무 환경 프로토타입입니다.  
+# 🚀 ISOR (Intelligent System for Optimized RAG)
+> **비용 최적화형 차세대 AI 에이전트 및 RAG 파이프라인 플랫폼**
 
-💡 Project Background & Goal  
-단순히 똑똑한 AI를 만드는 것을 넘어, **'운영 원가 절감'**과 **'실무 적용성'**에 집중했습니다.  
-비용 혁신: 기존 모델 공급사 대비 높은 운영 마진 체계를 개선하여, 운영 비용을 30% 이상 추가 절감합니다.  
-
-모델 슬림화: 21종의 복잡한 모델 라인업을 '티어별 라우팅'으로 최적화하여 관리 효율을 극대화합니다.  
-에이전틱 워크플로우: 단순 챗봇을 넘어 [분석-작성-검수] 과정을 스스로 수행하는 시스템을 지향합니다.  
-
-## 🏗️ Core System Architecture  
-본 프로젝트는 3가지 핵심 마이크로서비스 모듈로 구성됩니다. 각 폴더의 **README.md**에서 상세 로직을 확인할 수 있습니다.
-
-1.  **[Orchestrator (The Brain)](./services/orchestrator/README.md)**:  
-    *   사용자의 의도를 분석하고 `AI Hub` 또는 `AI Drive`로 작업을 분배하는 중앙 제어 장치입니다.
-    *   **핵심 기능**: Intent Analysis, Dynamic Routing, JSON Schema Generation.
-
-2.  **[AI Hub (Agent Service)](./services/ai_hub/README.md)**:  
-    *   나만의 에이전트를 생성(Draft -> Publish)하고 검색(RAG)하는 플랫폼입니다.
-    *   **핵심 기능**: Agent Creation Wizard, Vector Search, Metadata Management.
-
-3.  **[AI Drive (Knowledge Base)](./services/ai_drive/README.md)**:  
-    *   문서를 업로드하고 RAG 기반으로 질의응답을 수행하는 지식 저장소입니다.
-    *   **핵심 기능**: 5-Step SLM Pipeline (Router -> Researcher -> Reasoner -> Synthesizer -> Guardrail).
-
-4.  **Admin Dashboard**: 전체 서비스의 사용량과 비용 로그를 실시간으로 통합 관리합니다.  
+**ISOR**은 기존 엔터프라이즈 AI 시스템의 비효율적인 구조를 개선하여, **초저비용 오케스트레이션**과 **고효율 RAG 엔진**을 결합한 차세대 업무 환경 플랫폼입니다. 단순한 챗봇을 넘어, 사용자의 의도를 시스템 스스로 분석하고 최적의 가성비 모델 위치로 동적 라우팅하여 가장 합리적인 비용으로 고품질의 응답을 제공합니다.
 
 ---
 
-## 🛠️ Key Technical Features  
+## 💡 Project Background & Core Goals
 
-### 1. 5단계 레이어드 파이프라인 (SLM Pipeline)
-모든 문서 질의 요청은 성능과 비용 최적화를 위해 설계된 5단계 레이어를 거칩니다. (`ai_drive/core/doc_chat.py`)
+단순히 똑똑한 AI를 구축하는 것을 넘어, **'운영 원가 절감(Cost-efficiency)'**과 **'실무 적용성(Practicality)'**에 기술적 초점을 두었습니다.
 
-*   **Step 1. Router**: 의도 분류 및 복잡도 판단 (Gemini Flash).
-*   **Step 2. Researcher**: Milvus 기반 벡터 검색 및 관련 청크 추출.
-*   **Step 3. Reasoner**: GPT-4o-mini를 활용한 정밀 답변 생성.
-*   **Step 4. Synthesizer**: 마크다운 포맷팅 및 답변 정제.
-*   **Step 5. Guardrail**: 개인정보 마스킹 및 최종 안전 검증.
-
-### 2. 지능형 에이전트 생성 (Agent Wizard)
-사용자와의 대화를 통해 에이전트 명세서를 자동으로 완성합니다. (`ai_hub/core/agent/manager.py`)
-
-*   **Analyze**: 사용자의 자연어 요청을 Orchestrator가 분석하여 JSON 스키마로 변환.
-*   **Vectorize**: 에이전트 특성을 임베딩하여 의미 기반 검색 지원.
+- 💰 **압도적인 비용 혁신**: 모든 텍스트 요청을 고비용 최신 모델로만 처리하는 기존 방식을 탈피했습니다.
+- 🎯 **동적 모델 라우팅 (Model Slimming)**: 질문의 의도와 복잡도에 따라 경량 모델(Gemini Flash-lite 등)과 추론 모델(DeepSeek-R1, GPT-4o 등)을 동적으로 매핑하여 불필요한 API 과금을 획기적으로 차단합니다.
+- 🤖 **에이전틱 워크플로우**: 단순 질의응답을 뛰어넘어 `[의도 분석 ➜ 전략 수립 ➜ 문서 검색 ➜ 생성 ➜ 검수]`의 파이프라인을 자율적으로 통과하는 에이전트 모델을 지향합니다.
 
 ---
 
-## 💻 Tech Stack  
-*   **LLM/SLM**: Gemini 1.5 Flash (Router/Draft), GPT-4o-mini (Reasoner).
-*   **Embeddings**: OpenAI text-embedding-3-small.  
-*   **Database**: PostgreSQL 15+ (Metadata), Milvus 2.3+ (Vector Attributes).  
-*   **Infrastructure**: Docker Compose (Microservices Architecture).
+## 🏗️ Core System Architecture
+
+ISOR 시스템은 세 가지 핵심 마이크로서비스 모듈로 완벽하게 분리되어 유기적으로 동작합니다.
+
+### 1. 🧠 Orchestrator (중앙 제어 시스템)
+사용자의 최초 요청을 수신하고 의도(Intent)와 복잡도(Complexity)를 파악해 최적의 경로를 배차(Dispatch)하는 지능형 컨트롤 타워.
+- **주요 기능**: Intent Classification, Dynamic Model Routing, Agent Schema Draft.
+
+### 2. 🤖 AI Hub (에이전트 서비스 플랫폼)
+목적에 맞는 특화된 사내 AI 에이전트를 자연어로 손쉽게 제작, 저장, 검색할 수 있는 플랫폼.
+- **주요 기능**: 대화형 에이전트 생성 마법사(Agent Creation Wizard), Vector 기반 유사 에이전트 추천.
+
+### 3. 📂 AI Drive (통합 지식 저장소 & RAG)
+PDF, TXT 등 기업의 문서 데이터를 밀리초 단위로 파악하는 지식 저장소 및 SLM 파이프라인 구동계.
+- **주요 기능**: Chunking & Embedding, Vector Semantic Search (Milvus).
 
 ---
 
-## 👨‍💻 개발 매뉴얼 (Development Manual)
+## 🛠️ 5-Step SLM Pipeline (핵심 정보 처리 과정)
 
-### 1. 가상환경 설정 (Virtual Environment Setup)
-```bash
-# Mac/Limit
-python3 -m venv venv && source venv/bin/activate
+ISOR의 가장 특징적인 로직은 답변 무결성과 비용 낭비 최소화를 위해 설계된 **5단계의 치밀한 검증 레이어**(`services/orchestrator/pipeline.py`)입니다.
 
-# Windows
-python -m venv venv && .\venv\Scripts\activate
-
-# 패키지 설치
-pip install -r requirements.txt
-```
-
-### 2. 담당 파트 및 작업 경로 (Roles & Paths)
-*   **권영민** (`services/orchestrator/`): LLM 오케스트레이션 엔진 및 라우팅 로직.
-*   **이지석** (`services/ai_hub/`): 에이전트 생성 마법사 및 허브 검색 시스템.
-*   **송호성** (`services/ai_drive/`): RAG 시스템 및 문서 관리 파이프라인.
+1. 🔀 **Router**: 요청의 성격을 분석하고, 복잡도(SIMPLE, COMPLEX) 계산을 통해 맞춤형 모델 분배.
+2. 🔍 **Researcher**: AI Drive(Milvus)에 접근하여 질문과 의미적으로 근접한 최상위 관련 문서 확보.
+3. ⚙️ **Reasoner**: 추출된 문서를 기반으로 질문에 대한 구체적이고 논리적인 답변 초안 작성 (환각 방지 기술 적용).
+4. ✍️ **Synthesizer**: 로우 데이터를 가독성 높은 맞춤형 마크다운 및 표 형태로 최종 디자인 렌더링.
+5. 🛡️ **Guardrail**: 주민번호 등 PII 데이터 블라인드 마스킹, 유해 콘텐츠 차단 및 메타 정보 노출 방지 (API 비용 0원의 자체 Regex 기반 검사 연동).
 
 ---
 
-## 🚀 빠른 시작 (Quick Start)
+## 💻 Tech Stack
 
-### 1. Docker 실행 (필수)
-DB(Postgres, Milvus, Redis)를 실행합니다.
-```bash
-./deploy.sh
-# 또는
-docker-compose up -d
-```
+- **LLM/SLM**: Gemini 1.5 Flash-lite (고속 라우팅 및 Guardrail), GPT-4o-mini (주요 답변), DeepSeek-R1 (고난도 추론)
+- **Embeddings**: OpenAI `text-embedding-3-small`
+- **Backend / API**: FastAPI (Python 3.11)
+- **Database**: 
+  - **PostgreSQL 15+** : 메타데이터 및 회원/권한 관리 RDBMS
+  - **Milvus 2.3+** : 초고속 Vector 임베딩 데이터 쿼리용 Standalone DB
+- **Infrastructure**: Docker & Docker Compose (완전한 컨테이너 환경 격리 및 배포)
 
-### 2. 환경 변수 설정
-`.env` 파일을 생성하고 API 키를 입력하세요.
+---
+
+## 🚀 Quick Start (빠른 실행 가이드)
+
+ISOR 프로젝트는 도커 환경으로 컨테이너화되어 있어 누구나 쉽게 실행할 수 있습니다.
+
+### 1. 환경 변수 설정
+프로젝트 최상단 디렉토리에 `.env` 파일을 복사하여 생성하고, 필수 API 키를 입력합니다.
 ```bash
 cp .env.template .env
-# OPENAI_API_KEY, GOOGLE_API_KEY 입력
+# 편집기로 .env 파일을 열고 OPENAI_API_KEY, GOOGLE_API_KEY 등 입력
 ```
 
-### 3. 서버 실행
+### 2. 인프라 실행 (DB 및 서버 전체 배포)
+디바이스 내 Docker가 실행되어 있는 상태에서, 내장된 쉘 스크립트를 통해 시스템 로딩을 시작합니다.
 ```bash
-python -m application.main
+# 실행 권한 부여 후 배포 처리
+chmod +x deploy.sh
+./deploy.sh
 ```
-*   **API 문서**: [http://localhost:8000/docs](http://localhost:8000/docs)
 
-> **💡 참고: Mock 모드**  
-> API 키가 없거나 DB 연결 실패 시, 시스템은 자동으로 **Mock Mode(테스트 모드)**로 동작하여 개발 편의성을 제공합니다.
-> (단, 실제 RAG 품질 확인을 위해서는 API 키 설정이 필수입니다.)
+### 3. 접속 및 테스트
+- **API 도큐먼트 (Swagger UI)**: [http://localhost:8000/docs](http://localhost:8000/docs)
+- **서버 헬스 체크**: [http://localhost:8000/health](http://localhost:8000/health)
 
----
+> **💡 개발 / Mock Mode 관련 안내**  
+> 인프라나 DB(Milvus 등) 연결이 단절되거나 실패하는 상황에서는, 프론트 서버 다운을 방지하기 위해 자체적인 예외 처리를 뱉고 빈 문서를 활용해서라도 시스템 자율 지식 기반으로 답변하도록 방어 로직이 갖춰져 있습니다.
 
-## 🏗️ Project Infrastructure Files (Root)
 
-이 프로젝트를 실행하고 배포하기 위한 핵심 인프라 파일들입니다.
-
-*   **`deploy.sh`**: [Deployment Script] 서버에서 Git Pull -> Docker Build -> Docker Up 과정을 한 번에 수행하는 배포 자동화 스크립트입니다.
-*   **`docker-compose.yml`**: [Container Orchestration] App, PostgreSQL, Redis, Milvus(Standalone) 컨테이너를 정의하고 네트워크로 연결하는 설정 파일입니다.
-*   **`Dockerfile`**: [App Image] Python 3.11 환경에서 Fastapi 서버를 실행하기 위한 도커 이미지 빌드 명세서입니다.
-*   **`requirements.txt`**: [Dependencies] 프로젝트 실행에 필요한 Python 패키지 목록입니다. (Litellm, Fastapi, Pymilvus 등 포함)
-
----
-
-## 🚀 How to Run (실행 방법)
-
-서버를 실행하려면 다음 단계를 따라주세요.
-
-1.  **Docker 실행:** Mac의 `Applications` > `Docker` 앱을 클릭하여 실행합니다. (상단 메뉴바에 고래 아이콘 확인)
-2.  **배포 스크립트 실행:** 터미널에서 다음 명령어를 입력하세요.
-    ```bash
-    ./deploy.sh
-    ```
-3.  **접속:** 잠시 후 로그가 멈추면 브라우저에서 아래 주소로 접속합니다.
-    *   **API 문서:** [http://localhost:8000/docs](http://localhost:8000/docs)
-    *   **헬스 체크:** [http://localhost:8000/health](http://localhost:8000/health)
-
----
