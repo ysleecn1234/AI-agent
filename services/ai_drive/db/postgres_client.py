@@ -179,6 +179,9 @@ class PostgresClient:
             
             return doc_id
             
+        except Exception:
+            session.rollback()
+            raise
         finally:
             session.close()
     
@@ -244,6 +247,9 @@ class PostgresClient:
                 doc.full_text = full_text
                 session.commit()
                 print(f"✓ 전체 텍스트 저장: {doc_id} ({len(full_text)}자)")
+        except Exception:
+            session.rollback()
+            raise
         finally:
             session.close()
     
@@ -261,7 +267,9 @@ class PostgresClient:
                 doc.modified_at = datetime.utcnow()
                 session.commit()
                 print(f"✓ 문서 상태 업데이트: {doc_id} → {status}")
-                
+        except Exception:
+            session.rollback()
+            raise
         finally:
             session.close()
     
@@ -279,6 +287,9 @@ class PostgresClient:
                     doc.doc_type = doc_type
                 session.commit()
                 print(f"✓ 태그 업데이트: {doc_id}")
+        except Exception:
+            session.rollback()
+            raise
         finally:
             session.close()
     
@@ -295,6 +306,9 @@ class PostgresClient:
                 doc.chunk_count = chunk_count
                 session.commit()
                 print(f"✓ 청크 수 업데이트: {doc_id} → {chunk_count}개")
+        except Exception:
+            session.rollback()
+            raise
         finally:
             session.close()
     
@@ -311,6 +325,9 @@ class PostgresClient:
                 doc.file_path = file_path
                 session.commit()
                 print(f"✓ 파일 경로 업데이트: {doc_id}")
+        except Exception:
+            session.rollback()
+            raise
         finally:
             session.close()
 
@@ -380,6 +397,9 @@ class PostgresClient:
                 "modified_at": doc.modified_at.isoformat()
             }
             
+        except Exception:
+            session.rollback()
+            raise
         finally:
             session.close()
 
@@ -487,6 +507,9 @@ class PostgresClient:
             
             return new_doc_id
             
+        except Exception:
+            session.rollback()
+            raise
         finally:
             session.close()
     
@@ -576,6 +599,9 @@ class PostgresClient:
             session.add(log)
             session.commit()
             
+        except Exception:
+            session.rollback()
+            raise
         finally:
             session.close()
     
@@ -649,6 +675,9 @@ class PostgresClient:
             session.add(log)
             session.commit()
             
+        except Exception:
+            session.rollback()
+            raise
         finally:
             session.close()
     
@@ -787,6 +816,9 @@ class PostgresClient:
                 doc.status = "archived"
                 session.commit()
                 print(f"✓ 이전 버전 아카이브: {doc_id}")
+        except Exception:
+            session.rollback()
+            raise
         finally:
             session.close()
 
@@ -843,6 +875,9 @@ class PostgresClient:
                 session.delete(doc)
                 session.commit()
                 print(f"✓ 문서 완전 삭제: {doc_id}")
+        except Exception:
+            session.rollback()
+            raise
         finally:
             session.close()
 

@@ -65,6 +65,7 @@ class ActivityLogger:
             doc_id: 문서 ID (선택)
             user_name: 사용자 이름 (선택)
         """
+        session = None
         try:
             from services.ai_drive.db.postgres_client import ActivityLog
             
@@ -82,10 +83,14 @@ class ActivityLogger:
             
             session.add(log)
             session.commit()
-            session.close()
             
         except Exception as e:
+            if session:
+                session.rollback()
             print(f"  [ActivityLogger] DB 기록 실패: {e}")
+        finally:
+            if session:
+                session.close()
 
 
 # 전역 인스턴스

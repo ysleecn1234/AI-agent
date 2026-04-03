@@ -35,11 +35,14 @@ class AgentRepository:
             input_example=agent_data.get("input_example", ""),
             output_example=agent_data.get("output_example", "")
         )
-        
-        db.add(new_agent)
-        db.commit()
-        db.refresh(new_agent)
-        return new_agent
+        try:
+            db.add(new_agent)
+            db.commit()
+            db.refresh(new_agent)
+            return new_agent
+        except Exception:
+            db.rollback()
+            raise
 
     def get_agent(self, db: Session, agent_id: str) -> Optional[object]:
         """
@@ -69,7 +72,10 @@ class AgentRepository:
         agent = db.query(Agent).filter(Agent.id == agent_id).first()
         if not agent:
             return False
-            
-        db.delete(agent)
-        db.commit()
-        return True
+        try:
+            db.delete(agent)
+            db.commit()
+            return True
+        except Exception:
+            db.rollback()
+            raise

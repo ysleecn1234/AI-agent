@@ -69,6 +69,7 @@ class CostLogger:
         """
         import uuid
         
+        session = None
         try:
             # postgres_client의 CostLog 테이블 재사용
             from services.ai_drive.db.postgres_client import CostLog
@@ -87,10 +88,14 @@ class CostLogger:
             
             session.add(log)
             session.commit()
-            session.close()
             
         except Exception as e:
+            if session:
+                session.rollback()
             print(f"  [CostLogger] DB 기록 실패: {e}")
+        finally:
+            if session:
+                session.close()
     
     def log_embedding_cost(
         self,
@@ -107,6 +112,7 @@ class CostLogger:
         """
         import uuid
         
+        session = None
         try:
             from services.ai_drive.db.postgres_client import CostLog
             
@@ -124,10 +130,14 @@ class CostLogger:
             
             session.add(log)
             session.commit()
-            session.close()
             
         except Exception as e:
+            if session:
+                session.rollback()
             print(f"  [CostLogger] 임베딩 비용 DB 기록 실패: {e}")
+        finally:
+            if session:
+                session.close()
 
 
 # 전역 인스턴스

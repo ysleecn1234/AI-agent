@@ -46,22 +46,25 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
     
-    # [3] 초대 코드 소모 표시
-    invite.is_used = True
-    invite.used_at = datetime.utcnow()
+    # [3] 초대 코드 소모 + 유저 생성 (단일 트랜잭션)
+    try:
+        invite.is_used = True
+        invite.used_at = datetime.utcnow()
 
-    # Create new user
-    hashed_password = get_password_hash(user.password)
-    new_user = User(
-        email=user.email,
-        password_hash=hashed_password,
-        name=user.name,
-        department=user.department,
-        memory={} # Initialize empty memory
-    )
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
+        hashed_password = get_password_hash(user.password)
+        new_user = User(
+            email=user.email,
+            password_hash=hashed_password,
+            name=user.name,
+            department=user.department,
+            memory={} # Initialize empty memory
+        )
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="회원가입 처리 중 오류가 발생했습니다.")
     
     # Generate Token
     access_token = create_access_token(
@@ -73,8 +76,7 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
         "token_type": "bearer",
         "user_id": str(new_user.id),
         "user_name": new_user.name,
-        "department": new_user.department,
-        "user_id": str(new_user.id) # [New] Check 1
+        "department": new_user.department
     }
 
 @router.post("/login", response_model=Token)
@@ -98,6 +100,5 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
         "token_type": "bearer",
         "user_id": str(db_user.id),
         "user_name": db_user.name,
-        "department": db_user.department,
-        "user_id": str(db_user.id) # [New] Check 2
+        "department": db_user.department
     }
