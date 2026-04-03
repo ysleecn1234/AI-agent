@@ -26,16 +26,30 @@ def get_current_user_id(token: str = Depends(oauth2_scheme)):
 
 
 def _categorize_operation(op: str) -> str:
-    """operation 필드 → 사용자 관점 3개 카테고리 매핑"""
+    """operation 필드 → 사용자 관점 카테고리 매핑
+    
+    실제 DB에 기록되는 operation 값:
+    - llm:chat_routing, llm:chat_research, llm:chat_synthesis, llm:chat_guardrail
+    - llm:casual_chat, llm:premium:GPT_5_4_PRO 등, llm:web_search
+    - llm:doc_chat
+    - embedding, search_embedding, chat_embedding, storage, llm:ocr
+    - llm:tagging, llm:title_gen, llm:doc_format
+    - llm:agent_draft, llm:agent_recommend, hub_search, agent_publish_embedding
+    """
     if not op:
         return "other"
-    if op.startswith("llm:chat_") or op == "llm:chat_simple":
+    # AI 채팅 (일반/캐주얼/프리미엄/웹검색)
+    if op.startswith("llm:chat_") or op.startswith("llm:casual") or op.startswith("llm:premium:") or op == "llm:web_search":
         return "ai_chat"
+    # 문서 Q&A
     if op == "llm:doc_chat":
         return "doc_qa"
-    if op == "embedding" or op == "llm:tagging" or op == "llm:title_gen":
+    # 문서 처리 (임베딩/저장/태깅/OCR 등)
+    if op in ("embedding", "search_embedding", "chat_embedding", "storage", "hub_search") \
+       or op in ("llm:tagging", "llm:title_gen", "llm:doc_format", "llm:ocr"):
         return "doc_processing"
-    if op.startswith("llm:agent_"):
+    # AI 에이전트
+    if op.startswith("llm:agent_") or op == "agent_publish_embedding":
         return "agent"
     return "other"
 
