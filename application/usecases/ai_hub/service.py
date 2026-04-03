@@ -34,7 +34,7 @@ class AIHubService:
 
         # Sorting
         if sort_by == "newest":
-            query = query.order_by(desc(Agent.created_at)) 
+            query = query.order_by(desc(Agent.id))
         elif sort_by == "name":
              query = query.order_by(Agent.name)
 
