@@ -208,9 +208,9 @@ class PIIDetector:
             )
 
         if "이메일" in active_types:
-            # user@company.com → use***@company.com
+            # user@company.com → use***@company.com (마크다운 링크 내부도 처리)
             masked_text = re.sub(
-                r'\b([a-zA-Z0-9._%+-]{1,3})[a-zA-Z0-9._%+-]*(@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\b',
+                r'([a-zA-Z0-9._%+-]{1,3})[a-zA-Z0-9._%+-]*(@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})',
                 r'\1***\2',
                 masked_text
             )

@@ -1334,19 +1334,20 @@ class Guardrail:
     def _get_user_pii_settings(self, user_id: str) -> Dict[str, bool]:
         """DB에서 사용자 PII 감지 항목 설정 조회"""
         try:
+            import uuid as _uuid
             from application.database import SessionLocal, UserSettings
+            uid = _uuid.UUID(user_id) if isinstance(user_id, str) else user_id
             db = SessionLocal()
             try:
                 settings = db.query(UserSettings).filter(
-                    UserSettings.user_id == user_id
+                    UserSettings.user_id == uid
                 ).first()
                 if settings and hasattr(settings, 'detection_items') and settings.detection_items:
                     return settings.detection_items
             finally:
                 db.close()
-        except Exception:
-            pass
-        # 기본값: 전체 활성화
+        except Exception as e:
+            print(f"  ⚠️ PII 설정 조회 실패: {e}")
         return {"ssn": True, "phone": True, "email": True, "creditCard": True, "account": True, "address": True}
 
     def mask_sensitive_info(self, text: str, user_id: str = None) -> str:
