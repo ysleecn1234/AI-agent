@@ -122,7 +122,7 @@ class Orchestrator:
         """
         return self.pipeline.call_llm(task=task, prompt=prompt, options=options)
 
-    def save_chat_log(self, user_id: str, session_id: str, user_input: str, ai_response: str, sources: Optional[List[Dict]] = None):
+    def save_chat_log(self, user_id: str, session_id: str, user_input: str, ai_response: str, sources: Optional[List[Dict]] = None, web_searched: bool = False, web_citations: Optional[List] = None):
         """
         채팅 로그를 DB에 저장합니다. (Fire-and-forget 방식)
         """
@@ -135,7 +135,9 @@ class Orchestrator:
                 session_id=session_id,
                 user_input=user_input,
                 ai_response=ai_response,
-                sources=sources if sources is not None else []
+                sources=sources if sources is not None else [],
+                web_searched=web_searched,
+                web_citations=web_citations if web_citations is not None else []
             )
             db.add(log_entry)
             db.commit()

@@ -18,6 +18,8 @@ class ChatLog(Base):
     user_input = Column(Text, nullable=False)
     ai_response = Column(Text, nullable=False)
     sources = Column(JSONB, server_default='[]')
+    web_searched = Column(Boolean, server_default='false')
+    web_citations = Column(JSONB, server_default='[]')
     
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
 
