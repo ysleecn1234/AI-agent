@@ -721,6 +721,7 @@ class Researcher:
         - 웹 검색 여부는 ML 의도 분류 결과(search/question/analysis)로 판단
         """
         user_input = routing_result["user_input"]
+        user_id = routing_result.get("user_id")
         
         documents = []
         web_context = ""
@@ -793,7 +794,7 @@ class Researcher:
 
             if needs_web:
                 try:
-                    web_context, web_citations = self._web_search(user_input)
+                    web_context, web_citations = self._web_search(user_input, user_id=user_id)
                 except Exception as e:
                     print(f"  ⚠️ 웹 검색 실패 (스킵): {e}")
             else:
@@ -806,7 +807,7 @@ class Researcher:
 
             if needs_web:
                 try:
-                    web_context, web_citations = self._web_search(user_input)
+                    web_context, web_citations = self._web_search(user_input, user_id=user_id)
                 except Exception as e:
                     print(f"  ⚠️ 웹 검색 실패 (스킵): {e}")
             else:
@@ -850,7 +851,7 @@ class Researcher:
             print(f"  → 쿼리 압축 실패 ({e}), 원본 사용")
             return user_input
 
-    def _web_search(self, query: str) -> tuple:
+    def _web_search(self, query: str, user_id: str = None) -> tuple:
         """
         Perplexity API를 통한 실시간 웹 검색
         
@@ -882,7 +883,7 @@ class Researcher:
                     output_tokens=ws_output,
                     cost_usd=ws_cost.get("cost_usd", {}).get("total", 0),
                     cost_krw=ws_cost.get("cost_krw", {}).get("total", 0),
-                    user_id=None
+                    user_id=user_id
                 )
             
             # ── Perplexity API citations 강력 추출 (여러 경로 시도) ──
@@ -2117,7 +2118,7 @@ class Pipeline:
             web_citations = []
             if model_type != "PERPLEXITY":
                 try:
-                    web_context, web_citations = self.researcher._web_search(user_input)
+                    web_context, web_citations = self.researcher._web_search(user_input, user_id=user_id)
                 except Exception as e:
                     print(f"  → 웹 검색 실패 (스킵): {e}")
             
