@@ -43,7 +43,7 @@ app.include_router(generate.router)  # 메타데이터 자동생성 라우터
 # CORS 미들웨어
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:8000"],
+    allow_origins=["http://localhost:3000", "http://localhost:8000", "http://223.130.142.76:3000", "http://223.130.142.76:8000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
