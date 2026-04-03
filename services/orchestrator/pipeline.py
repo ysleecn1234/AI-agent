@@ -642,8 +642,8 @@ class Researcher:
             return self._search_with_rag(query, top_k, department)
         else:
             if self.use_rag and self.rag_searcher is None:
-                print("  [RAG] use_rag=True 이지만 rag_searcher가 초기화되지 않아 Mock 검색으로 폴백합니다.")
-            return self._search_mock(query, top_k)
+                print("  ❌ [RAG] use_rag=True 이지만 rag_searcher가 초기화되지 않음 → 문서 없이 진행")
+            return []  # Mock 대신 빈 리스트 → LLM이 자체 지식으로 답변
     
     def _search_with_rag(self, query: str, top_k: int, department: str) -> list[Dict[str, Any]]:
         """
@@ -674,24 +674,24 @@ class Researcher:
             return formatted_results
             
         except Exception as e:
-            print(f"  [RAG] 검색 실패: {e}")
-            print("  [RAG] Mock 검색으로 폴백")
-            return self._search_mock(query, top_k)
+            print(f"  ❌ [RAG] 검색 실패: {e}")
+            print(f"  → 문서 없이 진행 (자체 지식 기반 답변)")
+            return []  # Mock 대신 빈 리스트
     
     def _search_mock(self, query: str, top_k: int) -> list[Dict[str, Any]]:
         """
-        Mock 검색 (테스트용)
-        
-        Args:
-            query: 검색 쿼리
-            top_k: 반환할 문서 개수
-            
-        Returns:
-            Mock 문서 리스트
+        [DEPRECATED] 개발용 Mock 데이터.
+        프로덕션에서는 사용 금지. 테스트에서만 직접 호출.
         """
+        import warnings
+        warnings.warn(
+            "_search_mock()은 프로덕션에서 사용하면 안 됩니다. "
+            "테스트 코드에서만 사용하세요.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         print(f"  [Mock] '{query}'에 대한 Mock 검색 실행")
-        
-        # Mock 데이터 생성
+
         mock_documents = [
             {
                 "content": f"'{query}'와 관련된 Mock 문서 내용입니다. 이것은 테스트용 데이터로, 실제 RAG 연동 시 실제 문서 내용으로 대체됩니다.",
@@ -708,8 +708,7 @@ class Researcher:
                 "chunk_id": "mock-chunk-002"
             }
         ]
-        
-        # top_k 개수만큼 반환
+
         return mock_documents[:top_k]
     
     def retrieve(self, routing_result: Dict[str, Any]) -> Dict[str, Any]:
@@ -1294,10 +1293,84 @@ class Guardrail:
             return match.group(1).strip()
         return text
     
-    def check_safety(self, text: str) -> bool:
-        """안전성 검사"""
-        # TODO: 유해 콘텐츠 검사 로직 구현
-        return True
+    def check_safety(self, text: str) -> tuple:
+        """
+        응답 안전성 검사 (LLM 호출 없이 키워드/패턴 기반)
+        Returns: (is_safe: bool, issues: list[str])
+        """
+        import re
+        issues = []
+        text_lower = text.lower()
+
+        # ── 1. 시스템 메타정보 유출 감지 ──
+        system_leak_patterns = [
+            r"system[_\s]?prompt",
+            r"TASK_MODEL_CONFIG",
+            r"api[_\s]?key\s*[:=]",
+            r"sk-[a-zA-Z0-9]{20,}",           # OpenAI API key 패턴
+            r"AIza[a-zA-Z0-9_-]{30,}",        # Google API key 패턴
+            r"PERPLEXITY_API",
+            r"litellm\.completion",
+            r"pipeline\.call_llm",
+        ]
+        for pattern in system_leak_patterns:
+            if re.search(pattern, text, re.IGNORECASE):
+                issues.append(f"시스템 메타정보 유출 감지: {pattern}")
+
+        # ── 2. 모델명/내부 구조 노출 감지 ──
+        internal_terms = [
+            "deepseek-r1", "gemini-2.5-flash-lite", "gpt-5.4-nano",
+            "chat_guardrail", "chat_routing", "chat_research",
+            "Researcher", "Reasoner", "Synthesizer",  # 파이프라인 클래스명
+            "TASK_MODEL_CONFIG", "routing_confidence",
+        ]
+        for term in internal_terms:
+            if term.lower() in text_lower:
+                issues.append(f"내부 구조 노출: '{term}'")
+
+        # ── 3. 역할 이탈 감지 ──
+        role_break_patterns = [
+            r"저는\s*(AI|인공지능|언어\s*모델|챗봇)입니다",
+            r"(OpenAI|Anthropic|Google|DeepSeek)에\s*의해\s*(만들어|개발|학습)",
+            r"GPT-[0-9]|Claude\s+[A-Z]",  # 모델 자기 소개
+        ]
+        for pattern in role_break_patterns:
+            if re.search(pattern, text):
+                issues.append(f"역할 이탈 감지: {pattern}")
+
+        # ── 4. 잠재적 유해 지시 반복 감지 ──
+        harmful_patterns = [
+            r"폭탄\s*(만드|제조|설계)",
+            r"해킹\s*(방법|코드|스크립트)",
+            r"(마약|불법\s*약물)\s*(제조|구입|복용)",
+        ]
+        for pattern in harmful_patterns:
+            if re.search(pattern, text):
+                issues.append(f"유해 콘텐츠 감지: {pattern}")
+
+        is_safe = len(issues) == 0
+        if not is_safe:
+            print(f"  [Guardrail] 안전성 이슈 {len(issues)}건 감지: {issues}")
+
+        return is_safe, issues
+
+    def _redact_system_info(self, text: str) -> str:
+        """응답에서 시스템 메타정보를 마스킹"""
+        import re
+
+        # API 키 패턴 마스킹
+        text = re.sub(r'sk-[a-zA-Z0-9]{20,}', '[REDACTED]', text)
+        text = re.sub(r'AIza[a-zA-Z0-9_-]{30,}', '[REDACTED]', text)
+
+        # 내부 클래스명/설정명 마스킹
+        internal_terms = [
+            "TASK_MODEL_CONFIG", "pipeline.call_llm", "litellm.completion",
+            "routing_confidence", "chat_guardrail", "chat_routing",
+        ]
+        for term in internal_terms:
+            text = text.replace(term, "[내부 정보]")
+
+        return text
     
     def verify_quality(self, synthesis_result: Dict[str, Any]) -> Dict[str, Any]:
         """품질 검수 (복잡도에 따라 차등 적용)"""
@@ -1309,34 +1382,30 @@ class Guardrail:
             
         complexity = synthesis_result.get("complexity")
         
-        # SIMPLE 작업 처리
+        routing_confidence = synthesis_result.get("routing_confidence", 0.0)
+        response = synthesis_result.get("response", "")
+
+        # ── 경량 검증으로 충분한 경우 (LLM 호출 없이) ──
+
+        # Case 1: SIMPLE 질문 → 항상 경량 검증
         if complexity == ComplexityLevel.SIMPLE.value:
-            routing_confidence = synthesis_result.get("routing_confidence", 0.0)
-            
-            if routing_confidence >= 0.7:
-                # Router가 SIMPLE이라고 확신 → 신뢰하고 스킵
-                print(f"  → [SIMPLE] Router 신뢰도 높음 ({routing_confidence:.2f}), 검수 스킵")
-                return {
-                    "quality_verified": True,
-                    "quality_score": 1.0,
-                    "quality_issues": [],
-                    "needs_regeneration": False
-                }
-            else:
-                # Router 신뢰도 낮음 → COMPLEX 오분류 가능성 → 경량 검수 적용
-                print(f"  → [SIMPLE 경량 검수] Router 신뢰도 낮음 ({routing_confidence:.2f}), 오분류 가능성 있음")
-                result = self._verify_fallback(synthesis_result)
-                print(f"  ✓ 경량 검수 완료 (점수: {result['quality_score']:.2f})")
-                return result
+            return self._verify_fallback(synthesis_result)
+
+        # Case 2: COMPLEX/BULK + 고신뢰(0.8+) + 짧은 답변(2000자 미만) → 경량 검증
+        if routing_confidence >= 0.8 and len(response) < 2000:
+            print(f"  [Guardrail] 고신뢰 + 짧은 답변 → 경량 검증")
+            return self._verify_fallback(synthesis_result)
+
+        # Case 3: 나머지 (COMPLEX/BULK + 저신뢰 or 긴 답변) → LLM 검증
         
-        # COMPLEX, BULK 작업은 DeepSeek-R1로 검수
-        print("  → DeepSeek-R1 품질 검수 중...")
+        # COMPLEX, BULK 작업은 LLM으로 검수
+        print("  → LLM 기반 품질 검수 중...")
         
         user_input = synthesis_result.get("user_input", "")
         response = synthesis_result.get("response", "")
         intent = synthesis_result.get("intent", "")
         
-        # DeepSeek-R1에게 검수 요청 (CoT 활용)
+        # LLM에게 검수 요청 (CoT 활용)
         prompt = f"""다음 AI 답변의 품질을 검수해주세요.
 
 사용자 질문: {user_input}
@@ -1373,7 +1442,7 @@ AI 답변:
                 quality_score = quality_data.get("quality_score", 0.8)
                 issues = quality_data.get("issues", [])
                 
-                print(f"  ✓ DeepSeek-R1 검수 완료 (점수: {quality_score:.2f})")
+                print(f"  ✓ LLM 검수 완료 (점수: {quality_score:.2f})")
                 
                 if issues:
                     print(f"  [!] 품질 이슈 발견: {len(issues)}개")
@@ -1390,7 +1459,7 @@ AI 답변:
                 }
         
         except Exception as e:
-            print(f"  [!] DeepSeek-R1 검수 실패: {e}, Fallback 사용")
+            print(f"  [!] LLM 검수 실패: {e}, Fallback 사용")
         
         # Fallback: 기본 검수
         return self._verify_fallback(synthesis_result)
@@ -1485,18 +1554,32 @@ AI 답변:
         quality_result = self.verify_quality(synthesis_result)
 
         # 3. 안전성 검사
-        is_safe = self.check_safety(safe_response)
+        is_safe, safety_issues = self.check_safety(safe_response)
 
-        # 재생성 필요 시 경고 메시지 추가
+        # 안전하지 않은 경우: 문제 유형별 처리
+        if not is_safe:
+            for issue in safety_issues:
+                if "시스템 메타정보" in issue or "내부 구조" in issue:
+                    # 메타정보 유출 → 해당 부분 마스킹
+                    safe_response = self._redact_system_info(safe_response)
+                elif "역할 이탈" in issue:
+                    # 역할 이탈 → 로그만 기록 (답변 자체는 유지)
+                    print(f"  [Guardrail] 역할 이탈 경고 (로그만 기록)")
+                elif "유해 콘텐츠" in issue:
+                    # 유해 콘텐츠 → 안전한 거절 메시지로 교체
+                    safe_response = "죄송합니다. 해당 요청에는 답변드리기 어렵습니다. 다른 질문을 해주세요."
+                    break
+
+        # 재생성 필요 시 사용자 응답 수정 없이 메타데이터에만 기록
         if quality_result["needs_regeneration"]:
-            print(f"  [!] 품질 경고: {quality_result['quality_issues']}")
-            safe_response = f"※ 이 답변은 정확도가 낮을 수 있습니다. 중요한 수치는 원본 자료를 확인해주세요.\n\n{safe_response}"
+            print(f"  [Guardrail] 품질 점수 낮음 ({quality_result.get('quality_score', 0):.2f}), 메타데이터 기록")
 
         return {
             **synthesis_result,
             **quality_result,
             "final_response": safe_response,
-            "is_safe": is_safe
+            "is_safe": is_safe,
+            "safety_issues": safety_issues
         }
 
 
@@ -1828,6 +1911,32 @@ class Pipeline:
         import re
         return re.sub(r'\s*<!--USED_DOCS:\[.*?\]-->\s*', '', response).strip()
 
+    def _get_conversation_history(self, session_id: Optional[str], user_id: Optional[str]) -> list:
+        """대화 히스토리 조회 (user_id 보안 필터 포함)"""
+        if not session_id or not user_id:
+            return []
+
+        import uuid as _uuid
+        from services.orchestrator.db.tables import ChatLog
+        from application.database import SessionLocal
+
+        uid = _uuid.UUID(user_id) if isinstance(user_id, str) else user_id
+        conversation_history = []
+        db = SessionLocal()
+        try:
+            recent_logs = db.query(ChatLog).filter(
+                ChatLog.session_id == session_id,
+                ChatLog.user_id == uid
+            ).order_by(ChatLog.created_at.desc()).limit(5).all()
+
+            for log in reversed(recent_logs):
+                conversation_history.append({"role": "user", "content": log.user_input})
+                conversation_history.append({"role": "assistant", "content": log.ai_response})
+        finally:
+            db.close()
+
+        return conversation_history
+
     def process(self, user_input: str, user_id: Optional[str] = None, system_prompt: Optional[str] = None, session_id: Optional[str] = None) -> Dict[str, Any]:
         """전체 파이프라인 실행"""
         pipeline_start = time.time()
@@ -1836,28 +1945,11 @@ class Pipeline:
         print(f"{'='*60}")
         
         # 대화 히스토리 조회
-        conversation_history = []
-        if session_id and user_id:
-            import uuid as _uuid
-            from services.orchestrator.db.tables import ChatLog
-            from application.database import SessionLocal
-            uid = _uuid.UUID(user_id) if isinstance(user_id, str) else user_id
-            db = SessionLocal()
-            try:
-                recent_logs = db.query(ChatLog).filter(
-                    ChatLog.session_id == session_id,
-                    ChatLog.user_id == uid
-                ).order_by(ChatLog.created_at.desc()).limit(5).all()
+        conversation_history = self._get_conversation_history(session_id, user_id)
 
-                for log in reversed(recent_logs):
-                    conversation_history.append({"role": "user", "content": log.user_input})
-                    conversation_history.append({"role": "assistant", "content": log.ai_response})
-            finally:
-                db.close()
-        
         # 세션 시작
         session_id = self.logger.start_session(user_input, user_id)
-        
+
         try:
             # Step 1: Router
             print(f"\n[Step 1/5] Router - 의도 분류 및 복잡도 판단")
@@ -2058,28 +2150,11 @@ class Pipeline:
         model_name = model_config["model"]
         
         # 대화 히스토리 조회
-        conversation_history = []
-        if session_id and user_id:
-            import uuid as _uuid
-            from services.orchestrator.db.tables import ChatLog
-            from application.database import SessionLocal
-            uid = _uuid.UUID(user_id) if isinstance(user_id, str) else user_id
-            db = SessionLocal()
-            try:
-                recent_logs = db.query(ChatLog).filter(
-                    ChatLog.session_id == session_id,
-                    ChatLog.user_id == uid
-                ).order_by(ChatLog.created_at.desc()).limit(5).all()
+        conversation_history = self._get_conversation_history(session_id, user_id)
 
-                for log in reversed(recent_logs):
-                    conversation_history.append({"role": "user", "content": log.user_input})
-                    conversation_history.append({"role": "assistant", "content": log.ai_response})
-            finally:
-                db.close()
-        
         # 세션 시작
         session_id = self.logger.start_session(user_input, user_id)
-        
+
         try:
             # 2. RAG 검색 (use_rag=True일 때만)
             rag_context = ""

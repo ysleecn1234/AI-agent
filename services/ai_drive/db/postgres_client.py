@@ -91,14 +91,10 @@ class PostgresClient:
             port = os.getenv("POSTGRES_PORT", "5433")
             db_name = os.getenv("POSTGRES_DB", "ai_hub")
             
-            print(f"[DEBUG] POSTGRES_HOST={host}, PORT={port}, USER={user}, DB={db_name}")
-            
             self.database_url = os.getenv(
                 "POSTGRES_URL",
                 f"postgresql://{user}:{password}@{host}:{port}/{db_name}"
             )
-            
-            print(f"[DEBUG] Database URL: {self.database_url}")
         
         self.engine = create_engine(self.database_url)
         self.Session = sessionmaker(bind=self.engine)
@@ -510,61 +506,6 @@ class PostgresClient:
         except Exception:
             session.rollback()
             raise
-        finally:
-            session.close()
-    
-    def get_version_history(self, doc_id: str) -> List[Dict[str, Any]]:
-        """버전 히스토리 조회"""
-        session = self.Session()
-        
-        try:
-            # 최신 문서 찾기
-            doc = session.query(Document).filter(
-                Document.doc_id == uuid.UUID(doc_id)
-            ).first()
-            
-            if not doc:
-                return []
-            
-            # 루트 문서 찾기
-            root_id = doc.doc_id
-            while doc.parent_doc_id:
-                doc = session.query(Document).filter(
-                    Document.doc_id == doc.parent_doc_id
-                ).first()
-                if doc:
-                    root_id = doc.doc_id
-                else:
-                    break
-            
-            # 모든 버전 조회 (루트부터)
-            versions = []
-            current_id = root_id
-            
-            while current_id:
-                doc = session.query(Document).filter(
-                    Document.doc_id == current_id
-                ).first()
-                
-                if doc:
-                    versions.append({
-                        "doc_id": str(doc.doc_id),
-                        "version": doc.version,
-                        "title": doc.title,
-                        "is_latest": doc.is_latest,
-                        "created_at": doc.created_at.isoformat() if doc.created_at else None
-                    })
-                    
-                    # 다음 버전 찾기
-                    next_doc = session.query(Document).filter(
-                        Document.parent_doc_id == doc.doc_id
-                    ).first()
-                    current_id = next_doc.doc_id if next_doc else None
-                else:
-                    break
-            
-            return versions
-            
         finally:
             session.close()
     

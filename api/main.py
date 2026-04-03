@@ -4,16 +4,11 @@ from contextlib import asynccontextmanager
 
 from application.database import engine, Base
 from . import auth, chat, agents, drive, settings, admin, generate
-# [New] Import Models explicitly to ensure tables are created
+# [New] Import Models explicitly to ensure tables are created (Base.metadata.create_all()이 테이블을 생성하려면 필요)
 from services.orchestrator.db.tables import ChatLog
 from services.ai_hub.db.tables import Agent
 from services.ai_drive.db.postgres_client import Document
 from application.database import UserSettings
-
-# 모델 등록 (Base.metadata.create_all()이 테이블을 생성하려면 필요)
-from services.orchestrator.db.tables import ChatLog
-from services.ai_hub.db.tables import Agent
-from services.ai_drive.db.postgres_client import Document
 
 # TODO: Import Routers (etc.
 # from api import etc
@@ -45,10 +40,10 @@ app.include_router(settings.router)  # 설정 라우터 추가
 app.include_router(admin.router)  # 관리(사용 통계) 라우터 추가
 app.include_router(generate.router)  # 메타데이터 자동생성 라우터
 
-# CORS 미들웨어 (개발 환경에서는 전체 허용)
+# CORS 미들웨어
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:3000", "http://localhost:8000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

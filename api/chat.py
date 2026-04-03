@@ -199,9 +199,9 @@ def get_chat_session_messages(
         messages.append({
             "role": "assistant", 
             "content": log.ai_response, 
-            "sources": log.sources if hasattr(log, "sources") and log.sources else [],
-            "web_searched": log.web_searched if hasattr(log, "web_searched") else False,
-            "web_citations": log.web_citations if hasattr(log, "web_citations") and log.web_citations else [],
+            "sources": log.sources or [],
+            "web_searched": log.web_searched or False,
+            "web_citations": log.web_citations or [],
             "created_at": log.created_at.isoformat()
         })
 
