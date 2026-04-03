@@ -577,30 +577,18 @@ class Router:
             return ComplexityLevel.SIMPLE
         return ComplexityLevel.SIMPLE
 
-    def needs_realtime_info(self, user_input: str) -> bool:
-        """실시간/최신 정보 여부 예측 (유지)"""
-        user_input_lower = user_input.lower()
-        realtime_keywords = [
-            "날씨", "기온", "온도", "비", "미세먼지", "환율", "주가", "시세", 
-            "비트코인", "뉴스", "속보", "최근", "오늘", "지금", "스코어"
-        ]
-        for keyword in realtime_keywords:
-            if keyword in user_input_lower: return True
-        return False
-    
     def route(self, user_input: str, user_id: str = None) -> dict:
         self.current_user_id = user_id
         try:
             intent = self.classify_intent(user_input)
             complexity = self.determine_complexity(user_input, intent)
-            
+
             return {
                 "intent": intent.value,
                 "complexity": complexity.value,
                 "routing_confidence": self.last_confidence,
                 "user_input": user_input,
                 "user_id": user_id,
-                "needs_realtime": self.needs_realtime_info(user_input)
             }
         finally:
             self.current_user_id = None
@@ -730,7 +718,7 @@ class Researcher:
         
         - Drive 참조 ON (use_rag=True): Drive 문서 검색 + 실시간 정보 필요 시 웹 검색 동시 실행
         - Drive 참조 OFF (use_rag=False): 실시간 정보 필요 시 웹 검색만 실행
-        - 실시간 정보 필요 여부는 Router의 needs_realtime 플래그로 판단
+        - 웹 검색 여부는 ML 의도 분류 결과(search/question/analysis)로 판단
         """
         user_input = routing_result["user_input"]
         
@@ -750,10 +738,12 @@ class Researcher:
                 try:
                     from application.database import SessionLocal, User
                     db = SessionLocal()
-                    user = db.query(User).filter(User.id == user_id).first()
-                    if user and user.department:
-                        user_department = user.department
-                    db.close()
+                    try:
+                        user = db.query(User).filter(User.id == user_id).first()
+                        if user and user.department:
+                            user_department = user.department
+                    finally:
+                        db.close()
                 except Exception as e:
                     print(f"  ⚠️ 부서 조회 실패 (기본값 사용): {e}")
             
@@ -797,22 +787,9 @@ class Researcher:
                 except Exception as e:
                     print(f"  ⚠️ 전체 텍스트 조회 실패: {e}")
             
-            # 의도 검출 결과에 따라 웹 검색 결정
+            # ML 분류 결과 기반 웹 검색 결정
             intent = routing_result.get("intent")
-            needs_realtime = routing_result.get("needs_realtime", False)
-
-            if intent == "casual":
-                needs_web = False
-            elif intent == "analysis":
-                needs_web = True
-            elif intent == "question":
-                needs_web = True
-            elif intent == "generation":
-                needs_web = needs_realtime
-            elif intent == "search":
-                needs_web = needs_realtime
-            else:
-                needs_web = needs_realtime
+            needs_web = intent in ("search", "question", "analysis")
 
             if needs_web:
                 try:
@@ -820,24 +797,12 @@ class Researcher:
                 except Exception as e:
                     print(f"  ⚠️ 웹 검색 실패 (스킵): {e}")
             else:
-                print(f"  → 웹 검색 스킵 (실시간 정보 불필요)")
-                
+                print(f"  → 웹 검색 스킵 (intent: {intent})")
+
+        else:
             # ──── Drive 참조 OFF ────
             intent = routing_result.get("intent")
-            needs_realtime = routing_result.get("needs_realtime", False)
-
-            if intent == "casual":
-                needs_web = False
-            elif intent == "analysis":
-                needs_web = True
-            elif intent == "question":
-                needs_web = True
-            elif intent == "generation":
-                needs_web = needs_realtime
-            elif intent == "search":
-                needs_web = needs_realtime
-            else:
-                needs_web = needs_realtime
+            needs_web = intent in ("search", "question", "analysis")
 
             if needs_web:
                 try:
@@ -845,7 +810,7 @@ class Researcher:
                 except Exception as e:
                     print(f"  ⚠️ 웹 검색 실패 (스킵): {e}")
             else:
-                print(f"  → 웹 검색 스킵 (실시간 정보 불필요)")
+                print(f"  → 웹 검색 스킵 (intent: {intent})")
             full_docs = []
         
         return {
