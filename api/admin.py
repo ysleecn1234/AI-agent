@@ -241,35 +241,56 @@ def get_usage_summary(
         monthly_budget = _get_monthly_budget(db, user_id)
         budget_pct = round(total_krw_f / monthly_budget * 100, 1) if monthly_budget > 0 else 0.0
 
-        # 인기 모델 TOP 5 (text-embedding-3-small 제외 전체)
-        top_models_rows = (
+        # 프리미엄 모델 TOP 5
+        premium_models_rows = (
             db.query(
                 CostLog.model_name,
                 func.round(func.sum(CostLog.cost_krw)).label("sum_krw"),
                 func.count().label("usage_count"),
-                func.sum(CostLog.tokens_used).label("sum_tokens"),
             )
             .filter(
                 cast(CostLog.timestamp, Date) >= cur_first,
                 cast(CostLog.timestamp, Date) <= cur_last,
+                CostLog.operation.like("llm:premium:%"),
                 CostLog.model_name != None,
                 CostLog.model_name != "",
-                CostLog.model_name != "text-embedding-3-small"
             )
             .group_by(CostLog.model_name)
             .order_by(func.sum(CostLog.cost_krw).desc())
             .limit(5)
             .all()
         )
-        
-        top_models = []
-        for r in top_models_rows:
-            top_models.append({
-                "model": r.model_name,
-                "cost_krw": float(r.sum_krw or 0),
-                "count": r.usage_count,
-                "tokens": int(r.sum_tokens or 0)
-            })
+
+        # Auto 모델 TOP 5
+        auto_models_rows = (
+            db.query(
+                CostLog.model_name,
+                func.round(func.sum(CostLog.cost_krw)).label("sum_krw"),
+                func.count().label("usage_count"),
+            )
+            .filter(
+                cast(CostLog.timestamp, Date) >= cur_first,
+                cast(CostLog.timestamp, Date) <= cur_last,
+                ~CostLog.operation.like("llm:premium:%"),
+                CostLog.operation != "llm:doc_chat",
+                CostLog.model_name != None,
+                CostLog.model_name != "",
+                CostLog.model_name != "text-embedding-3-small",
+            )
+            .group_by(CostLog.model_name)
+            .order_by(func.sum(CostLog.cost_krw).desc())
+            .limit(5)
+            .all()
+        )
+
+        top_models_premium = [
+            {"model": r.model_name, "cost_krw": float(r.sum_krw or 0), "count": r.usage_count}
+            for r in premium_models_rows
+        ]
+        top_models_auto = [
+            {"model": r.model_name, "cost_krw": float(r.sum_krw or 0), "count": r.usage_count}
+            for r in auto_models_rows
+        ]
 
         # 일 평균 / 월말 예측 계산
         total_days_in_month = (cur_last - cur_first).days + 1
@@ -294,7 +315,9 @@ def get_usage_summary(
             "daily_avg_krw": daily_avg_krw,
             "month_end_estimate_krw": month_end_estimate_krw,
             "cost_by_category": cost_by_category,
-            "top_models": top_models,
+
+            "top_models_premium": top_models_premium,
+            "top_models_auto": top_models_auto,
             "vs_last_month": {
                 "cost_change_percent": cost_change,
                 "token_change_percent": token_change,

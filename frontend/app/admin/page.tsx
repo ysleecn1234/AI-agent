@@ -334,52 +334,87 @@ export default function AdminPage() {
                                             </div>
                                         </div>
 
-                                        {/* 인기 모델 TOP 5 섹션 */}
+                                        {/* 모델 사용량 비교 섹션 */}
                                         <div className="border-t border-gray-100 pt-4 mt-4">
-                                            <h3 className="text-sm font-semibold text-gray-900 mb-3">인기 모델 TOP 5</h3>
-                                            {(!summary?.top_models || summary.top_models.length === 0) ? (
-                                                <p className="text-sm text-gray-400 text-center py-4">아직 사용 데이터가 없습니다</p>
-                                            ) : (
-                                                <div className="space-y-2">
-                                                    {summary.top_models.map((item: any, idx: number) => {
-                                                        const displayNames: Record<string, string> = {
-                                                            'AUTO': 'Auto (자동)',
-                                                            'gemini/gemini-2.5-flash-lite': 'Gemini 2.5 Flash Lite',
-                                                            'gemini/gemini-2.5-flash': 'Gemini 2.5 Flash',
-                                                            'gemini/gemini-3.1-flash-lite-preview': 'Gemini 3.1 Flash Lite',
-                                                            'gemini/gemini-3.1-pro-preview': 'Gemini 3.1 Pro',
-                                                            'gpt-5.4-nano': 'GPT-5.4 Nano',
-                                                            'gpt-5.4-mini': 'GPT-5.4 Mini',
-                                                            'gpt-5.4': 'GPT-5.4',
-                                                            'gpt-5.4-pro': 'GPT-5.4 Pro',
-                                                            'claude-haiku-4.5': 'Claude Haiku 4.5',
-                                                            'claude-sonnet-4-6': 'Claude Sonnet 4.6',
-                                                            'claude-opus-4-6': 'Claude Opus 4.6',
-                                                            'perplexity/sonar': 'Perplexity Sonar',
-                                                            'perplexity/sonar-pro': 'Perplexity Sonar Pro',
-                                                        };
-                                                        const displayName = displayNames[item.model] || item.model;
-                                                        
-                                                        const badgeColors = ['bg-blue-600', 'bg-gray-600', 'bg-gray-500', 'bg-gray-400', 'bg-gray-300'];
-                                                        const badgeColor = badgeColors[idx] || 'bg-gray-100';
-                                                        
-                                                        return (
-                                                            <div key={idx} className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-lg">
-                                                                <div className="flex items-center gap-2">
-                                                                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white ${badgeColor}`}>
-                                                                        {idx + 1}
-                                                                    </div>
-                                                                    <span className="text-sm text-gray-700 font-medium">{displayName}</span>
+                                            <h3 className="text-sm font-semibold text-gray-900 mb-3">모델 사용량</h3>
+                                            {(() => {
+                                                const displayNames: Record<string, string> = {
+                                                    'AUTO': 'Auto (자동)',
+                                                    'gemini/gemini-2.5-flash-lite': 'Gemini 2.5 Flash Lite',
+                                                    'gemini/gemini-2.5-flash': 'Gemini 2.5 Flash',
+                                                    'gemini/gemini-3.1-flash-lite-preview': 'Gemini 3.1 Flash Lite',
+                                                    'gemini/gemini-3.1-pro-preview': 'Gemini 3.1 Pro',
+                                                    'gpt-5.4-nano': 'GPT-5.4 Nano',
+                                                    'gpt-5.4-mini': 'GPT-5.4 Mini',
+                                                    'gpt-5.4': 'GPT-5.4',
+                                                    'gpt-5.4-pro': 'GPT-5.4 Pro',
+                                                    'claude-haiku-4.5': 'Claude Haiku 4.5',
+                                                    'claude-sonnet-4-6': 'Claude Sonnet 4.6',
+                                                    'claude-opus-4-6': 'Claude Opus 4.6',
+                                                    'perplexity/sonar': 'Perplexity Sonar',
+                                                    'perplexity/sonar-pro': 'Perplexity Sonar Pro',
+                                                };
+                                                return (
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        {/* 프리미엄 */}
+                                                        <div>
+                                                            <p className="text-xs font-medium text-purple-600 mb-2">⚡ 프리미엄</p>
+                                                            {(!summary?.top_models_premium || summary.top_models_premium.length === 0) ? (
+                                                                <p className="text-xs text-gray-400 text-center py-3">사용 없음</p>
+                                                            ) : (
+                                                                <div className="space-y-1.5">
+                                                                    {summary.top_models_premium.map((item: any, idx: number) => {
+                                                                        const displayName = displayNames[item.model] || item.model;
+                                                                        const badgeColors = ['bg-purple-600', 'bg-purple-500', 'bg-purple-400', 'bg-purple-300', 'bg-purple-200'];
+                                                                        return (
+                                                                            <div key={idx} className="flex items-center justify-between px-2 py-1.5 bg-purple-50 rounded-lg">
+                                                                                <div className="flex items-center gap-1.5">
+                                                                                    <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold text-white ${badgeColors[idx]}`}>
+                                                                                        {idx + 1}
+                                                                                    </div>
+                                                                                    <span className="text-xs text-gray-700 font-medium truncate max-w-[80px]">{displayName}</span>
+                                                                                </div>
+                                                                                <div className="text-right">
+                                                                                    <span className="text-xs font-semibold text-gray-900">₩{Math.round(item.cost_krw).toLocaleString()}</span>
+                                                                                    <span className="text-[10px] text-gray-400 ml-1">{item.count}건</span>
+                                                                                </div>
+                                                                            </div>
+                                                                        );
+                                                                    })}
                                                                 </div>
-                                                                <div className="text-right flex flex-col sm:flex-row sm:items-center sm:gap-2">
-                                                                    <span className="text-sm font-semibold text-gray-900">₩{Math.round(item.cost_krw).toLocaleString()}</span>
-                                                                    <span className="text-xs text-gray-500">{item.count}건</span>
+                                                            )}
+                                                        </div>
+                                                        {/* Auto */}
+                                                        <div>
+                                                            <p className="text-xs font-medium text-blue-600 mb-2">🤖 Auto</p>
+                                                            {(!summary?.top_models_auto || summary.top_models_auto.length === 0) ? (
+                                                                <p className="text-xs text-gray-400 text-center py-3">사용 없음</p>
+                                                            ) : (
+                                                                <div className="space-y-1.5">
+                                                                    {summary.top_models_auto.map((item: any, idx: number) => {
+                                                                        const displayName = displayNames[item.model] || item.model;
+                                                                        const badgeColors = ['bg-blue-600', 'bg-blue-500', 'bg-blue-400', 'bg-blue-300', 'bg-blue-200'];
+                                                                        return (
+                                                                            <div key={idx} className="flex items-center justify-between px-2 py-1.5 bg-blue-50 rounded-lg">
+                                                                                <div className="flex items-center gap-1.5">
+                                                                                    <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold text-white ${badgeColors[idx]}`}>
+                                                                                        {idx + 1}
+                                                                                    </div>
+                                                                                    <span className="text-xs text-gray-700 font-medium truncate max-w-[80px]">{displayName}</span>
+                                                                                </div>
+                                                                                <div className="text-right">
+                                                                                    <span className="text-xs font-semibold text-gray-900">₩{Math.round(item.cost_krw).toLocaleString()}</span>
+                                                                                    <span className="text-[10px] text-gray-400 ml-1">{item.count}건</span>
+                                                                                </div>
+                                                                            </div>
+                                                                        );
+                                                                    })}
                                                                 </div>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            )}
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })()}
 
                                             {/* 일 평균 비용 + 월말 예측 */}
                                             {typeof summary?.daily_avg_krw === 'number' && typeof summary?.month_end_estimate_krw === 'number' && (
