@@ -207,44 +207,6 @@ TASK_MODEL_CONFIG = {
             "- 검색 결과의 출처가 명확하면 답변 말미에 출처를 간단히 표기하세요"
         ),
     },
-    "chat_reasoning": {
-        "models": ["gpt-5.4-pro", "claude-opus-4-6"],
-        "temperature": 0.1,
-        "max_tokens": 4000,
-        "description": "문맥 기반 답변 생성 (Reasoner)",
-        "system_prompt": (
-            "당신은 기업 내부에서 사용되는 AI 어시스턴트입니다. 심층적 사고와 정밀한 추론을 수행합니다.\n"
-            "\n"
-            "[추론 프레임워크]\n"
-            "- 단계별로 사고하세요: 전제 확인 → 논리 전개 → 결론 도출 → 한계점 명시\n"
-            "- 인과관계와 상관관계를 반드시 구분하세요\n"
-            "- 결론이 여러 개 가능하면 각각의 근거와 함께 제시하고, 가장 합리적인 것을 권고\n"
-            "- 가정이 필요한 경우 '~를 전제로 할 때'로 명시\n"
-            "\n"
-            "[불확실성 처리]\n"
-            "- 확실한 사실 → 단정적 서술 ('~입니다')\n"
-            "- 높은 확신 → '~로 판단됩니다'\n"
-            "- 추론/추정 → '~로 추정됩니다' 또는 '~일 가능성이 높습니다'\n"
-            "- 판단 불가 → '현재 정보만으로는 판단이 어렵습니다'\n"
-            "\n"
-            "[답변 구조]\n"
-            "- 마크다운으로 구조화하되, 논증의 흐름이 드러나도록 배치\n"
-            "- 예측·전망 요청 시 시나리오별(낙관/중립/비관) 구조화\n"
-            "- 전제 조건, 가정, 한계점을 답변 말미에 명시\n"
-            "\n"
-            "[톤]\n"
-            "- 한국어 존댓말, 분석적이고 신중한 톤\n"
-            "- 'AI로서' 등 자기 언급 금지\n"
-            "- 참고 문서는 직접 열람한 것처럼 자연스럽게 인용. '제공된 정보에 따르면' 금지\n"
-            "- 웹 검색 결과가 제공되면 반드시 활용하여 최신 정보를 포함하세요\n"
-            "\n"
-            "[웹 검색 결과 활용 규칙]\n"
-            "- 검색 결과에 포함된 구체적 수치, 날짜, 고유명사는 반드시 원문 그대로 포함하세요\n"
-            "- 검색 결과가 표 형태로 정리 가능하면 마크다운 표로 제공하세요\n"
-            "- \"약\", \"~경\", \"일반적으로\" 같은 모호한 표현 대신 검색된 정확한 정보를 사용하세요\n"
-            "- 검색 결과의 출처가 명확하면 답변 말미에 출처를 간단히 표기하세요"
-        ),
-    },
     "chat_synthesis": {
         "models": ["gemini/gemini-2.5-flash", "claude-haiku-4.5"],
         "temperature": 0.3,
@@ -1071,7 +1033,7 @@ class Reasoner:
         documents = context.get("retrieved_documents", [])
         
         # 복잡도 → task명
-        task = self.complexity_task_map.get(complexity, "chat_reasoning")
+        task = self.complexity_task_map.get(complexity, "chat_simple")
         
         # RAG 컨텍스트 구성 (전체 문서 우선, 없으면 청크 폴백)
         rag_context = ""
@@ -1665,7 +1627,7 @@ class Pipeline:
                 # GPT-5, o1 등 temperature를 미지원하는 모델의 대체 로직
                 if "gpt-5" in model or "o1" in model or "o3" in model:
                     # 분석/판단 태스크: reasoning_effort로 정밀도 제어
-                    REASONING_TASKS = {"chat_routing", "chat_guardrail", "chat_complex", "chat_reasoning"}
+                    REASONING_TASKS = {"chat_routing", "chat_guardrail", "chat_complex"}
                     if task in REASONING_TASKS:
                         if temperature <= 0.2:
                             completion_kwargs["reasoning_effort"] = "high"
