@@ -321,18 +321,6 @@ class DocumentPipeline:
                 cost_krw=embed_cost["cost_krw"]["total"],
             )
 
-            # 크기별 저장 비용
-            cost_manager = CostManager()
-            storage_cost = cost_manager.calculate_daily_cost(file_size)
-
-            self.cost_logger.log_embedding_cost(
-                user_id=creator_id,
-                doc_id=doc_id,
-                tokens=0,
-                cost_usd=storage_cost["daily_cost_krw"] / 1400,
-                cost_krw=storage_cost["daily_cost_krw"],
-                operation="storage",
-            )
             
             print(f"[Pipeline] 처리 완료: {duration_ms}ms")
             
@@ -468,19 +456,6 @@ class DocumentPipeline:
                 cost_krw=embed_cost["cost_krw"]["total"],
             )
 
-            # 크기별 저장 비용
-            file_size = len(chat_content.encode('utf-8'))
-            cost_manager = CostManager()
-            storage_cost = cost_manager.calculate_daily_cost(file_size)
-
-            self.cost_logger.log_embedding_cost(
-                user_id=creator_id,
-                doc_id=doc_id,
-                tokens=0,
-                cost_usd=storage_cost["daily_cost_krw"] / 1400,
-                cost_krw=storage_cost["daily_cost_krw"],
-                operation="storage",
-            )
             
             self.postgres_client.update_document_status(doc_id, "active")
             

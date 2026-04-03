@@ -445,6 +445,28 @@ class PostgresClient:
         finally:
             session.close()
     
+    def get_all_active_documents(self) -> List[Dict[str, Any]]:
+        """활성 문서 전체 조회 (일일 storage 과금용, limit 없음)"""
+        session = self.Session()
+        
+        try:
+            docs = session.query(Document).filter(
+                Document.status == "active"
+            ).all()
+            
+            return [
+                {
+                    "doc_id": str(doc.doc_id),
+                    "creator_id": str(doc.creator_id),
+                    "file_size": doc.file_size or 0,
+                    "title": doc.title,
+                }
+                for doc in docs
+            ]
+            
+        finally:
+            session.close()
+    
     def delete_document(self, doc_id: str):
         """문서 삭제 (실제 삭제가 아닌 상태 변경)"""
         self.update_document_status(doc_id, "archived")
