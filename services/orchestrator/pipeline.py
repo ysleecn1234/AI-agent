@@ -1837,13 +1837,16 @@ class Pipeline:
         
         # 대화 히스토리 조회
         conversation_history = []
-        if session_id:
+        if session_id and user_id:
+            import uuid as _uuid
             from services.orchestrator.db.tables import ChatLog
             from application.database import SessionLocal
+            uid = _uuid.UUID(user_id) if isinstance(user_id, str) else user_id
             db = SessionLocal()
             try:
                 recent_logs = db.query(ChatLog).filter(
-                    ChatLog.session_id == session_id
+                    ChatLog.session_id == session_id,
+                    ChatLog.user_id == uid
                 ).order_by(ChatLog.created_at.desc()).limit(5).all()
 
                 for log in reversed(recent_logs):
@@ -2056,13 +2059,16 @@ class Pipeline:
         
         # 대화 히스토리 조회
         conversation_history = []
-        if session_id:
+        if session_id and user_id:
+            import uuid as _uuid
             from services.orchestrator.db.tables import ChatLog
             from application.database import SessionLocal
+            uid = _uuid.UUID(user_id) if isinstance(user_id, str) else user_id
             db = SessionLocal()
             try:
                 recent_logs = db.query(ChatLog).filter(
-                    ChatLog.session_id == session_id
+                    ChatLog.session_id == session_id,
+                    ChatLog.user_id == uid
                 ).order_by(ChatLog.created_at.desc()).limit(5).all()
 
                 for log in reversed(recent_logs):
