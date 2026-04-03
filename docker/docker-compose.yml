@@ -23,7 +23,7 @@ services:
     ports:
       - "8000:8000"
     env_file:
-      - ../.env.keys
+      - ../.env
     environment:
       - POSTGRES_HOST=agent-postgres
       - POSTGRES_PORT=5432
