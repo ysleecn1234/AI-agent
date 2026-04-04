@@ -296,20 +296,26 @@ class AIDriveService:
         #     raise ValueError("본인이 업로드한 문서만 삭제할 수 있습니다")
 
         self.db_client.update_document_status(doc_id, "archived")
-        
-        # Milvus에서 벡터 삭제
-        from services.ai_drive.db.milvus_client import MilvusClient
-        milvus_client = MilvusClient()
-        milvus_client.delete_by_doc_id(doc_id)
-        
-        # 활동 로그 (activity_logger로 통일)
-        self.activity_logger.log(
-            user_id=user_id,
-            action="delete",
-            details={"doc_id": doc_id},
-            doc_id=doc_id,
-        )
-        
+
+        # Milvus에서 벡터 삭제 (실패해도 아카이브 처리는 유지)
+        try:
+            from services.ai_drive.db.milvus_client import MilvusClient
+            milvus_client = MilvusClient()
+            milvus_client.delete_by_doc_id(doc_id)
+        except Exception as e:
+            print(f"  ⚠️ Milvus 벡터 삭제 실패 (무시): {e}")
+
+        # 활동 로그 (실패해도 삭제 처리는 유지)
+        try:
+            self.activity_logger.log(
+                user_id=user_id,
+                action="delete",
+                details={"doc_id": doc_id},
+                doc_id=doc_id,
+            )
+        except Exception as e:
+            print(f"  ⚠️ 활동 로그 기록 실패 (무시): {e}")
+
         return True
 
     async def restore_document(self, doc_id: str, user_id: str) -> bool:
