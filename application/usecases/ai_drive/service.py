@@ -287,13 +287,13 @@ class AIDriveService:
         return self.db_client.get_document(doc_id)
     
     async def delete_document(self, doc_id: str, user_id: str) -> bool:
-        """
-        문서 삭제 (Facade)
-        
-        현재: PostgresClient + MilvusClient 호출
-        향후: 권한 체크, 로그 기록 등 추가 가능
-        """
-        # DB에서 상태 변경 (archived)
+        """문서 삭제 — 소유자만 삭제 가능 (archived 상태로 변경)"""
+        doc = self.db_client.get_document(doc_id)
+        if not doc:
+            raise ValueError("문서를 찾을 수 없습니다")
+        if doc.get("creator_id") != user_id:
+            raise ValueError("본인이 업로드한 문서만 삭제할 수 있습니다")
+
         self.db_client.update_document_status(doc_id, "archived")
         
         # Milvus에서 벡터 삭제

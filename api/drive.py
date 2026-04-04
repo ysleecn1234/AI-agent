@@ -331,6 +331,9 @@ async def delete_document(doc_id: str, user_id: str = Depends(get_current_user_i
     try:
         await drive_service.delete_document(doc_id, user_id)
         return {"success": True, "message": "문서가 삭제되었습니다"}
+    except ValueError as e:
+        code = 404 if "찾을 수 없습니다" in str(e) else 403
+        raise HTTPException(code, str(e))
     except Exception as e:
         raise HTTPException(500, f"문서 삭제 실패: {str(e)}")
 
