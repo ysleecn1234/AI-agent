@@ -141,10 +141,17 @@ export default function AdminPage() {
     };
 
     const totalKRW = summary?.total_cost_krw ?? 0;
-    const budget = summary?.monthly_budget_krw ?? 1_000_000;
+    const budget = summary?.monthly_budget_krw ?? 100_000;
     const budgetPct = summary?.budget_usage_percent ?? 0;
     const remaining = Math.max(0, budget - totalKRW);
     const costChangePct = summary?.vs_last_month?.cost_change_percent ?? 0;
+
+    // 조직 전체 비용
+    const orgTotalKRW = summary?.org_total_cost_krw ?? 0;
+    const orgActiveUsers = summary?.org_active_users ?? 0;
+    const orgDailyAvg = summary?.org_daily_avg_krw ?? 0;
+    const orgMonthEndEstimate = summary?.org_month_end_estimate_krw ?? 0;
+    const orgCostChangePct = summary?.org_cost_change_percent ?? 0;
 
     return (
         <div className="flex flex-col h-screen bg-gray-50">
@@ -275,7 +282,7 @@ export default function AdminPage() {
                                                                 ₩{Math.round(totalKRW).toLocaleString()}
                                                             </text>
                                                             <text x="50%" y="58%" textAnchor="middle" className="text-xs fill-gray-500">
-                                                                이번 달 총 비용
+                                                                내 이번 달 비용
                                                             </text>
                                                         </PieChart>
                                                     </ResponsiveContainer>
@@ -424,7 +431,7 @@ export default function AdminPage() {
                                                         summary.month_end_estimate_krw >= summary.monthly_budget_krw * 0.8 ? 'text-amber-600' :
                                                         'text-gray-500'
                                                     }`}>
-                                                        📊 하루 평균 ₩{Math.round(summary.daily_avg_krw).toLocaleString()} 사용 중 · 이 추세면 월말 예상 ₩{Math.round(summary.month_end_estimate_krw).toLocaleString()}
+                                                        내 하루 평균 ₩{Math.round(summary.daily_avg_krw).toLocaleString()} · 월말 예상 ₩{Math.round(summary.month_end_estimate_krw).toLocaleString()}
                                                     </p>
                                                 </div>
                                             )}
@@ -433,11 +440,26 @@ export default function AdminPage() {
                                 </Card>
 
                                 {/* 인사이트 카드 */}
-                                <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
-                                    {/* 전월 대비 */}
+                                <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
+                                    {/* 내 예산 사용률 */}
+                                    <Card className="shadow-sm border-l-4 border-l-blue-500">
+                                        <CardContent className="py-3 px-5">
+                                            <p className="text-sm text-gray-500 mb-1">내 예산 사용률</p>
+                                            <div className="flex items-baseline gap-1">
+                                                <span className="text-2xl font-bold text-gray-900">{budgetPct}%</span>
+                                                <span className="text-xs text-gray-400">/ {formatKRW(budget)}</span>
+                                            </div>
+                                            <Progress value={Math.min(budgetPct, 100)} className="mt-2 h-2" />
+                                            <p className="text-xs text-gray-400 mt-1">
+                                                잔액 ₩{Math.round(remaining).toLocaleString()}
+                                            </p>
+                                        </CardContent>
+                                    </Card>
+
+                                    {/* 내 전월 대비 */}
                                     <Card className="shadow-sm border-l-4" style={{ borderLeftColor: costChangePct >= 0 ? '#EF4444' : '#10B981' }}>
-                                        <CardContent className="py-4 px-5">
-                                            <p className="text-sm text-gray-500 mb-1">전월 대비</p>
+                                        <CardContent className="py-3 px-5">
+                                            <p className="text-sm text-gray-500 mb-1">내 전월 대비</p>
                                             <div className="flex items-center gap-2">
                                                 {costChangePct >= 0 ? (
                                                     <ArrowUpRight className="w-5 h-5 text-red-500" />
@@ -448,43 +470,35 @@ export default function AdminPage() {
                                                     {costChangePct > 0 ? '+' : ''}{costChangePct}%
                                                 </span>
                                             </div>
-                                            <p className="text-xs text-gray-400 mt-1">
-                                                지난 달 같은 기간 대비 비용 {costChangePct >= 0 ? '증가' : '감소'}
-                                            </p>
                                         </CardContent>
                                     </Card>
 
-                                    {/* 예산 사용률 */}
-                                    <Card className="shadow-sm border-l-4 border-l-blue-500">
-                                        <CardContent className="py-4 px-5">
-                                            <p className="text-sm text-gray-500 mb-1">월 예산 사용률</p>
-                                            <div className="flex items-baseline gap-1">
-                                                <span className="text-2xl font-bold text-gray-900">{budgetPct}%</span>
-                                                <span className="text-xs text-gray-400">/ {formatKRW(budget)}</span>
-                                            </div>
-                                            <Progress value={Math.min(budgetPct, 100)} className="mt-2 h-2" />
-                                        </CardContent>
-                                    </Card>
-
-                                    {/* 사용 가능 잔액 */}
-                                    <Card className="shadow-sm border-l-4 border-l-emerald-500">
-                                        <CardContent className="py-4 px-5">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <Wallet className="w-4 h-4 text-emerald-600" />
-                                                <p className="text-sm text-gray-500">사용 가능 잔액</p>
-                                            </div>
-                                            <span className="text-2xl font-bold text-emerald-700">
-                                                ₩{Math.round(remaining).toLocaleString()}
+                                    {/* 조직 전체 비용 */}
+                                    <Card className="shadow-sm border-l-4 border-l-violet-500 bg-violet-50/30">
+                                        <CardContent className="py-3 px-5">
+                                            <p className="text-sm font-medium text-violet-700 mb-1">조직 전체 비용</p>
+                                            <span className="text-2xl font-bold text-gray-900">
+                                                ₩{Math.round(orgTotalKRW).toLocaleString()}
                                             </span>
+                                            <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-500">
+                                                <span>활성 사용자 {orgActiveUsers}명</span>
+                                                <span>·</span>
+                                                <span className={orgCostChangePct >= 0 ? 'text-red-500' : 'text-emerald-500'}>
+                                                    전월 대비 {orgCostChangePct > 0 ? '+' : ''}{orgCostChangePct}%
+                                                </span>
+                                            </div>
+                                            <div className="mt-1.5 text-xs text-gray-400">
+                                                일 평균 ₩{Math.round(orgDailyAvg).toLocaleString()} · 월말 예상 ₩{Math.round(orgMonthEndEstimate).toLocaleString()}
+                                            </div>
                                         </CardContent>
                                     </Card>
 
                                     {/* 총 토큰 */}
                                     <Card className="shadow-sm border-l-4 border-l-amber-500">
-                                        <CardContent className="py-4 px-5">
+                                        <CardContent className="py-3 px-5">
                                             <div className="flex items-center gap-2 mb-1">
                                                 <Zap className="w-4 h-4 text-amber-600" />
-                                                <p className="text-sm text-gray-500">총 사용 토큰</p>
+                                                <p className="text-sm text-gray-500">내 사용 토큰</p>
                                             </div>
                                             <span className="text-2xl font-bold text-gray-900">
                                                 {formatNumber(summary?.total_tokens ?? 0)}

@@ -79,5 +79,5 @@ class UserSettings(Base):
         "account": True,
         "address": True,
     })
-    monthly_budget = Column(Integer, default=1000000)  # 월 예산 한도 (KRW)
+    monthly_budget = Column(Integer, default=100000)  # 월 예산 한도 (KRW)
 

@@ -15,7 +15,7 @@ import uuid
 router = APIRouter(prefix="/admin", tags=["Admin"])
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
-MONTHLY_BUDGET_DEFAULT = 1_000_000  # 기본 월 예산 (KRW)
+MONTHLY_BUDGET_DEFAULT = 100_000  # 기본 월 예산 (KRW)
 
 
 def get_current_user_id(token: str = Depends(oauth2_scheme)):
@@ -99,6 +99,7 @@ def get_usage_summary(
     db = SessionLocal()
     try:
         cur_first, cur_last = _parse_month(month)
+        uid = uuid.UUID(user_id)
 
         # 전월 계산
         if cur_first.month == 1:
@@ -107,21 +108,7 @@ def get_usage_summary(
             prev_year, prev_mon = cur_first.year, cur_first.month - 1
         prev_first, prev_last = _parse_month(f"{prev_year}-{prev_mon:02d}")
 
-        # 선택한 월 전체 비용/토큰 집계 (실시간 cost_logs 기준)
-        cur_summary = (
-            db.query(
-                func.round(func.sum(CostLog.cost_krw)).label("sum_krw"),
-                func.sum(CostLog.cost_usd).label("sum_usd"),
-                func.sum(CostLog.tokens_used).label("sum_tokens"),
-            )
-            .filter(
-                cast(CostLog.timestamp, Date) >= cur_first,
-                cast(CostLog.timestamp, Date) <= cur_last,
-            )
-            .first()
-        )
-
-        # 이번 달 cost_logs 집계
+        # ── 개인 비용 집계 (user_id 필터) ──
         cur_rows = (
             db.query(
                 CostLog.operation,
@@ -130,6 +117,7 @@ def get_usage_summary(
                 func.sum(CostLog.tokens_used).label("sum_tokens"),
             )
             .filter(
+                CostLog.user_id == uid,
                 cast(CostLog.timestamp, Date) >= cur_first,
                 cast(CostLog.timestamp, Date) <= cur_last,
             )
@@ -137,7 +125,7 @@ def get_usage_summary(
             .all()
         )
 
-        # 카테고리별 비용 집계 (cost_logs 기준)
+        # 카테고리별 비용 집계 (개인)
         cost_by_category: dict = {}
         total_krw = Decimal("0")
         total_usd = Decimal("0")
@@ -155,13 +143,33 @@ def get_usage_summary(
         for cat in cost_by_category:
             cost_by_category[cat]["cost_krw"] = float(cost_by_category[cat]["cost_krw"])
 
+        # ── 조직 전체 비용 집계 (필터 없음) ──
+        org_summary = (
+            db.query(
+                func.round(func.sum(CostLog.cost_krw)).label("sum_krw"),
+                func.sum(CostLog.cost_usd).label("sum_usd"),
+                func.sum(CostLog.tokens_used).label("sum_tokens"),
+                func.count(func.distinct(CostLog.user_id)).label("active_users"),
+            )
+            .filter(
+                cast(CostLog.timestamp, Date) >= cur_first,
+                cast(CostLog.timestamp, Date) <= cur_last,
+            )
+            .first()
+        )
+        org_total_krw = float(org_summary.sum_krw or 0)
+        org_total_usd = float(org_summary.sum_usd or 0)
+        org_total_tokens = int(org_summary.sum_tokens or 0)
+        org_active_users = int(org_summary.active_users or 0)
+
         # 건수 조회 — 카테고리별로 최적 소스 사용
         from services.ai_drive.db.postgres_client import ActivityLog
 
-        # AI 채팅: activity_logs action='chat' (실제 사용자 채팅 메시지 수)
+        # AI 채팅: activity_logs action='chat' (개인)
         ai_chat_cnt = (
             db.query(func.count())
             .filter(
+                ActivityLog.user_id == uid,
                 ActivityLog.action == "chat",
                 cast(ActivityLog.timestamp, Date) >= cur_first,
                 cast(ActivityLog.timestamp, Date) <= cur_last,
@@ -169,10 +177,11 @@ def get_usage_summary(
             .scalar() or 0
         )
 
-        # AI 에이전트: activity_logs action='create_draft' (또는 관련 액션)
+        # AI 에이전트: activity_logs action='create_draft' (개인)
         agent_cnt = (
             db.query(func.count())
             .filter(
+                ActivityLog.user_id == uid,
                 ActivityLog.action == "create_draft",
                 cast(ActivityLog.timestamp, Date) >= cur_first,
                 cast(ActivityLog.timestamp, Date) <= cur_last,
@@ -180,11 +189,11 @@ def get_usage_summary(
             .scalar() or 0
         )
 
-        # 문서 Q&A: activity_logs에 doc_chat 미기록 → cost_logs llm:doc_chat 건수로 대체
-        # (문서 Q&A 채팅은 activity_logs에 'chat'으로 기록되지 않으므로 ai_chat_cnt와 중복 없음)
+        # 문서 Q&A: cost_logs llm:doc_chat 건수 (개인)
         doc_qa_cnt = (
             db.query(func.count())
             .filter(
+                CostLog.user_id == uid,
                 CostLog.operation == "llm:doc_chat",
                 cast(CostLog.timestamp, Date) >= cur_first,
                 cast(CostLog.timestamp, Date) <= cur_last,
@@ -192,10 +201,11 @@ def get_usage_summary(
             .scalar() or 0
         )
 
-        # 문서 처리: upload + chat_save
+        # 문서 처리: upload + chat_save (개인)
         doc_proc_cnt = (
             db.query(func.count())
             .filter(
+                ActivityLog.user_id == uid,
                 ActivityLog.action.in_(["upload", "chat_save"]),
                 cast(ActivityLog.timestamp, Date) >= cur_first,
                 cast(ActivityLog.timestamp, Date) <= cur_last,
@@ -219,13 +229,14 @@ def get_usage_summary(
                 cost_by_category[cat] = {"cost_krw": 0.0, "activity_count": cnt}
 
 
-        # 전월 집계
+        # 전월 집계 (개인)
         prev_rows = (
             db.query(
                 func.round(func.sum(CostLog.cost_krw)).label("sum_krw"),
                 func.sum(CostLog.tokens_used).label("sum_tokens"),
             )
             .filter(
+                CostLog.user_id == uid,
                 cast(CostLog.timestamp, Date) >= prev_first,
                 cast(CostLog.timestamp, Date) <= prev_last,
             )
@@ -233,6 +244,20 @@ def get_usage_summary(
         )
         prev_krw = float(prev_rows.sum_krw or 0)
         prev_tokens = int(prev_rows.sum_tokens or 0)
+
+        # 전월 집계 (조직 전체)
+        org_prev_rows = (
+            db.query(
+                func.round(func.sum(CostLog.cost_krw)).label("sum_krw"),
+            )
+            .filter(
+                cast(CostLog.timestamp, Date) >= prev_first,
+                cast(CostLog.timestamp, Date) <= prev_last,
+            )
+            .first()
+        )
+        org_prev_krw = float(org_prev_rows.sum_krw or 0)
+        org_cost_change = round(((org_total_krw - org_prev_krw) / org_prev_krw * 100), 1) if org_prev_krw > 0 else 0.0
 
         total_krw_f = float(total_krw)
         cost_change = round(((total_krw_f - prev_krw) / prev_krw * 100), 1) if prev_krw > 0 else 0.0
@@ -305,8 +330,13 @@ def get_usage_summary(
         daily_avg_krw = round(total_krw_f / elapsed_days) if elapsed_days > 0 else 0
         month_end_estimate_krw = daily_avg_krw * total_days_in_month
 
+        # 조직 전체 일 평균 / 월말 예측
+        org_daily_avg = round(org_total_krw / elapsed_days) if elapsed_days > 0 else 0
+        org_month_end_estimate = org_daily_avg * total_days_in_month
+
         return {
             "month": f"{cur_first.year}-{cur_first.month:02d}",
+            # 개인 비용
             "total_cost_krw": total_krw_f,
             "total_cost_usd": float(total_usd),
             "total_tokens": total_tokens,
@@ -315,6 +345,14 @@ def get_usage_summary(
             "daily_avg_krw": daily_avg_krw,
             "month_end_estimate_krw": month_end_estimate_krw,
             "cost_by_category": cost_by_category,
+            # 조직 전체 비용
+            "org_total_cost_krw": org_total_krw,
+            "org_total_cost_usd": org_total_usd,
+            "org_total_tokens": org_total_tokens,
+            "org_active_users": org_active_users,
+            "org_daily_avg_krw": org_daily_avg,
+            "org_month_end_estimate_krw": org_month_end_estimate,
+            "org_cost_change_percent": org_cost_change,
 
             "top_models_premium": top_models_premium,
             "top_models_auto": top_models_auto,
@@ -340,6 +378,7 @@ def get_usage_daily(
     db = SessionLocal()
     try:
         first, last = _parse_month(month)
+        uid = uuid.UUID(user_id)
 
         rows = (
             db.query(
@@ -348,6 +387,7 @@ def get_usage_daily(
                 func.sum(CostLog.tokens_used).label("sum_tokens"),
             )
             .filter(
+                CostLog.user_id == uid,
                 cast(CostLog.timestamp, Date) >= first,
                 cast(CostLog.timestamp, Date) <= last,
             )

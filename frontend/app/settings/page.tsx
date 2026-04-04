@@ -57,7 +57,7 @@ export default function SettingsPage() {
             email: '',
             department: '',
         },
-        monthly_budget: 1000000,
+        monthly_budget: 100000,
     });
 
     const userName = typeof window !== 'undefined' ? localStorage.getItem('user_name') || '사용자' : '사용자';
@@ -72,7 +72,7 @@ export default function SettingsPage() {
             const data = await api.getSettings();
             setSettings({
                 ...data,
-                monthly_budget: data.monthly_budget ?? 1000000,
+                monthly_budget: data.monthly_budget ?? 100000,
             });
         } catch (error) {
             console.error('Error fetching settings:', error);
@@ -94,7 +94,7 @@ export default function SettingsPage() {
                     email: localStorage.getItem('user_email') || '',
                     department: localStorage.getItem('department') || '',
                 },
-                monthly_budget: 1000000,
+                monthly_budget: 100000,
             });
         } finally {
             setIsLoading(false);
@@ -397,18 +397,11 @@ export default function SettingsPage() {
                                     id="monthly_budget"
                                     type="number"
                                     value={settings.monthly_budget}
-                                    onChange={(e) =>
-                                        setSettings({
-                                            ...settings,
-                                            monthly_budget: parseInt(e.target.value) || 0,
-                                        })
-                                    }
-                                    placeholder="1000000"
-                                    min={0}
-                                    step={100000}
+                                    disabled
+                                    className="bg-gray-100 cursor-not-allowed"
                                 />
                                 <p className="text-sm text-gray-500">
-                                    기본값: ₩1,000,000 · 관리 대시보드에서 이 한도를 기준으로 사용률을 표시합니다
+                                    관리자만 변경 가능 · 관리 대시보드에서 이 한도를 기준으로 사용률을 표시합니다
                                 </p>
                             </div>
                         </CardContent>
