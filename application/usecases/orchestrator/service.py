@@ -9,6 +9,7 @@
 from typing import Dict, List, Optional
 # Import the Real Brain (Directly Pipeline)
 import time
+import asyncio
 from services.orchestrator.pipeline import Pipeline
 from services.common.activity_logger import get_activity_logger
 from services.ai_hub.db.agent_repo import AgentRepository
@@ -56,22 +57,29 @@ class Orchestrator:
             except Exception as e:
                 pass  # Agent 로드 실패 무시
 
-        # 모델 타입에 따라 분기
+        # 모델 타입에 따라 분기 (동기 파이프라인을 스레드에서 실행하여 이벤트 루프 블로킹 방지)
+        loop = asyncio.get_event_loop()
         if model_type == "AUTO":
-            result = self.pipeline.process(
-                user_input=user_input, 
-                user_id=user_id,
-                system_prompt=system_prompt,  # [New] Inject Agent Persona
-                session_id=context_id
+            result = await loop.run_in_executor(
+                None,
+                lambda: self.pipeline.process(
+                    user_input=user_input,
+                    user_id=user_id,
+                    system_prompt=system_prompt,
+                    session_id=context_id
+                )
             )
         else:
-            result = self.pipeline.process_premium(
-                user_input=user_input,
-                model_type=model_type,
-                use_rag=use_rag,
-                user_id=user_id,
-                system_prompt=system_prompt,  # [New] Inject Agent Persona
-                session_id=context_id
+            result = await loop.run_in_executor(
+                None,
+                lambda: self.pipeline.process_premium(
+                    user_input=user_input,
+                    model_type=model_type,
+                    use_rag=use_rag,
+                    user_id=user_id,
+                    system_prompt=system_prompt,
+                    session_id=context_id
+                )
             )
         
         # 활동 로그

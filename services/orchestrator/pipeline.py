@@ -865,6 +865,7 @@ class Researcher:
                 model="perplexity/sonar",
                 messages=[{"role": "user", "content": compressed_query}],
                 max_tokens=2000,
+                timeout=30,
             )
             result = response.choices[0].message.content or ""
             
@@ -1680,17 +1681,18 @@ class Pipeline:
                     if max_tokens:
                         completion_kwargs["max_tokens"] = max_tokens
                 
+                completion_kwargs["timeout"] = 30
                 response = litellm.completion(**completion_kwargs)
-                
+
                 content = response.choices[0].message.content or ""
-                
+
                 # 5. 토큰 추출
                 input_tokens = 0
                 output_tokens = 0
                 if hasattr(response, 'usage') and response.usage:
                     input_tokens = getattr(response.usage, 'prompt_tokens', 0) or 0
                     output_tokens = getattr(response.usage, 'completion_tokens', 0) or 0
-                
+
                 # 6. 비용 계산
                 cost_info = self.cost_calculator.calculate_cost(
                     model_name=model,
@@ -2224,11 +2226,12 @@ class Pipeline:
             else:
                 completion_kwargs["temperature"] = model_config["temperature"]
                 completion_kwargs["max_tokens"] = model_config["max_tokens"]
-            
+
+            completion_kwargs["timeout"] = 30
             response = litellm.completion(**completion_kwargs)
-            
+
             content = response.choices[0].message.content or ""
-            
+
             # 5. 토큰 추출
             input_tokens = 0
             output_tokens = 0
