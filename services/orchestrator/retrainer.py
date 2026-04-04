@@ -63,11 +63,9 @@ def trigger_retrain(db):
     # Step 4: 검증 (5-Fold CV)
     cv_scores = cross_val_score(svm, X_tfidf, df_combined['label'], cv=5)
     accuracy = cv_scores.mean()
-    print(f"[Auto-Retrain] 재학습 완료: {len(df_combined)}건, 정확도: {accuracy:.4f}")
 
     # 정확도가 기존보다 떨어지면 중단 (안전장치)
     if accuracy < 0.85:
-        print(f"[Auto-Retrain] 정확도 {accuracy:.4f} < 0.85 → 재학습 취소")
         return
 
     # Step 5: pkl 저장 + CSV 업데이트
@@ -83,5 +81,3 @@ def trigger_retrain(db):
     for log in unused_logs:
         log.is_used = True
     db.commit()
-
-    print(f"[Auto-Retrain] 전체 완료. 모델 즉시 반영됨.")

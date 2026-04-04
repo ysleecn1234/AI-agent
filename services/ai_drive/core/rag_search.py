@@ -40,12 +40,12 @@ class RAGSearcher:
     ) -> List[Dict[str, Any]]:
         """
         RAG 4단계 검색 실행
-        
+
         Args:
             query: 사용자 질문
             user_department: 사용자 부서 (권한 필터링용)
             top_k: 최종 반환 개수 (기본 10)
-            
+
         Returns:
             [
                 {
@@ -61,46 +61,32 @@ class RAGSearcher:
                 ...
             ]
         """
-        print(f"[RAG] 검색 시작: '{query[:50]}...'")
-        
         # Step 1: 질문 임베딩 생성
-        print("[Step 1/4] 질문 임베딩 생성")
         query_embedding = self._create_query_embedding(query)
-        
+
         if not query_embedding:
-            print("  ⚠️ 임베딩 생성 실패")
             return []
-        
+
         # Step 2: Milvus 유사도 검색 (Top-30)
-        print("[Step 2/4] Milvus 유사도 검색 (Top-30)")
         raw_results = self._search_similar_chunks(
             query_embedding=query_embedding,
             user_department=user_department,
             top_k=30  # 권한 필터링 전 여유있게
         )
-        
-        print(f"  → 검색 결과: {len(raw_results)}개")
-        
+
         if not raw_results:
-            print("  ⚠️ 검색 결과 없음")
             return []
-        
+
         # Step 3: 권한 필터링 (이미 Milvus에서 기본 필터링 됨)
         # 추가 검증이 필요한 경우 여기서 처리
-        print("[Step 3/4] 권한 필터링 확인")
         filtered_results = self._verify_permissions(raw_results, user_department)
-        print(f"  → 필터링 후: {len(filtered_results)}개")
-        
+
         # Step 4: Freshness Score 적용 → Top-10 반환
-        print("[Step 4/4] Freshness Score 적용")
         final_results = self._apply_freshness_score(filtered_results, top_k)
-        print(f"  → 최종 결과: {len(final_results)}개")
-        
+
         # 메타데이터 보강 (출처 정보)
         enriched_results = self._enrich_with_metadata(final_results)
-        
-        print(f"[RAG] 검색 완료")
-        
+
         return enriched_results
     
     # ==================== Step 1: 임베딩 생성 ====================
@@ -123,11 +109,10 @@ class RAGSearcher:
                     operation="search_embedding",
                 )
             except Exception as log_error:
-                print(f"  ⚠️ 비용 로그 실패: {log_error}")
-            
+                pass
+
             return embedding
         except Exception as e:
-            print(f"  ❌ 임베딩 생성 실패: {str(e)}")
             return None
     
     # ==================== Step 2: 유사도 검색 ====================
@@ -151,7 +136,6 @@ class RAGSearcher:
             )
             return results
         except Exception as e:
-            print(f"  ❌ Milvus 검색 실패: {str(e)}")
             return []
     
     # ==================== Step 3: 권한 필터링 ====================
@@ -250,7 +234,7 @@ class RAGSearcher:
                         elif mod_date_naive >= one_month_ago:
                             freshness_bonus = 0.05
                 except Exception as e:
-                    print(f"  ⚠️ 날짜 파싱 오류: {e}")
+                    pass
             
             # 최종 점수
             final_score = base_score + freshness_bonus
@@ -337,41 +321,3 @@ class RAGSearcher:
         """리소스 정리"""
         self.milvus_client.close()
         self.postgres_client.close()
-        print("[RAG] 연결 종료")
-
-
-# ==================== 테스트 코드 ====================
-
-if __name__ == "__main__":
-    print("=" * 80)
-    print("RAG 4단계 검색 테스트")
-    print("=" * 80)
-    
-    try:
-        searcher = RAGSearcher()
-        
-        # 테스트 검색
-        print("\n[테스트 1] 일반 검색")
-        results = searcher.search(
-            query="마케팅 전략에 대해 알려줘",
-            user_department="개발팀"
-        )
-        
-        print(f"\n검색 결과: {len(results)}개")
-        for i, result in enumerate(results, 1):
-            print(f"\n  [{i}] {result['source']}")
-            print(f"      점수: {result['score']:.4f} (Freshness: +{result['freshness_bonus']})")
-            print(f"      부서: {result['department']}")
-            print(f"      날짜: {result['date']}")
-            print(f"      내용: {result['content'][:100]}...")
-        
-        searcher.close()
-        
-        print("\n" + "=" * 80)
-        print("✓ 테스트 완료!")
-        print("=" * 80)
-        
-    except Exception as e:
-        print(f"\n❌ 테스트 실패: {str(e)}")
-        import traceback
-        traceback.print_exc()

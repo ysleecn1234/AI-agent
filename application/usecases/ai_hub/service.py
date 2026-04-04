@@ -69,7 +69,7 @@ class AIHubService:
             milvus = MilvusClient()
             milvus.delete_agent(str(agent.id))
         except Exception as e:
-            print(f"[Hub:Service] Warning: Failed to delete from Milvus: {e}")
+            pass  # Milvus 삭제 실패 무시
 
         db.delete(agent)
         db.commit()

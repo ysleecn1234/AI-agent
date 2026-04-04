@@ -268,30 +268,3 @@ class PIIDetector:
         
         return masked_text
 
-if __name__ == "__main__":
-    detector = PIIDetector()
-    
-    # 테스트 텍스트
-    test_text = """
-    안녕하세요, 김철수입니다.
-    연락처: 010-1234-5678
-    이메일: test@example.com
-    주민번호: 901215-1234567
-    계좌번호: 110-123-456789
-    신용카드: 1234-5678-9012-3456
-    """
-    
-    print("=" * 60)
-    print("개인정보 감지 테스트")
-    print("=" * 60)
-    
-    result = detector.detect(test_text)
-    
-    print(f"개인정보 포함: {result['has_pii']}")
-    print(f"총 감지 수: {result['total_count']}")
-    print("-" * 60)
-    
-    for finding in result['findings']:
-        print(f"  - {finding['type']}: {finding['count']}건")
-    
-    print("=" * 60)

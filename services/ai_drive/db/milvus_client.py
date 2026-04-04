@@ -39,17 +39,14 @@ class MilvusClient:
             host=self.host,
             port=self.port
         )
-        print(f"✓ Milvus 연결 성공: {self.host}:{self.port}")
     
     def _init_collection(self):
         """컬렉션 초기화 (없으면 생성)"""
         if utility.has_collection(self.collection_name):
             self.collection = Collection(self.collection_name)
             self.collection.load()
-            print(f"✓ 기존 컬렉션 로드: {self.collection_name}")
         else:
             self._create_collection()
-            print(f"✓ 새 컬렉션 생성: {self.collection_name}")
     
     def _create_collection(self):
         """컬렉션 생성 (기획서 스키마 반영)"""
@@ -137,7 +134,6 @@ class MilvusClient:
         result = self.collection.insert(data)
         self.collection.flush()
         
-        print(f"✓ {len(chunks)}개 청크 저장 완료 (doc_id: {doc_id})")
         
         return result.primary_keys
     
@@ -208,7 +204,6 @@ class MilvusClient:
         result = self.collection.delete(expr)
         self.collection.flush()
         
-        print(f"✓ doc_id={doc_id} 삭제 완료")
         
         return result.delete_count
 
@@ -217,7 +212,6 @@ class MilvusClient:
         메타데이터 업데이트 (Visibility, Department 등)
         Milvus는 Update를 직접 지원하지 않으므로, 기존 데이터를 조회 -> 삭제 -> 재삽입 과정을 거쳐야 함.
         """
-        print(f"[Milvus] Updating metadata for doc_id={doc_id}...")
         
         # 1. 기존 데이터 조회
         expr = f'doc_id == "{doc_id}"'
@@ -227,10 +221,8 @@ class MilvusClient:
         )
         
         if not res:
-            print(f"[Milvus] 문서 없음 (Skip Update): {doc_id}")
             return
             
-        print(f"  → Found {len(res)} chunks to update.")
         
         # 2. 데이터 수정
         new_data_list = []
@@ -260,7 +252,6 @@ class MilvusClient:
         
         self.collection.insert(insert_data)
         self.collection.flush()
-        print(f"✓ Milvus Metadata Updated: {doc_id} (Visibility: {visibility})")
 
     
     def update_version_status(self, doc_id: str, old_version: int):
@@ -278,7 +269,6 @@ class MilvusClient:
         )
     
         if not old_chunks:
-            print(f"  → 이전 버전 없음 (doc_id={doc_id}, version={old_version})")
             return
     
         # 삭제
@@ -299,7 +289,6 @@ class MilvusClient:
         self.collection.insert(data)
         self.collection.flush()
     
-        print(f"  → 이전 버전 is_latest=False 처리 완료 ({len(old_chunks)}개 청크)")
     
     def get_collection_stats(self) -> Dict[str, Any]:
         """컬렉션 통계 조회"""
@@ -351,7 +340,6 @@ class MilvusClient:
                     "score": hit.score
                 })
         
-        print(f"  → doc_id={doc_id}에서 {len(formatted_results)}개 검색")
         
         return formatted_results
 
@@ -369,68 +357,9 @@ class MilvusClient:
             limit=100
         )
         
-        print(f"  → doc_id={doc_id}에서 {len(results)}개 청크 조회")
         
         return results
 
     def close(self):
         """연결 종료"""
         connections.disconnect("default")
-        print("✓ Milvus 연결 종료")
-
-
-# 테스트 코드
-if __name__ == "__main__":
-    print("=" * 80)
-    print("MilvusClient 테스트")
-    print("=" * 80)
-    
-    try:
-        client = MilvusClient()
-        
-        stats = client.get_collection_stats()
-        print(f"\n[컬렉션 통계]")
-        print(f"이름: {stats['name']}")
-        print(f"문서 수: {stats['num_entities']}")
-        
-        # 테스트 데이터 삽입
-        print(f"\n[삽입 테스트]")
-        test_chunks = ["테스트 청크 1입니다.", "테스트 청크 2입니다."]
-        test_embeddings = [[0.1] * 1536, [0.2] * 1536]
-        
-        ids = client.insert(
-            doc_id="test_doc_001",
-            chunks=test_chunks,
-            embeddings=test_embeddings,
-            visibility="team",
-            creator_department="개발팀",
-            version=1,
-            is_latest=True,
-            status="active"
-        )
-        print(f"삽입된 ID: {ids}")
-        
-        # 검색 테스트
-        print(f"\n[검색 테스트]")
-        query_embedding = [0.1] * 1536
-        results = client.search(
-            query_embedding=query_embedding,
-            department="개발팀",
-            top_k=5
-        )
-        
-        for r in results:
-            print(f"  - {r['chunk_text'][:30]}... (score: {r['score']:.4f})")
-        
-        # 삭제 테스트
-        print(f"\n[삭제 테스트]")
-        client.delete_by_doc_id("test_doc_001")
-        
-        client.close()
-        
-        print("\n" + "=" * 80)
-        print("✓ 테스트 성공!")
-        print("=" * 80)
-        
-    except Exception as e:
-        print(f"\n❌ 테스트 실패: {str(e)}")

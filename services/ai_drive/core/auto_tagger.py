@@ -22,26 +22,23 @@ class AutoTagger:
     
     def __init__(self, orchestrator=None):
         self.orchestrator = orchestrator  # 중앙 LLM 호출용
-        
+
         # orchestrator가 있으면 중앙 관제 모드, 없으면 기존 방식
         if self.orchestrator:
-            print("✓ AutoTagger: 오케스트레이터 연동 모드")
             self.use_mock = False
         else:
             self.api_key = os.getenv("GOOGLE_API_KEY")
             if not self.api_key:
-                print("⚠️ GOOGLE_API_KEY 없음 - Mock 모드로 실행")
                 self.use_mock = True
             else:
                 self.use_mock = False
                 self._init_client()
-        
+
         # 비용 로깅을 위한 PostgresClient
         try:
             from db.postgres_client import PostgresClient
             self.postgres_client = PostgresClient()
         except Exception as e:
-            print(f"⚠️ PostgresClient 초기화 실패: {e}")
             self.postgres_client = None
     
     def _init_client(self):
@@ -50,9 +47,7 @@ class AutoTagger:
             import google.generativeai as genai
             genai.configure(api_key=self.api_key)
             self.model = genai.GenerativeModel('gemini-2.0-flash')
-            print("✓ Gemini Flash 연결 성공")
         except Exception as e:
-            print(f"⚠️ Gemini 연결 실패: {e}")
             self.use_mock = True
     
     def generate_tags(self, text: str, title: str = "") -> Dict[str, any]:
@@ -127,16 +122,13 @@ class AutoTagger:
                     result_text = result_text[4:]
         
             result = json.loads(result_text.strip())
-        
-            print(f"✓ AI 제목 생성: {result.get('title', '')}")
-        
+
             return {
                 "title": result.get("title", "제목 없음")[:50],
                 "description": result.get("description", "")[:200]
             }
-        
+
         except Exception as e:
-            print(f"⚠️ 제목 생성 실패: {e}")
             return self._mock_generate_title(text)
     
     def _mock_generate_title(self, text: str) -> Dict[str, str]:
@@ -199,9 +191,7 @@ class AutoTagger:
         # 빈 제목 방지
         if not title or title.strip() == "관련":
             title = "새 문서"
-        
-        print(f"✓ Mock 제목 생성: {title}")
-        
+
         return {
             "title": title,
             "description": description
@@ -252,16 +242,12 @@ class AutoTagger:
             
             # 검증
             result = self._validate_result(result)
-            
-            print(f"✓ AI 태깅 완료: {result['tags']}")
-            
+
             return result
-            
+
         except json.JSONDecodeError as e:
-            print(f"⚠️ JSON 파싱 실패: {e}")
             return self._mock_generate(text, title)
         except Exception as e:
-            print(f"⚠️ Gemini 호출 실패: {e}")
             return self._mock_generate(text, title)
     
     def _mock_generate(self, text: str, title: str) -> Dict[str, any]:
@@ -325,9 +311,7 @@ class AutoTagger:
             "keywords": keywords[:5],
             "doc_type": doc_type
         }
-        
-        print(f"✓ Mock 태깅 완료: {result['tags']}")
-        
+
         return result
     
     def _validate_result(self, result: Dict) -> Dict:
@@ -349,41 +333,3 @@ class AutoTagger:
             result["doc_type"] = "기타"
         
         return result
-
-
-# ==================== 테스트 코드 ====================
-
-if __name__ == "__main__":
-    print("=" * 60)
-    print("AI 자동 태깅 테스트")
-    print("=" * 60)
-    
-    tagger = AutoTagger()
-    
-    # 테스트 1: 마케팅 문서
-    print("\n[테스트 1] 마케팅 문서")
-    result1 = tagger.generate_tags(
-        text="2024년 마케팅 전략 보고서입니다. 타겟 고객은 20-30대이며, 인스타그램과 유튜브를 활용한 캠페인을 진행합니다. 예상 ROI는 150%입니다.",
-        title="2024 마케팅 전략 보고서"
-    )
-    print(f"  결과: {result1}")
-    
-    # 테스트 2: 개발 문서
-    print("\n[테스트 2] 개발 문서")
-    result2 = tagger.generate_tags(
-        text="API 서버 개발 가이드입니다. FastAPI를 사용하여 REST API를 구현합니다. 인증은 JWT를 사용합니다.",
-        title="API 개발 매뉴얼"
-    )
-    print(f"  결과: {result2}")
-    
-    # 테스트 3: AI 문서
-    print("\n[테스트 3] AI 문서")
-    result3 = tagger.generate_tags(
-        text="AI 드라이브는 문서를 자동으로 분석하고 검색할 수 있게 해주는 시스템입니다. RAG 기반으로 동작합니다.",
-        title="AI 드라이브 기획서"
-    )
-    print(f"  결과: {result3}")
-    
-    print("\n" + "=" * 60)
-    print("✓ 테스트 완료!")
-    print("=" * 60)

@@ -34,10 +34,8 @@ class AgentManager:
             self.milvus_client = MilvusClient()
             self.embedding_generator = EmbeddingGenerator()
             self.use_rag = True
-            print("[Hub] AI Drive 연동 성공: Vector Search 활성화 (Agent 전용)")
         except ImportError:
             self.use_rag = False
-            print("[Hub] AI Drive 모듈 없음: Mock Search 모드")
 
         # [Logging] Hub Repository 초기화
         self.hub_repo = HubRepository()
@@ -56,8 +54,6 @@ class AgentManager:
         """
         # 1. Orchestrator 호출
         from application.usecases.orchestrator.service import orchestrator
-        
-        print(f"[Hub] Analyzing intent for recommendation: {user_msg[:20]}...")
         analysis = await orchestrator.recommend_agents(user_msg, conversation_history)
         
         # 2. 검색 수행 (DB 세션은 상위에서 주입받아야 함 - 현재는 None으로 호출될 수 있음)
@@ -119,9 +115,7 @@ class AgentManager:
                     score = res.get('score', 0)
                     if res_id:
                         candidate_map[str(res_id)] = score
-                
-                print(f"[Hub] Vector Search executed for: '{search_query}' -> IDs: {list(candidate_map.keys())}")
-                
+
                 # [Log] Cost (Embedding - API 실제 토큰)
                 try:
                     actual_tokens = self.embedding_generator.last_usage.total_tokens if self.embedding_generator.last_usage else 0
@@ -135,10 +129,10 @@ class AgentManager:
                         operation="hub_search",
                     )
                 except Exception as e:
-                    print(f"[Hub] Failed to log searching cost: {e}")
-                
+                    pass
+
             except Exception as e:
-                print(f"[Hub] Vector Search Failed: {e}")
+                pass
         
         # 2. Metadata Fetch (DB) - 상세 정보 보완 (Batch Query)
         if db and candidate_map:
@@ -156,11 +150,9 @@ class AgentManager:
                 
                 # 점수순 정렬
                 results.sort(key=lambda x: x.get("match_score", 0), reverse=True)
-                
+
             except Exception as e:
-                print(f"[Hub] DB Fetch Failed: {e}")
-                import traceback
-                traceback.print_exc()
+                pass
 
         # 3. Fallback: 벡터 결과 없을 때 DB 키워드/전체에서 추천
         if not results and db:
@@ -176,7 +168,7 @@ class AgentManager:
                 for agent in fallback_agents[:5]:
                     results.append(_agent_to_recommendation_item(agent, 0))
             except Exception as e:
-                print(f"[Hub] Fallback search failed: {e}")
+                pass
 
         return results
 
@@ -299,8 +291,7 @@ class AgentManager:
                 
                 # Agent Vector Store 저장
                 self.milvus_client.insert_agent(draft, embedding)
-                print(f"[Hub] Agent Vectorized & Saved to Milvus: {draft.get('name')} (ID: {draft['id']})")
-                
+
                 # [Log] Cost & Activity (Publishing)
                 try:
                     # 1. Cost (Embedding - API 실제 토큰)
@@ -314,13 +305,12 @@ class AgentManager:
                         cost_krw=embed_cost["cost_krw"]["total"],
                         operation="agent_publish_embedding",
                     )
-                
+
                 except Exception as e:
-                    print(f"[Hub] Failed to log publishing: {e}")
-                        
+                    pass
+
             except Exception as e:
-                print(f"[Hub] Vectorization Failed: {e}")
-                # 실패 시 - 여기선 로그만 남김 (이미 DB엔 저장됨)
+                pass
         
         # Cleanup Redis
         redis_client.delete(key)

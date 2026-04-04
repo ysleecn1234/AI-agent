@@ -87,7 +87,6 @@ class ActivityLogger:
         except Exception as e:
             if session:
                 session.rollback()
-            print(f"  [ActivityLogger] DB 기록 실패: {e}")
         finally:
             if session:
                 session.close()

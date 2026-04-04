@@ -681,7 +681,7 @@ if __name__ == "__main__":
     try:
         pipeline = DocumentPipeline()
         
-        # 테스트용 사용자 정보
+        # 사용자 정보 설정
         test_user_id = str(uuid.uuid4())
         test_department = "개발팀"
         

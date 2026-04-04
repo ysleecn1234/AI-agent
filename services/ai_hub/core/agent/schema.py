@@ -8,7 +8,7 @@ def get_standard_template() -> Dict:
     return {
         # Step 1: 개념 정의 (Concept)
         "name": "",             # [O] 제목
-        "description": "",      # [O] AI가 작성한 초기 설명
+        "description": "",      # [O] 자동 생성된 초기 설명
         "input_example": "",    # [O] 입력 예시
         "output_example": "",   # [O] 출력 예시
         

@@ -72,7 +72,6 @@ export default function AgentsPage() {
             setAgents(data);
         } catch (error) {
             console.error('Error fetching agents:', error);
-            // Mock data fallback for development
             setAgents([]);
         } finally {
             setIsLoading(false);

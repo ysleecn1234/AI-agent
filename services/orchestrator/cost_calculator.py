@@ -237,37 +237,3 @@ def get_cost_calculator() -> CostCalculator:
     if _global_calculator is None:
         _global_calculator = CostCalculator()
     return _global_calculator
-
-
-# 테스트 코드
-if __name__ == "__main__":
-    calculator = CostCalculator()
-    
-    print("=" * 80)
-    print("비용 계산 시스템 테스트")
-    print("=" * 80)
-    
-    # 1. 단일 모델 비용 계산
-    print("\n[테스트 1] GPT-5.4 비용 계산 (입력 1000토큰, 출력 500토큰)")
-    cost = calculator.calculate_cost("gpt-5.4", 1000, 500)
-    print(f"모델: {cost['model']}")
-    print(f"총 토큰: {cost['tokens']['total']}")
-    print(f"비용 (USD): ${cost['cost_usd']['total']}")
-    print(f"비용 (KRW): {cost['cost_krw']['total']:,}원")
-    
-    # 2. 복잡도별 비용 비교
-    print("\n[테스트 2] 복잡도별 비용 비교")
-    for complexity in ["simple", "complex", "bulk"]:
-        cost = calculator.estimate_cost_by_complexity(complexity, 1000, 500)
-        print(f"\n{complexity.upper()}: {cost['model']}")
-        print(f"  비용: {cost['cost_krw']['total']:,}원")
-    
-    # 3. 모델 가격 정보 조회
-    print("\n[테스트 3] 모델 가격 정보")
-    for model in ["gemini/gemini-3.1-pro-preview", "gpt-5.4", "claude-sonnet-4-6"]:
-        info = calculator.get_pricing_info(model)
-        if info:
-            print(f"\n{model}:")
-            print(f"  제공사: {info['provider']}")
-            print(f"  입력: ${info['pricing_usd']['input_per_1m']}/1M ({info['pricing_krw']['input_per_1m']:,}원/1M)")
-            print(f"  출력: ${info['pricing_usd']['output_per_1m']}/1M ({info['pricing_krw']['output_per_1m']:,}원/1M)")

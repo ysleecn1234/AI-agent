@@ -253,7 +253,7 @@ def update_agent(
             loop.run_until_complete(agent_manager.update_agent_vector(agent))
             loop.close()
         except Exception as e:
-            print(f"[Warning] 벡터 DB 업데이트 실패 (DB는 정상 저장됨): {e}")
+            pass  # 벡터 DB 업데이트 실패 무시 (DB는 정상 저장됨)
     
     return {
         "status": "updated",

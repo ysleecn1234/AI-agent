@@ -36,20 +36,16 @@ class MilvusClient:
                 host=self.host,
                 port=self.port
             )
-            print(f"[Hub:MilvusClient] Milvus 연결 성공: {self.host}:{self.port}")
         except Exception as e:
-            print(f"[Hub:MilvusClient] Milvus 연결 실패: {e}")
-            # 이미 연결된 경우 등 예외 처리
+            pass
 
     def _init_collection(self):
         """컬렉션 초기화 (없으면 생성)"""
         if utility.has_collection(self.collection_name, using="ai_hub"):
             self.collection = Collection(self.collection_name, using="ai_hub")
             self.collection.load()
-            print(f"[Hub:MilvusClient] 기존 컬렉션 로드: {self.collection_name}")
         else:
             self._create_collection()
-            print(f"[Hub:MilvusClient] 새 컬렉션 생성: {self.collection_name}")
     
     def _create_collection(self):
         """
@@ -112,11 +108,9 @@ class MilvusClient:
             
             self.collection.insert(data)
             self.collection.flush()
-            print(f"[Hub:MilvusClient] Agent Saved: {agent_data.get('name')}")
             return True
-            
+
         except Exception as e:
-            print(f"[Hub:MilvusClient] Insert Failed: {e}")
             return False
 
     def search_agents(
@@ -169,16 +163,13 @@ class MilvusClient:
             expr = f'agent_id == "{agent_id}"'
             self.collection.delete(expr)
             self.collection.flush()
-            print(f"[Hub:MilvusClient] Agent Deleted: {agent_id}")
             return True
         except Exception as e:
-            print(f"[Hub:MilvusClient] Delete Failed: {e}")
             return False
 
     def close(self):
         """연결 종료"""
         try:
             connections.disconnect("ai_hub")
-            print("[Hub:MilvusClient] 연결 종료")
         except:
             pass

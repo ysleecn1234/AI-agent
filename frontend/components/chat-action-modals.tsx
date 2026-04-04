@@ -337,7 +337,6 @@ export function CreateAgentModal({ isOpen, onClose, onCreate, content, fullMessa
                 </DialogHeader>
 
                 {step === 1 ? (
-                    /* ===== Step 1: 학습 범위 + 이름 + 입력/출력 예시 + 시스템 프롬프트 ===== */
                     <div className="space-y-5 py-4">
                         <p className="text-sm font-semibold text-blue-600">Step 1 — 기본 정보 및 프롬프트</p>
 
@@ -427,7 +426,6 @@ export function CreateAgentModal({ isOpen, onClose, onCreate, content, fullMessa
                         </div>
                     </div>
                 ) : (
-                    /* ===== Step 2: 카테고리 + 설명 + 모델 선택 + RAG + 공개 범위 ===== */
                     <div className="space-y-5 py-4">
                         <p className="text-sm font-semibold text-blue-600">Step 2 — 분류 및 설정</p>
 

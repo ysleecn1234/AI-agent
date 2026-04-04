@@ -15,9 +15,7 @@ class AgentService:
         self.activity_logger = get_activity_logger()
 
     async def generate_draft_from_chat(self, user_id: str, messages: list):
-        print(f"[App] Requesting draft creation to AgentManager for user: {user_id}")
-        
-        # 1. Orchestrator에게 대화 분석 요청 (LLM이 템플릿 채움)
+        # 1. Orchestrator에게 대화 분석 요청 (자동으로 템플릿 채움)
         template = agent_manager.get_standard_template()
         filled_template = await orchestrator.analyze_for_draft(messages, template)
         
@@ -58,8 +56,6 @@ class AgentService:
         관리자(AgentManager)에게 배포 요청
         (벡터화 및 DB 저장은 Manager가 내부적으로 처리)
         """
-        print(f"[App] Publishing agent draft: {draft_id}")
-        
         start = time.time()
         
         # Manager에게 위임 (Vectorize + DB Save)

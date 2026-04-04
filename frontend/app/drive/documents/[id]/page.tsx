@@ -134,10 +134,9 @@ export default function DocumentDetailPage() {
             setMessages(prev => [...prev, { role: 'assistant', content: data.answer }]);  // Changed from 'response' to 'answer'
         } catch (error) {
             console.error('Error sending message:', error);
-            // Mock response for development
             setMessages(prev => [...prev, {
                 role: 'assistant',
-                content: '이 문서에 대한 질문에 답변드리겠습니다. 현재 백엔드 API가 연결되지 않아 Mock 응답입니다.'
+                content: '질문 처리에 실패했습니다. 잠시 후 다시 시도해 주세요.'
             }]);
         } finally {
             setIsLoading(false);

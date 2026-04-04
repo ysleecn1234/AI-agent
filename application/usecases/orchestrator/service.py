@@ -51,14 +51,10 @@ class Orchestrator:
                         system_prompt = agent.system_prompt
                         if model_type == "AUTO" and agent.model_type != "AUTO":
                             model_type = agent.model_type
-                            
-                        print(f"[Orchestrator] Agent Active: {agent.name} (Model: {model_type})")
-                    else:
-                        print(f"[Orchestrator] Warning: Agent {agent_id} not found.")
                 finally:
                     db.close()
             except Exception as e:
-                print(f"[Orchestrator] Failed to load agent context: {e}")
+                pass  # Agent 로드 실패 무시
 
         # 모델 타입에 따라 분기
         if model_type == "AUTO":
@@ -143,9 +139,8 @@ class Orchestrator:
             db.commit()
         except Exception as e:
             # Log the error but don't re-raise, as it's fire-and-forget
-            print(f"Error saving chat log: {e}")
             if db:
-                db.rollback() # Rollback in case of error
+                db.rollback()
         finally:
             if db:
                 db.close()

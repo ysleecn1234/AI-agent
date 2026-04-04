@@ -106,32 +106,3 @@ class TextChunker:
             })
         
         return result
-
-
-# 테스트 코드
-if __name__ == "__main__":
-    chunker = TextChunker()
-    
-    # 테스트 텍스트 (긴 텍스트)
-    test_text = "이것은 테스트 텍스트입니다. " * 500  # 약 5000자
-    
-    print("=" * 80)
-    print("TextChunker 테스트")
-    print("=" * 80)
-    print(f"원본 텍스트 길이: {len(test_text)}자")
-    print(f"원본 토큰 수: {chunker.get_token_count(test_text)}")
-    
-    # 청킹
-    chunks = chunker.chunk(test_text)
-    
-    print(f"\n생성된 청크 수: {len(chunks)}")
-    print("-" * 80)
-    
-    for idx, chunk in enumerate(chunks[:3]):  # 처음 3개만 출력
-        print(f"\n[청크 {idx + 1}]")
-        print(f"길이: {len(chunk)}자")
-        print(f"토큰 수: {chunker.get_token_count(chunk)}")
-        print(f"미리보기: {chunk[:100]}...")
-    
-    if len(chunks) > 3:
-        print(f"\n... (나머지 {len(chunks) - 3}개 청크)")

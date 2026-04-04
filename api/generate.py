@@ -75,7 +75,6 @@ async def generate_document_metadata(
         return {"title": title, "description": description}
 
     except Exception as e:
-        print(f"[Generate] 메타데이터 생성 실패: {e}")
         # LLM 실패 시 단순 fallback (첫 줄 기반)
         lines = [l.strip() for l in content_snippet.split("\n") if l.strip()]
         first_line = lines[0][:50] if lines else "채팅 대화"

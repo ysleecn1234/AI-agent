@@ -115,31 +115,3 @@ class CostManager:
         }
         
         return f"{category_name[size_category]} ({size_kb:.1f}KB)"
-
-
-# ==================== 테스트 코드 ====================
-
-if __name__ == "__main__":
-    print("=" * 60)
-    print("크기별 과금 테스트")
-    print("=" * 60)
-    
-    manager = CostManager()
-    
-    # 테스트 케이스
-    test_sizes = [
-        10 * 1024,      # 10KB - 소형
-        100 * 1024,     # 100KB - 중형
-        1000 * 1024,    # 1MB - 대형
-    ]
-    
-    for size in test_sizes:
-        result = manager.calculate_daily_cost(size)
-        print(f"\n파일 크기: {result['file_size_kb']}KB")
-        print(f"  분류: {result['size_category']}")
-        print(f"  일일 비용: {result['daily_cost_krw']}원")
-        print(f"  월간 비용: {result['monthly_cost_krw']}원")
-    
-    print("\n" + "=" * 60)
-    print("✓ 테스트 완료!")
-    print("=" * 60)

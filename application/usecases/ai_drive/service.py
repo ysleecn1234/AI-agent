@@ -162,15 +162,12 @@ class AIDriveService:
                 
                 data = json.loads(response_text.strip())
                 title = data.get("title", "채팅 대화")
-                
+
                 # 설명이 비어있으면 자동 생성된 설명 사용
                 if not description:
                     description = data.get("description", "")
-                    
-                print(f"[App] 제목 자동 생성 완료: {title}")
-                    
+
             except Exception as e:
-                print(f"[App] 제목 생성 실패: {e}")
                 title = "채팅 대화"
         
         # 채팅 내용 문서화 (구조화)
@@ -180,9 +177,7 @@ class AIDriveService:
                 prompt=f"다음 대화 내용을 구조화된 문서로 변환하세요:\n\n{request.content}"
             )
             formatted_content = format_result["content"]
-            print(f"[App] 문서화 완료: {len(formatted_content)}자")
         except Exception as e:
-            print(f"[App] 문서화 실패, 원문 사용: {e}")
             formatted_content = request.content
 
         start = time.time()
@@ -220,9 +215,7 @@ class AIDriveService:
                 prompt=f"다음 에이전트 실행 결과를 구조화된 문서(보고서)로 변환하세요:\n\n{request.content}"
             )
             formatted_content = format_result["content"]
-            print(f"[App] 에이전트 결과 문서화 완료: {len(formatted_content)}자")
         except Exception as e:
-            print(f"[App] 문서화 실패, 원문 사용: {e}")
             formatted_content = request.content
 
         start = time.time()
@@ -389,7 +382,7 @@ class AIDriveService:
                 milvus_client = MilvusClient()
                 milvus_client.update_metadata(doc_id, visibility=visibility)
             except Exception as e:
-                print(f"[App] Milvus Update Failed: {e}")
+                pass  # Milvus 업데이트 실패 무시
         
         # 활동 로그
         self.activity_logger.log(

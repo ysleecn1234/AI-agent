@@ -643,7 +643,7 @@ class Researcher:
         else:
             if self.use_rag and self.rag_searcher is None:
                 print("  ❌ [RAG] use_rag=True 이지만 rag_searcher가 초기화되지 않음 → 문서 없이 진행")
-            return []  # Mock 대신 빈 리스트 → LLM이 자체 지식으로 답변
+            return []  # 문서 없을 시 기본 답변 반환
     
     def _search_with_rag(self, query: str, top_k: int, department: str) -> list[Dict[str, Any]]:
         """
@@ -680,8 +680,7 @@ class Researcher:
     
     def _search_mock(self, query: str, top_k: int) -> list[Dict[str, Any]]:
         """
-        [DEPRECATED] 개발용 Mock 데이터.
-        프로덕션에서는 사용 금지. 테스트에서만 직접 호출.
+        테스트용 Mock 데이터 - 프로덕션 미사용
         """
         import warnings
         warnings.warn(
@@ -1039,7 +1038,7 @@ class Reasoner:
         _weekdays = ['월', '화', '수', '목', '금', '토', '일']
         time_str = _now.strftime(f"%Y년 %m월 %d일 ({_weekdays[_now.weekday()]}) %H:%M KST")
         
-        # 참고 문서 ID 반환 지시 (LLM이 실제로 참고한 문서만 필터링)
+        # 참고 문서 ID 반환 지시 (실제 참고한 문서만 필터링)
         used_docs_instruction = ""
         if documents or full_docs:
             used_docs_instruction = '\n[중요] 답변 작성 후, 실제로 내용을 참고한 문서의 DOC_ID만 답변 맨 마지막 줄에 다음 형식으로 적어주세요: <!--USED_DOCS:["id1","id2"]-->' \
@@ -1283,7 +1282,7 @@ class Guardrail:
         return self.pii_detector.partial_mask(text, enabled_items)
     
     def clean_markdown_formatting(self, text: str) -> str:
-        """LLM이 전체 텍스트를 마크다운 코드 블록으로 감싸서 반환하는 경우 방어"""
+        """마크다운 코드 블록 감싸기 제거"""
         import re
         text = text.strip()
         # ```markdown 또는 ```md 또는 ``` 로 시작해서 ``` 로 끝나는 경우
@@ -1396,16 +1395,16 @@ class Guardrail:
             print(f"  [Guardrail] 고신뢰 + 짧은 답변 → 경량 검증")
             return self._verify_fallback(synthesis_result)
 
-        # Case 3: 나머지 (COMPLEX/BULK + 저신뢰 or 긴 답변) → LLM 검증
-        
-        # COMPLEX, BULK 작업은 LLM으로 검수
-        print("  → LLM 기반 품질 검수 중...")
+        # Case 3: 나머지 (COMPLEX/BULK + 저신뢰 or 긴 답변) → 품질 검증
+
+        # COMPLEX, BULK 작업은 검수 모델로 검수
+        print("  → 검수 모델 기반 품질 검증 중...")
         
         user_input = synthesis_result.get("user_input", "")
         response = synthesis_result.get("response", "")
         intent = synthesis_result.get("intent", "")
         
-        # LLM에게 검수 요청 (CoT 활용)
+        # 검수 모델에 검증 요청 (CoT 활용)
         prompt = f"""다음 AI 답변의 품질을 검수해주세요.
 
 사용자 질문: {user_input}
@@ -1442,7 +1441,7 @@ AI 답변:
                 quality_score = quality_data.get("quality_score", 0.8)
                 issues = quality_data.get("issues", [])
                 
-                print(f"  ✓ LLM 검수 완료 (점수: {quality_score:.2f})")
+                print(f"  ✓ 검수 완료 (점수: {quality_score:.2f})")
                 
                 if issues:
                     print(f"  [!] 품질 이슈 발견: {len(issues)}개")
@@ -1459,7 +1458,7 @@ AI 답변:
                 }
         
         except Exception as e:
-            print(f"  [!] LLM 검수 실패: {e}, Fallback 사용")
+            print(f"  [!] 검수 실패: {e}, Fallback 사용")
         
         # Fallback: 기본 검수
         return self._verify_fallback(synthesis_result)
@@ -1515,8 +1514,7 @@ AI 답변:
     
     def _check_completeness(self, user_input: str, response: str, intent: str) -> bool:
         """요청사항 충족도 검증"""
-        # TODO: LLM을 사용한 정교한 검증 구현
-        # 현재는 간단한 길이 기반 체크
+        # 길이 기반 휴리스틱 체크
         if intent == IntentType.ANALYSIS.value:
             return len(response) > 100  # 분석은 충분한 길이 필요
         elif intent == IntentType.GENERATION.value:
@@ -1525,13 +1523,11 @@ AI 답변:
     
     def _check_logical_consistency(self, response: str) -> bool:
         """논리적 일관성 검증"""
-        # TODO: LLM을 사용한 논리적 일관성 검증
-        # 현재는 기본적인 체크만
+        # 기본 검증 체크
         return len(response) > 0
     
     def _check_missing_information(self, user_input: str, response: str, intent: str) -> list[str]:
         """누락된 정보 확인"""
-        # TODO: LLM을 사용한 누락 정보 탐지
         missing = []
         
         # 분석 요청인데 데이터나 근거가 없는 경우
@@ -1782,7 +1778,7 @@ class Pipeline:
     "description": "에이전트 설명 (50자 이내)",
     "category": "카테고리 (마케팅/개발/기획/영업/인사/재무/기타 중 하나)",
     "input_example": "사용자가 이 에이전트에게 할 법한 구체적인 질문 예시 (예: '광운대 2025년 1학기 학사일정 알려줘')",
-    "output_example": "입력 예시에 대한 에이전트의 완성된 답변 형태 예시 (단순 설명/요약이 아닌, 실제 AI가 답변하는 것처럼 작성된 모의 답변. 마크다운이나 표/JSON 포맷 등 실제 응답 형태 그대로 작성)",
+    "output_example": "입력 예시에 대한 에이전트의 완성된 답변 형태 예시 (단순 설명/요약이 아닌, 실제 응답 형태 예시. 마크다운이나 표/JSON 포맷 등 예상 응답 형태 그대로 작성)",
     "system_prompt": "이 에이전트의 역할, 행동 규칙, 출력 형식을 정의하는 명확하고 구체적인 시스템 프롬프트 (예: '당신은 대학 학사일정 안내 에이전트입니다. 사용자가 학사 일정을 물어보면 표로 정리해 제공합니다.')",
     "use_rag": true,
     "model_type": "AUTO",
@@ -1819,12 +1815,6 @@ class Pipeline:
             
         print(f"[Pipeline] Draft Analysis Complete: {analysis.get('name', 'Unknown')}")
         return analysis
-
-    # async def vectorize_agent(self, agent_data: Dict) -> bool:
-    #     """
-    #     [Deprecated] Agent Vectorization Logic Moved to AI Hub (AgentManager)
-    #     """
-    #     pass
 
     async def recommend_agents(self, current_message: str, conversation_history: List[Dict] = None) -> Dict:
         """
@@ -2085,10 +2075,10 @@ class Pipeline:
                     })
                     seen_docs.add(dedup_key)
             
-            # LLM이 실제 참고한 문서만 필터링
+            # 실제 참고한 문서만 필터링
             if used_doc_ids:
                 sources = [s for s in sources if s["id"] in used_doc_ids]
-                print(f"  [Source Filter] LLM 참고 문서: {len(sources)}개 (전체 {len(research_result.get('retrieved_documents', []))}개 중)")
+                print(f"  [Source Filter] 참고 문서: {len(sources)}개 (전체 {len(research_result.get('retrieved_documents', []))}개 중)")
             
             # 웹 검색 정보 추출
             web_citations = research_result.get("web_citations", [])

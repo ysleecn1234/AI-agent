@@ -348,7 +348,7 @@ function ChatContent() {
             });
             setSaveProgress(100);
             setSaveModalOpen(false);
-            // 잠깐 100% 보여주고 닫기
+            // 진행률 표시 후 닫기
             setTimeout(() => { setIsSaving(false); setSaveProgress(0); }, 600);
         } catch (error) {
             console.error('Save failed:', error);
@@ -371,17 +371,17 @@ function ChatContent() {
         model_type?: string;
     }) => {
         try {
-            // 1. 선택된 메시지 준비
+            // 선택된 메시지 준비
             const selectedMessages = data.scope === 'single' && selectedMessageIndex !== null
                 ? [messages[selectedMessageIndex]].map(m => ({ role: m.role, content: m.content }))
                 : messages.map(m => ({ role: m.role, content: m.content }));
 
-            // 2. Draft 생성 (대화 내용만 전송)
+            // Draft 생성
             const draftResponse = await api.createAgentDraft({
                 selected_messages: selectedMessages
             });
 
-            // 3. Step1 업데이트 (이름, 입력/출력 예시)
+            // Step1 업데이트: 기본 정보
             await api.updateAgentStep1({
                 draft_id: draftResponse.draft_id,
                 name: data.name,
@@ -390,7 +390,7 @@ function ChatContent() {
                 output_example: data.output_example || selectedMessages[1]?.content || ''
             });
 
-            // 4. Step2 업데이트 (카테고리, 공개범위, 모델, 문서참조)
+            // Step2 업데이트: 카테고리, 공개범위, 모델
             await api.updateAgentStep2({
                 draft_id: draftResponse.draft_id,
                 category: data.category,
@@ -400,7 +400,7 @@ function ChatContent() {
                 linked_doc_ids: []
             });
 
-            // 5. 최종 발행
+            // 최종 발행
             const publishResponse = await api.publishAgent({
                 draft_id: draftResponse.draft_id
             });

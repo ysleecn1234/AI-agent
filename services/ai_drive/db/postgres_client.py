@@ -98,16 +98,13 @@ class PostgresClient:
         
         self.engine = create_engine(self.database_url)
         self.Session = sessionmaker(bind=self.engine)
-        
+
         # 테이블 생성
         self._create_tables()
-        
-        print(f"✓ PostgreSQL 연결 성공")
     
     def _create_tables(self):
         """테이블 생성 (없으면)"""
         Base.metadata.create_all(self.engine)
-        print("✓ 테이블 초기화 완료")
     
     # ==================== 문서 관리 ====================
     
@@ -171,7 +168,6 @@ class PostgresClient:
             session.commit()
             
             doc_id = str(doc.doc_id)
-            print(f"✓ 문서 생성: {doc_id}")
             
             return doc_id
             
@@ -242,7 +238,6 @@ class PostgresClient:
             if doc:
                 doc.full_text = full_text
                 session.commit()
-                print(f"✓ 전체 텍스트 저장: {doc_id} ({len(full_text)}자)")
         except Exception:
             session.rollback()
             raise
@@ -262,7 +257,6 @@ class PostgresClient:
                 doc.status = status
                 doc.modified_at = datetime.utcnow()
                 session.commit()
-                print(f"✓ 문서 상태 업데이트: {doc_id} → {status}")
         except Exception:
             session.rollback()
             raise
@@ -282,7 +276,6 @@ class PostgresClient:
                 if doc_type:
                     doc.doc_type = doc_type
                 session.commit()
-                print(f"✓ 태그 업데이트: {doc_id}")
         except Exception:
             session.rollback()
             raise
@@ -301,7 +294,6 @@ class PostgresClient:
             if doc:
                 doc.chunk_count = chunk_count
                 session.commit()
-                print(f"✓ 청크 수 업데이트: {doc_id} → {chunk_count}개")
         except Exception:
             session.rollback()
             raise
@@ -320,7 +312,6 @@ class PostgresClient:
             if doc:
                 doc.file_path = file_path
                 session.commit()
-                print(f"✓ 파일 경로 업데이트: {doc_id}")
         except Exception:
             session.rollback()
             raise
@@ -380,7 +371,6 @@ class PostgresClient:
             if changed_fields:
                 doc.modified_at = datetime.utcnow()
                 session.commit()
-                print(f"✓ 메타데이터 수정: {doc_id} → {changed_fields}")
             
             return {
                 "success": True,
@@ -521,7 +511,6 @@ class PostgresClient:
             session.commit()
             
             new_doc_id = str(new_doc.doc_id)
-            print(f"✓ 새 버전 생성: v{new_doc.version} ({new_doc_id})")
             
             return new_doc_id
             
@@ -778,7 +767,6 @@ class PostgresClient:
                 doc.is_latest = False
                 doc.status = "archived"
                 session.commit()
-                print(f"✓ 이전 버전 아카이브: {doc_id}")
         except Exception:
             session.rollback()
             raise
@@ -837,7 +825,6 @@ class PostgresClient:
             if doc:
                 session.delete(doc)
                 session.commit()
-                print(f"✓ 문서 완전 삭제: {doc_id}")
         except Exception:
             session.rollback()
             raise
@@ -847,88 +834,3 @@ class PostgresClient:
     def close(self):
         """연결 종료"""
         self.engine.dispose()
-        print("✓ PostgreSQL 연결 종료")
-
-
-# ==================== 테스트 코드 ====================
-
-if __name__ == "__main__":
-    print("=" * 80)
-    print("PostgresClient 테스트")
-    print("=" * 80)
-    
-    try:
-        client = PostgresClient()
-        
-        # 테스트용 사용자 ID
-        test_user_id = str(uuid.uuid4())
-        
-        # 1. 문서 생성 테스트
-        print("\n[문서 생성 테스트]")
-        doc_id = client.create_document(
-            title="테스트 문서",
-            creator_id=test_user_id,
-            creator_department="개발팀",
-            description="테스트용 문서입니다.",
-            visibility="team",
-            file_size=1024,
-            file_type="pdf",
-            tags=["테스트", "개발"],
-            doc_type="보고서"
-        )
-        print(f"생성된 doc_id: {doc_id}")
-        
-        # 2. 문서 조회 테스트
-        print("\n[문서 조회 테스트]")
-        doc = client.get_document(doc_id)
-        print(f"제목: {doc['title']}")
-        print(f"상태: {doc['status']}")
-        print(f"태그: {doc['tags']}")
-        
-        # 3. 상태 업데이트 테스트
-        print("\n[상태 업데이트 테스트]")
-        client.update_document_status(doc_id, "active")
-        doc = client.get_document(doc_id)
-        print(f"새 상태: {doc['status']}")
-        
-        # 4. 활동 로그 테스트
-        print("\n[활동 로그 테스트]")
-        client.log_activity(
-            user_id=test_user_id,
-            action="upload",
-            user_name="테스트유저",
-            doc_id=doc_id,
-            details={"file_name": "test.pdf"}
-        )
-        logs = client.get_activity_logs(user_id=test_user_id, limit=5)
-        print(f"로그 수: {len(logs)}")
-        
-        # 5. 비용 로그 테스트
-        print("\n[비용 로그 테스트]")
-        client.log_cost(
-            user_id=test_user_id,
-            operation="embedding",
-            tokens_used=1000,
-            cost_usd=0.00002,
-            cost_krw=0.028,
-            doc_id=doc_id
-        )
-        summary = client.get_cost_summary(user_id=test_user_id)
-        print(f"총 비용: {summary['total_cost_krw']}원")
-        
-        # 6. 문서 삭제 (아카이브)
-        print("\n[문서 삭제 테스트]")
-        client.delete_document(doc_id)
-        doc = client.get_document(doc_id)
-        print(f"삭제 후 상태: {doc['status']}")
-        
-        client.close()
-        
-        print("\n" + "=" * 80)
-        print("✓ 테스트 성공!")
-        print("=" * 80)
-        
-    except Exception as e:
-        print(f"\n❌ 테스트 실패: {str(e)}")
-        import traceback
-        traceback.print_exc()

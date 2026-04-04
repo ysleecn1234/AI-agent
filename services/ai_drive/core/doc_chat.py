@@ -31,18 +31,16 @@ class DocumentChat:
     
     def __init__(self, orchestrator=None):
         self.orchestrator = orchestrator  # 중앙 LLM 호출용
-        
+
         # orchestrator가 있으면 중앙 관제 모드, 없으면 기존 방식
         if self.orchestrator:
-            print("✓ DocumentChat: 오케스트레이터 연동 모드")
             self.use_mock = False
         else:
             self.openai_api_key = os.getenv("OPENAI_API_KEY")
             self.use_mock = False
             if not self.openai_api_key:
-                print("⚠️ OPENAI_API_KEY 없음 - Mock 모드")
                 self.use_mock = True
-            
+
             if not self.use_mock:
                 self._init_clients()
         
@@ -60,9 +58,7 @@ class DocumentChat:
         try:
             from openai import OpenAI
             self.openai_client = OpenAI(api_key=self.openai_api_key)
-            print("✓ OpenAI 연결 성공")
         except Exception as e:
-            print(f"⚠️ OpenAI 연결 실패: {e}")
             self.use_mock = True
     
     def chat(
@@ -87,23 +83,16 @@ class DocumentChat:
             }
         """
         start_time = time.time()
-        
-        print(f"\n[DocChat] 문서별 채팅 시작")
-        print(f"  문서: {doc_id}")
-        print(f"  질문: {question[:50]}...")
-        
+
         # Step 0: 문서 정보 조회
         doc_meta = self.postgres_client.get_document(doc_id)
         if not doc_meta:
             return {"error": "문서를 찾을 수 없습니다", "answer": None}
-        
+
         doc_title = doc_meta.get("title", "문서")
-        print(f"  제목: {doc_title}")
-        
+
         # Step 1: Researcher - 해당 문서에서 관련 청크 찾기
-        print("\n[Step 1/2] 관련 청크 검색")
         relevant_chunks = self._search_chunks(doc_id, question, user_id)
-        print(f"  → 관련 청크: {len(relevant_chunks)}개")
         
         if not relevant_chunks:
             return {
@@ -113,14 +102,10 @@ class DocumentChat:
             }
         
         # Step 2: Reasoner - 답변 생성 (할루시네이션 방지 프롬프트)
-        print("\n[Step 2/2] 답변 생성")
         raw_answer = self._generate_answer(question, relevant_chunks, doc_title)
-        print(f"  → 답변 생성 완료 ({len(raw_answer)}자)")
-        
+
         # 민감정보 마스킹 (정규식)
         final_answer, is_safe = self._mask_sensitive_info(raw_answer)
-        if not is_safe:
-            print("  → 민감정보 마스킹 적용")
         
         # 처리 시간 계산
         processing_time = int((time.time() - start_time) * 1000)
@@ -135,9 +120,7 @@ class DocumentChat:
             "processing_time_ms": processing_time,
             "model_used": "gpt-4o-mini"
         }
-        
-        print(f"\n[DocChat] 완료! ({processing_time}ms)")
-        
+
         return result
     
     # ==================== Step 1: 청크 검색 ====================
@@ -164,7 +147,7 @@ class DocumentChat:
                     operation="chat_embedding",
                 )
             except Exception as log_error:
-                print(f"  ⚠️ 비용 로그 실패: {log_error}")
+                pass
             
             # Milvus에서 해당 doc_id의 청크만 검색
             results = self.milvus_client.search_by_doc_id(
@@ -176,9 +159,8 @@ class DocumentChat:
             # 청크 텍스트만 추출
             chunks = [r.get("chunk_text", "") for r in results if r.get("chunk_text")]
             return chunks
-            
+
         except Exception as e:
-            print(f"  ⚠️ 청크 검색 오류: {e}")
             return self._fallback_get_chunks(doc_id)
     
     def _fallback_get_chunks(self, doc_id: str) -> List[str]:
@@ -227,9 +209,8 @@ class DocumentChat:
                 prompt=prompt,
             )
             return llm_result["content"]
-            
+
         except Exception as e:
-            print(f"  ⚠️ 답변 생성 오류: {e}")
             return self._mock_answer(question, chunks, doc_title)
     
     def _mock_answer(self, question: str, chunks: List[str], doc_title: str) -> str:
@@ -288,54 +269,3 @@ class DocumentChat:
         """리소스 정리"""
         self.postgres_client.close()
         self.milvus_client.close()
-        print("[DocChat] 연결 종료")
-
-
-# ==================== 테스트 코드 ====================
-
-if __name__ == "__main__":
-    print("=" * 60)
-    print("문서별 채팅 테스트 (간소화 버전)")
-    print("=" * 60)
-    
-    try:
-        chat = DocumentChat()
-        
-        # 테스트용 문서 ID 조회
-        docs = chat.postgres_client.list_documents(limit=1)
-        
-        if not docs:
-            print("❌ 테스트할 문서가 없습니다. 먼저 문서를 업로드하세요.")
-        else:
-            doc_id = docs[0]["doc_id"]
-            doc_title = docs[0]["title"]
-            
-            print(f"\n테스트 문서: {doc_title} ({doc_id})")
-            
-            # 테스트 질문
-            questions = [
-                "이 문서의 핵심 내용이 뭐야?",
-                "이 문서를 요약해줘",
-            ]
-            
-            for q in questions:
-                print(f"\n{'='*60}")
-                print(f"질문: {q}")
-                print("=" * 60)
-                
-                result = chat.chat(doc_id=doc_id, question=q)
-                
-                print(f"\n📝 답변:")
-                print(result.get("answer", "답변 없음"))
-                print(f"\n⏱️ 처리 시간: {result.get('processing_time_ms', 0)}ms")
-        
-        chat.close()
-        
-        print("\n" + "=" * 60)
-        print("✓ 테스트 완료!")
-        print("=" * 60)
-        
-    except Exception as e:
-        print(f"\n❌ 테스트 실패: {str(e)}")
-        import traceback
-        traceback.print_exc()

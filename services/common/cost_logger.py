@@ -92,7 +92,6 @@ class CostLogger:
         except Exception as e:
             if session:
                 session.rollback()
-            print(f"  [CostLogger] DB 기록 실패: {e}")
         finally:
             if session:
                 session.close()
@@ -134,7 +133,6 @@ class CostLogger:
         except Exception as e:
             if session:
                 session.rollback()
-            print(f"  [CostLogger] 임베딩 비용 DB 기록 실패: {e}")
         finally:
             if session:
                 session.close()

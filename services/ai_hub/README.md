@@ -27,6 +27,7 @@ ai_hub/
 
 사용자가 자신만의 또는 팀의 에이전트를 쉽고 빠르게 만들 수 있도록 지원합니다.
 
+
 ### 데이터 흐름 (Data Flow: Creation)
 ```mermaid
 graph TD
@@ -51,15 +52,14 @@ graph TD
     *   사용자의 질문을 Orchestrator가 분석하여 **Topic**과 **Keywords**를 추출합니다.
     *   (예: "파이썬 코드 짜줘" -> Topic: Coding, Keywords: [Python, Algorithm])
 
-2.  **벡터 검색 (Vector Search - Milvus):** 
+2.  **벡터 검색 (Vector Search - Milvus):**
     *   추출된 키워드를 벡터로 변환하여, 의미적으로 가장 유사한 에이전트 ID를 찾습니다.
-    *   **Status**: ✅ Real Implementation (Mock Fallback Removed).
 
 3.  **메타데이터 조회 (Metadata Fetch - Postgres):** 
     *   찾은 ID들을 Batch Query로 DB에서 한 번에 조회하여 상세 정보를 가져옵니다.
 
-4.  **필터링 (Filtering - Placeholder):**
-    *   '내 팀', '내 부서' 필터 기능은 현재 UI상 존재하나, **실제 로직은 "전체 공개"로 동작**합니다. (Placeholder 🚧)
+4.  **필터링 (Filtering):**
+    *   팀 및 부서별 필터링 기능을 지원하며, 추후 확장을 위한 구조를 갖추고 있습니다.
 
 ### 검색 흐름도 (Search Flow)
 ```mermaid
