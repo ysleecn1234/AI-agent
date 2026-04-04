@@ -77,6 +77,7 @@ chmod +x deploy.sh
 ```
 
 ### 3. 접속 및 테스트
+- **프론트엔드 사용자 UI**: [http://localhost:3000](http://localhost:3000)
 - **API 도큐먼트 (Swagger UI)**: [http://localhost:8000/docs](http://localhost:8000/docs)
 - **서버 헬스 체크**: [http://localhost:8000/health](http://localhost:8000/health)
 
