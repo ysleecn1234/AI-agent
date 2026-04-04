@@ -138,7 +138,7 @@ TASK_MODEL_CONFIG = {
     "chat_complex": {
         "models": ["claude-sonnet-4-6", "gpt-5.4"],
         "temperature": 0.1,
-        "max_tokens": 4000,
+        "max_tokens": 8000,
         "description": "정밀 분석 답변 생성 (Reasoner - COMPLEX)",
         "system_prompt": (
             "당신은 기업 내부에서 사용되는 AI 어시스턴트입니다. 정밀한 분석과 논리적 답변을 제공합니다.\n"
@@ -384,25 +384,25 @@ PREMIUM_MODELS = {
     "GPT_5_4_PRO": {
         "model": "gpt-5.4-pro",
         "display_name": "GPT 5.4 Pro (Thinking)",
-        "max_tokens": 4000,
+        "max_tokens": 8000,
         "temperature": 0.3,
     },
     "GEMINI_3_PRO": {
         "model": "gemini/gemini-3.1-pro-preview",
         "display_name": "Gemini 3 Pro",
-        "max_tokens": 4000,
+        "max_tokens": 8000,
         "temperature": 0.3,
     },
     "PERPLEXITY": {
         "model": "perplexity/sonar-pro",
         "display_name": "Perplexity Sonar Pro",
-        "max_tokens": 4000,
+        "max_tokens": 8000,
         "temperature": 0.3,
     },
     "OPUS_4_6": {
         "model": "claude-opus-4-6",
         "display_name": "Claude Opus 4.6",
-        "max_tokens": 4000,
+        "max_tokens": 8000,
         "temperature": 0.3,
     },
 }
@@ -1665,13 +1665,8 @@ class Pipeline:
                     "messages": messages,
                 }
                 
-                # 프롬프트 max_tokens 적용 (특정 모델 제외 시 여기에 조건 추가 가능)
-                if max_tokens:
-                    completion_kwargs["max_tokens"] = max_tokens
-                    
-                # GPT-5, o1 등 temperature를 미지원하는 모델의 대체 로직
+                # GPT-5, o1 등 temperature/max_tokens 미지원 모델 대응
                 if "gpt-5" in model or "o1" in model or "o3" in model:
-                    # 분석/판단 태스크: reasoning_effort로 정밀도 제어
                     REASONING_TASKS = {"chat_routing", "chat_guardrail", "chat_complex"}
                     if task in REASONING_TASKS:
                         if temperature <= 0.2:
@@ -1680,10 +1675,10 @@ class Pipeline:
                             completion_kwargs["reasoning_effort"] = "low"
                         else:
                             completion_kwargs["reasoning_effort"] = "medium"
-                    # 텍스트 생성 태스크(synthesis, simple 등): 파라미터 없이 기본 모드로 호출
-                    # → reasoning_effort를 보내면 content가 빈 문자열로 오는 GPT-5 이슈 방지
                 else:
                     completion_kwargs["temperature"] = temperature
+                    if max_tokens:
+                        completion_kwargs["max_tokens"] = max_tokens
                 
                 response = litellm.completion(**completion_kwargs)
                 
@@ -2218,17 +2213,22 @@ class Pipeline:
                 messages.extend(conversation_history)
             messages.append({"role": "user", "content": user_prompt})
             
-            # GPT-5, o1 등 temperature 미지원 모델 대응
+            # GPT-5, o1 등 temperature/max_tokens 미지원 모델 대응
             completion_kwargs = {
                 "model": model_name,
                 "messages": messages,
             }
-            
+
             if "gpt-5" in model_name or "o1" in model_name or "o3" in model_name:
+<<<<<<< Updated upstream
                 completion_kwargs["max_completion_tokens"] = model_config["max_tokens"]
+=======
+                pass
+>>>>>>> Stashed changes
             else:
                 completion_kwargs["max_tokens"] = model_config["max_tokens"]
                 completion_kwargs["temperature"] = model_config["temperature"]
+                completion_kwargs["max_tokens"] = model_config["max_tokens"]
             
             response = litellm.completion(**completion_kwargs)
             
