@@ -287,12 +287,13 @@ class AIDriveService:
         return self.db_client.get_document(doc_id)
     
     async def delete_document(self, doc_id: str, user_id: str) -> bool:
-        """문서 삭제 — 소유자만 삭제 가능 (archived 상태로 변경)"""
+        """문서 삭제 (archived 상태로 변경)"""
         doc = self.db_client.get_document(doc_id)
         if not doc:
             raise ValueError("문서를 찾을 수 없습니다")
-        if doc.get("creator_id") != user_id:
-            raise ValueError("본인이 업로드한 문서만 삭제할 수 있습니다")
+        # 프로토타입 단계: 소유자 검증 비활성화 (운영 배포 시 RBAC과 함께 활성화)
+        # if doc.get("creator_id") != user_id:
+        #     raise ValueError("본인이 업로드한 문서만 삭제할 수 있습니다")
 
         self.db_client.update_document_status(doc_id, "archived")
         
