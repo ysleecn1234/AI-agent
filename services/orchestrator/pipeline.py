@@ -865,7 +865,7 @@ class Researcher:
                 model="perplexity/sonar",
                 messages=[{"role": "user", "content": compressed_query}],
                 stream=False,
-                timeout=120,
+                timeout=300,
             )
             result = response.choices[0].message.content or ""
             
@@ -2240,7 +2240,7 @@ class Pipeline:
                 completion_kwargs["temperature"] = model_config["temperature"]
                 completion_kwargs["max_tokens"] = model_config["max_tokens"]
 
-            completion_kwargs["timeout"] = 120
+            completion_kwargs["timeout"] = 300
             response = litellm.completion(**completion_kwargs)
 
             content = response.choices[0].message.content or ""
