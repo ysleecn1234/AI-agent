@@ -2220,13 +2220,8 @@ class Pipeline:
             }
 
             if "gpt-5" in model_name or "o1" in model_name or "o3" in model_name:
-<<<<<<< Updated upstream
                 completion_kwargs["max_completion_tokens"] = model_config["max_tokens"]
-=======
-                pass
->>>>>>> Stashed changes
             else:
-                completion_kwargs["max_tokens"] = model_config["max_tokens"]
                 completion_kwargs["temperature"] = model_config["temperature"]
                 completion_kwargs["max_tokens"] = model_config["max_tokens"]
             
