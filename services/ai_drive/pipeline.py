@@ -221,37 +221,12 @@ class DocumentPipeline:
             text = self.file_parser.parse(file_path)
             print(f"  → 추출된 텍스트: {len(text)}자")
             
-            # Step 2.5: 개인정보(PII) 감지
-            print("[Step 2.5/6] 개인정보 감지")
-            pii_settings = self._get_user_pii_settings(creator_id)
-            pii_mode = pii_settings.get("mode", "block")
-            enabled_items = pii_settings.get("detection_items", None)
-            
-            pii_result = self.pii_detector.detect(text, enabled_items)
-            
-            if pii_result["has_pii"]:
-                findings_str = ", ".join(
-                    f"{f['type']} {f['count']}건" for f in pii_result['findings']
-                )
-                print(f"  ⚠️ 개인정보 감지: {findings_str}")
-                
-                if pii_mode == "block":
-                    # 차단 모드: 문서 삭제 후 에러 반환
-                    self.postgres_client.update_document_status(doc_id, "rejected")
-                    # 저장된 파일도 삭제
-                    if os.path.exists(perm_file_path):
-                        os.remove(perm_file_path)
-                    raise ValueError(
-                        f"개인정보가 감지되어 업로드가 차단되었습니다: {findings_str}"
-                    )
-                elif pii_mode == "mask":
-                    # 마스킹 모드: PII를 마스킹 처리 후 계속 진행
-                    text = self.pii_detector.mask(text, enabled_items)
-                    print("  → 개인정보 마스킹 완료")
-            else:
-                print("  ✅ 개인정보 미감지")
-            
-            # 전체 텍스트 DB 저장 (검색용 — PII 마스킹 후 텍스트 저장)
+            # Step 2.5: 개인정보(PII) 감지 — 업로드 단계에서는 원본 그대로 저장
+            # PII 마스킹은 출력 단계(doc_chat, Guardrail)에서 적용됨
+            # 내부 Drive는 사내 저장소이므로 원본 보존이 원칙
+            print("[Step 2.5/6] 개인정보 감지 (스킵 — 출력 단계에서 마스킹 적용)")
+
+            # 전체 텍스트 DB 저장 (원본 텍스트 저장 — 출력 시 PII 마스킹 적용)
             full_text_to_store = text if len(text) < 500000 else text[:500000]
             self.postgres_client.update_full_text(doc_id, full_text_to_store)
             
