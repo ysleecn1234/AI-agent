@@ -117,7 +117,7 @@ pydantic==2.5.0
 pydantic_core==2.14.1
 Pygments==2.19.2
 pykrx==1.0.51
-pymilvus==2.6.9
+pymilvus==2.3.4
 pyparsing==3.2.3
 pytest==9.0.2
 python-dateutil==2.9.0.post0

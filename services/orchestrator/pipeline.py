@@ -2130,8 +2130,21 @@ class Pipeline:
         print(f"[Pipeline] 프리미엄 모드: {model_type}")
         
         # 1. 모델 설정 가져오기
+        # TODO: v1 -> v2 마이그레이션 이후 삭제 예정 (기존 저장된 에이전트 모델명 호환 처리)
+        legacy_map = {
+            "gpt-4o-mini": "GPT_5_4_PRO",
+            "gpt-4o": "GPT_5_4_PRO",
+            "gpt-4": "GPT_5_4_PRO",
+            "gemini-1.5-pro": "GEMINI_3_PRO"
+        }
+        
+        normalized_model = model_type.lower()
+        if normalized_model in legacy_map:
+            model_type = legacy_map[normalized_model]
+            
         if model_type not in PREMIUM_MODELS:
-            raise ValueError(f"알 수 없는 프리미엄 모델: '{model_type}'. 가능한 모델: {list(PREMIUM_MODELS.keys())}")
+            print(f"WARN(orchestrator): Invalid model '{model_type}'. Falling back to GPT_5_4_PRO")
+            model_type = "GPT_5_4_PRO"
         
         model_config = PREMIUM_MODELS[model_type]
         model_name = model_config["model"]
