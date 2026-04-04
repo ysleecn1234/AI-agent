@@ -77,9 +77,9 @@ chmod +x deploy.sh
 ```
 
 ### 3. 접속 및 테스트
-- **프론트엔드 사용자 UI**: [http://localhost:3000](http://localhost:3000)
-- **API 도큐먼트 (Swagger UI)**: [http://localhost:8000/docs](http://localhost:8000/docs)
-- **서버 헬스 체크**: [http://localhost:8000/health](http://localhost:8000/health)
+- **프론트엔드 사용자 UI**: [http://223.130.142.76:3000](http://223.130.142.76:3000) (로컬 환경: `http://localhost:3000`)
+- **API 도큐먼트 (Swagger UI)**: [http://223.130.142.76:8000/docs](http://223.130.142.76:8000/docs)
+- **서버 헬스 체크**: [http://223.130.142.76:8000/health](http://223.130.142.76:8000/health)
 
 > 인프라나 DB(Milvus 등) 연결이 단절되거나 실패하는 상황에서는, 프론트 서버 다운을 방지하기 위해 자체적인 예외 처리와 방어 로직이 갖춰져 있습니다.
 
