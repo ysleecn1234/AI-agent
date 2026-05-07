@@ -85,7 +85,7 @@ TASK_MODEL_CONFIG = {
         ),
     },
     "chat_research": {
-        "models": ["gpt-5.4-mini", "claude-haiku-4.5"],
+        "models": ["gpt-5.4-mini", "claude-haiku-4-5"],
         "temperature": 0.2,
         "max_tokens": 500,
         "description": "검색 쿼리 생성 및 검증 (Researcher)",
@@ -208,7 +208,7 @@ TASK_MODEL_CONFIG = {
         ),
     },
     "chat_synthesis": {
-        "models": ["gemini/gemini-2.5-flash", "claude-haiku-4.5"],
+        "models": ["gemini/gemini-2.5-flash", "claude-haiku-4-5"],
         "temperature": 0.3,
         "max_tokens": 4000,
         "description": "답변 종합 및 포맷팅 (Synthesizer)",
@@ -328,7 +328,7 @@ TASK_MODEL_CONFIG = {
         ),
     },
     "title_gen": {
-        "models": ["gpt-5.4-mini", "claude-haiku-4.5"],
+        "models": ["gpt-5.4-mini", "claude-haiku-4-5"],
         "temperature": 0.3,
         "max_tokens": 500,
         "description": "채팅/에이전트 결과 저장 시 제목·설명 자동 생성",
@@ -1681,7 +1681,7 @@ class Pipeline:
                     if max_tokens:
                         completion_kwargs["max_tokens"] = max_tokens
                 
-                completion_kwargs["timeout"] = 30
+                completion_kwargs["timeout"] = 300
                 response = litellm.completion(**completion_kwargs)
 
                 content = response.choices[0].message.content or ""

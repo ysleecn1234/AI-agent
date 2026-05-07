@@ -44,7 +44,7 @@ class CostCalculator:
             "gpt-5.4-pro": ModelPricing(input_price_per_1m=30.00, output_price_per_1m=180.00, provider="OpenAI"),
 
             # Anthropic Claude 4.5 / 4.6 시리즈
-            "claude-haiku-4.5": ModelPricing(input_price_per_1m=1.00, output_price_per_1m=5.00, provider="Anthropic"),
+            "claude-haiku-4-5": ModelPricing(input_price_per_1m=1.00, output_price_per_1m=5.00, provider="Anthropic"),
             "claude-sonnet-4-6": ModelPricing(input_price_per_1m=3.00, output_price_per_1m=15.00, provider="Anthropic"),
             "claude-opus-4-6": ModelPricing(input_price_per_1m=5.00, output_price_per_1m=25.00, provider="Anthropic"),
             

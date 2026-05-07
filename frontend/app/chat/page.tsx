@@ -816,7 +816,7 @@ function ChatContent() {
                                                 'gpt-5.4-mini': 'GPT-5.4 Mini',
                                                 'gpt-5.4': 'GPT-5.4',
                                                 'gpt-5.4-pro': 'GPT-5.4 Pro',
-                                                'claude-haiku-4.5': 'Claude Haiku 4.5',
+                                                'claude-haiku-4-5': 'Claude Haiku 4.5',
                                                 'claude-sonnet-4-6': 'Claude Sonnet 4.6',
                                                 'claude-opus-4-6': 'Claude Opus 4.6',
                                                 'perplexity/sonar': 'Perplexity Sonar',
