@@ -1,86 +1,62 @@
-# 🚀 ISOR (Intelligent System for Optimized RAG)
-> **비용 최적화형 차세대 AI 에이전트 및 RAG 파이프라인 플랫폼**
+# ISOR — 비용 최적화형 RAG·AI 에이전트 플랫폼
 
-**ISOR**은 기존 엔터프라이즈 AI 시스템의 비효율적인 구조를 개선하여, **초저비용 오케스트레이션**과 **고효율 RAG 엔진**을 결합한 차세대 업무 환경 플랫폼입니다. 단순한 챗봇을 넘어, 사용자의 의도를 시스템 스스로 분석하고 최적의 가성비 모델 위치로 동적 라우팅하여 가장 합리적인 비용으로 고품질의 응답을 제공합니다.
+사용자의 질문 의도와 복잡도에 따라 **적절한 등급의 언어모델로 요청을 동적으로 라우팅**하고, 사내 문서를 검색해 답변하는 **RAG(검색 증강 생성) 기반 AI 에이전트 플랫폼**입니다. 기업 과제로 진행한 팀 프로젝트의 프로토타입입니다.
 
----
-
-## Project Background & Core Goals
-
-운영 원가 절감과 실무 적용성에 기술적 초점을 둡니다.
-
-- **비용 최적화**: 모든 텍스트 요청을 고비용 최신 모델로만 처리하는 기존 방식에서 벗어났습니다.
-- **동적 모델 라우팅**: 질문의 의도와 복잡도에 따라 경량 모델(Gemini Flash-lite 등)과 고성능 모델(Claude Sonnet, GPT-5.4 등)을 동적으로 매핑하여 불필요한 API 과금을 차단합니다.
-- **에이전트 워크플로우**: 단순 질의응답을 넘어 `[의도 분석 → 전략 수립 → 문서 검색 → 생성 → 검수]`의 파이프라인을 자율적으로 통과하는 에이전트 모델을 지향합니다.
+> RAG(Retrieval-Augmented Generation): 언어모델이 답을 생성하기 전에 관련 문서를 먼저 검색해 근거로 활용하는 방식. 최신 정보 반영과 환각(hallucination) 감소에 쓰입니다.
 
 ---
 
-## Core System Architecture
+## 배경 / 문제 정의
 
-ISOR 시스템은 세 가지 핵심 마이크로서비스 모듈로 완벽하게 분리되어 유기적으로 동작합니다.
+기업의 AI 시스템은 모든 요청을 고성능·고비용 모델로 처리하면 API 비용이 빠르게 늘어납니다. ISOR은 이 문제에 초점을 맞춰, 요청의 의도와 복잡도를 먼저 분석한 뒤 간단한 요청은 경량 모델로, 복잡한 요청은 고성능 모델로 나눠 보내는 구조를 실험했습니다. 여기에 사내 문서를 검색해 답하는 RAG 파이프라인과, 자연어로 특화 에이전트를 만드는 기능을 결합했습니다.
 
-### 1. Orchestrator (중앙 제어 시스템)
-사용자의 최초 요청을 수신하고 의도(Intent)와 복잡도(Complexity)를 파악해 최적의 경로를 배차(Dispatch)하는 지능형 컨트롤 타워.
-- **주요 기능**: Intent Classification, Dynamic Model Routing, Agent Schema Draft.
+## 사용 기술
 
-### 2. AI Hub (에이전트 서비스 플랫폼)
-목적에 맞는 특화된 사내 AI 에이전트를 자연어로 손쉽게 제작, 저장, 검색할 수 있는 플랫폼.
-- **주요 기능**: 대화형 에이전트 생성 마법사(Agent Creation Wizard), Vector 기반 유사 에이전트 추천.
+- **백엔드 / API**: Python 3.11, FastAPI
+- **데이터베이스**: PostgreSQL(회원·권한·메타데이터), Milvus(문서 임베딩을 저장·검색하는 벡터 데이터베이스)
+- **임베딩 / LLM 연동**: OpenAI `text-embedding-3-small`(문서·질문을 벡터로 변환), 요청 성격에 따라 경량 모델과 고성능 모델을 나눠 호출하는 다중 LLM 라우팅
+- **의도 분류**: scikit-learn 기반 의도 분류 모델(학습 데이터·적대적 테스트셋 포함, `services/orchestrator/`)
+- **프론트엔드**: Next.js, React, TypeScript, Tailwind CSS, shadcn/ui
+- **인프라**: Docker, Docker Compose 기반 컨테이너 환경
 
-### 3. AI Drive (통합 지식 저장소 & RAG)
-PDF, TXT 등 기업의 문서 데이터를 밀리초 단위로 파악하는 지식 저장소 및 SLM 파이프라인 구동계.
-- **주요 기능**: Chunking & Embedding, Vector Semantic Search (Milvus).
+## 프로젝트 구조
 
----
+세 개의 마이크로서비스로 분리되어 있으며, 요청은 Orchestrator를 거쳐 처리됩니다.
 
-## 5-Step SLM Pipeline (핵심 정보 처리 과정)
+```
+services/
+  ├─ orchestrator/     # ① 중앙 제어: 의도 분류 + 모델 라우팅
+  │    ├─ pipeline.py         # 5단계 처리 파이프라인
+  │    ├─ models/             # 학습된 의도 분류 모델(.pkl)
+  │    └─ data/               # 의도 분류 학습·테스트 데이터
+  ├─ ai_hub/           # ② 에이전트 플랫폼: 자연어로 에이전트 생성·검색
+  │    └─ core/agent/         # 에이전트 생성·스키마·관리
+  └─ ai_drive/         # ③ 지식 저장소(RAG): 문서 처리·벡터 검색
+       └─ core/                # 청킹·임베딩·RAG 검색·PII 탐지·자동 태깅
 
-ISOR의 가장 특징적인 로직은 답변 무결성과 비용 낭비 최소화를 위해 설계된 **5단계의 치밀한 검증 레이어**(`services/orchestrator/pipeline.py`)입니다.
-
-1. **Router**: 요청의 성격을 분석하고, 복잡도(SIMPLE, COMPLEX) 계산을 통해 맞춤형 모델 분배.
-2. **Researcher**: AI Drive(Milvus)에 접근하여 질문과 의미적으로 근접한 최상위 관련 문서 확보.
-3. **Reasoner**: 추출된 문서를 기반으로 질문에 대한 구체적이고 논리적인 답변 초안 작성 (환각 방지 기술 적용).
-4. **Synthesizer**: 로우 데이터를 가독성 높은 맞춤형 마크다운 및 표 형태로 최종 디자인 렌더링.
-5. **Guardrail**: 주민번호 등 PII 데이터 블라인드 마스킹, 유해 콘텐츠 차단 및 메타 정보 노출 방지 (API 비용 0원의 자체 Regex 기반 검사 연동).
-
----
-
-## Tech Stack
-
-- **LLM/SLM**: Gemini 2.5 Flash-lite (고속 라우팅 및 Guardrail), Claude Sonnet 4.6 (주요 답변), Gemini 2.5 Flash (추론/합성)
-- **Embeddings**: OpenAI `text-embedding-3-small`
-- **Backend / API**: FastAPI (Python 3.11)
-- **Database**:
-  - **PostgreSQL 15+** : 메타데이터 및 회원/권한 관리 RDBMS
-  - **Milvus 2.3+** : 초고속 Vector 임베딩 데이터 쿼리용 Standalone DB
-- **Infrastructure**: Docker & Docker Compose (완전한 컨테이너 환경 격리 및 배포)
-
----
-
-## Quick Start (빠른 실행 가이드)
-
-ISOR 프로젝트는 도커 환경으로 컨테이너화되어 있어 누구나 쉽게 실행할 수 있습니다.
-
-### 1. 환경 변수 설정
-프로젝트 최상단 디렉토리에 `.env` 파일을 복사하여 생성하고, 필수 API 키를 입력합니다.
-```bash
-cp .env.template .env
-# 편집기로 .env 파일을 열고 OPENAI_API_KEY, GOOGLE_API_KEY 등 입력
+api/                   # FastAPI 엔드포인트(chat, agents, drive, auth 등)
+application/           # 서비스 계층(usecases: ai_agent, ai_drive, ai_hub, orchestrator)
+frontend/              # Next.js 웹 UI(채팅, 에이전트 생성, 문서 관리, 관리자)
+docker/                # Dockerfile · docker-compose
+tests/                 # 통합 테스트
 ```
 
-### 2. 인프라 실행 (DB 및 서버 전체 배포)
-디바이스 내 Docker가 실행되어 있는 상태에서, 내장된 쉘 스크립트를 통해 시스템 로딩을 시작합니다.
-```bash
-# 실행 권한 부여 후 배포 처리
-chmod +x deploy.sh
-./deploy.sh
-```
+**핵심 처리 흐름 — Orchestrator의 5단계 파이프라인** (`services/orchestrator/pipeline.py`)
 
-### 3. 접속 및 테스트
-- **프론트엔드 사용자 UI**: [http://223.130.142.76:3000](http://223.130.142.76:3000) (로컬 환경: `http://localhost:3000`)
-- **API 도큐먼트 (Swagger UI)**: [http://223.130.142.76:8000/docs](http://223.130.142.76:8000/docs)
-- **서버 헬스 체크**: [http://223.130.142.76:8000/health](http://223.130.142.76:8000/health)
+1. **Router** — 요청의 의도와 복잡도(단순/복잡)를 판단해 처리할 모델을 결정
+2. **Researcher** — AI Drive(Milvus)에서 질문과 의미적으로 가까운 문서를 검색
+3. **Reasoner** — 검색된 문서를 근거로 답변 초안을 작성(환각 억제)
+4. **Synthesizer** — 초안을 읽기 좋은 마크다운·표 형태로 정리
+5. **Guardrail** — 주민번호 등 개인정보(PII) 마스킹, 유해 콘텐츠 차단(정규표현식 기반 자체 검사)
 
-> 인프라나 DB(Milvus 등) 연결이 단절되거나 실패하는 상황에서는, 프론트 서버 다운을 방지하기 위해 자체적인 예외 처리와 방어 로직이 갖춰져 있습니다.
+> 세부 실행·배포 방법은 저장소 내 `docker/`와 각 서비스의 `README.md` 문서를 참고하세요.
 
+## 결과 / 산출물
 
+기업 과제로 제출을 완료한 **동작하는 프로토타입**입니다. 이번 단계의 목표는 비용 절감률이나 정확도 같은 특정 지표 달성이 아니라, **"의도 기반 모델 라우팅 + RAG + 에이전트 생성"을 결합한 시스템을 팀이 실제로 구현하고 배포까지 할 수 있는가**를 검증하는 것이었습니다.
+
+- 세 개 마이크로서비스(Orchestrator / AI Hub / AI Drive)와 웹 UI를 갖춘 전체 시스템을 구현하고, Docker 컨테이너 환경으로 통합해 **배포·시연**했습니다.
+- 5단계 파이프라인, 벡터 검색 기반 RAG, 자연어 에이전트 생성, PII 마스킹 등 핵심 기능이 실제로 연동되어 동작함을 확인했습니다.
+- 정량적 성능 지표(비용 절감·분류 정확도 등) 측정은 이번 프로토타입 범위에 포함하지 않았으며, 향후 과제로 남겨두었습니다.
+
+ ## **현재 안전성을 위해서 develop 브렌치에 작업물이 있습니다.**
